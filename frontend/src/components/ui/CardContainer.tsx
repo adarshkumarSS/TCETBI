@@ -7,6 +7,7 @@ interface CardContainerProps {
   hover?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
+  sx?: React.CSSProperties;
 }
 
 export const CardContainer: React.FC<CardContainerProps> = ({

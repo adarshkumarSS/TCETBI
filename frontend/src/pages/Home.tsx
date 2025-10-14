@@ -302,15 +302,15 @@ interface Logo {
 
 const PartnersSection = () => {
   const govtLogos: Logo[] = [
-    { id: 1, name: "Ministry of MSME", src: "/asset/ministry_msme.png" },
-    { id: 2, name: "Startup India", src: "/asset/startup_india.png" },
-    { id: 3, name: "NSTEDB", src: "/asset/nstedb.png" },
+    { id: 1, name: "Ministry of MSME", src: "/asset/PartnerLogos/ministry_msme.png" },
+    { id: 2, name: "Startup India", src: "/asset/PartnerLogos/startup_india.png" },
+    { id: 3, name: "NSTEDB", src: "/asset/PartnerLogos/nstedb.png" },
   ];
 
   const stateLogos: Logo[] = [
-    { id: 4, name: "Tamil Nadu Govt", src: "/asset/govt_india.png" },
-    { id: 5, name: "TIDCO", src: "/asset/tidco.png" },
-    { id: 6, name: "TNSCST", src: "/asset/tnscst.png" },
+    { id: 4, name: "Tamil Nadu Govt", src: "/asset/PartnerLogos/govt_india.png" },
+    { id: 5, name: "TIDCO", src: "/asset/PartnerLogos/tidco.png" },
+    { id: 6, name: "TNSCST", src: "/asset/PartnerLogos/tnscst.png" },
   ];
 
   return (
