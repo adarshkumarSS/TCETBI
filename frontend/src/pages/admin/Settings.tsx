@@ -1,9 +1,12 @@
-import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { Box, Typography, Switch, FormControlLabel, IconButton } from "@mui/material";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { Settings2, Database, Bell, Shield, Palette } from "lucide-react";
+import { Settings2, Database, Bell, Shield, Palette, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Settings = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -19,17 +22,27 @@ export const Settings = () => {
           mx: "auto",
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 700,
-            color: "hsl(var(--foreground))",
-            mb: 4,
-          }}
-        >
-          Admin Settings
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
+          <IconButton
+            onClick={() => navigate("/admin")}
+            sx={{
+              color: "hsl(var(--foreground))",
+              "&:hover": { backgroundColor: "hsl(var(--muted))" },
+            }}
+          >
+            <ArrowLeft size={24} />
+          </IconButton>
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 700,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Admin Settings
+          </Typography>
+        </Box>
 
         <Box
           sx={{

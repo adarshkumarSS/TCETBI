@@ -1,10 +1,13 @@
-import { Box, Typography, Avatar } from "@mui/material";
+import { Box, Typography, Avatar, IconButton } from "@mui/material";
 import { Card, CardContent } from "@/components/ui/card";
 import { OutlinedTextField } from "@/components/ui/OutlinedTextField";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { User, Mail, Phone, MapPin } from "lucide-react";
+import { User, Mail, Phone, MapPin, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const AdminProfile = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -20,17 +23,27 @@ export const AdminProfile = () => {
           mx: "auto",
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 700,
-            color: "hsl(var(--foreground))",
-            mb: 4,
-          }}
-        >
-          Admin Profile
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
+          <IconButton
+            onClick={() => navigate("/admin")}
+            sx={{
+              color: "hsl(var(--foreground))",
+              "&:hover": { backgroundColor: "hsl(var(--muted))" },
+            }}
+          >
+            <ArrowLeft size={24} />
+          </IconButton>
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 700,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Admin Profile
+          </Typography>
+        </Box>
 
         <Card>
           <CardContent className="p-4">

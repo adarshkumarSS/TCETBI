@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Typography, IconButton, TextField, Button } from "@mui/material";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, LogOut, ArrowLeft, Upload, X, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, X, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DarkButton } from "@/components/ui/DarkButton";
 
@@ -100,20 +100,91 @@ export const UpdateContent = () => {
   ]);
 
   // Facilities states
-  const [facilityVideo, setFacilityVideo] = useState({ link: "https://example.com/video", description: "State-of-the-art facilities", details: "Our facilities include modern labs and workspaces" });
-  const [sharedInfra, setSharedInfra] = useState("High-speed internet, meeting rooms, collaboration spaces");
-  const [tcetbiInfra, setTcetbiInfra] = useState("Innovation labs, prototyping equipment, testing facilities");
+  const [facilityVideos, setFacilityVideos] = useState([
+    { link: "https://example.com/video1", description: "State-of-the-art facilities", details: "Our facilities include modern labs and workspaces" },
+  ]);
+  
+  const [sharedInfra, setSharedInfra] = useState([
+    {
+      id: 1,
+      name: 'Co-working Spaces',
+      description: 'Flexible workspaces with modern amenities for startups at different stages.',
+      image: '/api/placeholder/300/200',
+      features: ['24/7 Access', 'High-Speed Internet', 'Meeting Rooms', 'Coffee Station']
+    },
+    {
+      id: 2,
+      name: 'Innovation Labs',
+      description: 'Fully equipped laboratories for research, development, and testing.',
+      image: '/api/placeholder/300/200',
+      features: ['Latest Equipment', 'Testing Facilities', 'Research Support', 'Safety Protocols']
+    },
+    {
+      id: 3,
+      name: 'Fabrication Workshop',
+      description: 'Complete fabrication facility with 3D printing and prototyping tools.',
+      image: '/api/placeholder/300/200',
+      features: ['3D Printing', 'CNC Machines', 'Electronics Lab', 'Material Testing']
+    }
+  ]);
+
+  const [tcetbiInfra, setTcetbiInfra] = useState([
+    {
+      id: 4,
+      name: 'Auditorium',
+      description: 'State-of-the-art auditorium for events, presentations, and workshops.',
+      image: '/api/placeholder/300/200',
+      features: ['200 Seating', 'AV Equipment', 'Stage Lighting', 'Recording Setup']
+    },
+    {
+      id: 5,
+      name: 'Conference Halls',
+      description: 'Professional conference facilities for meetings and networking events.',
+      image: '/api/placeholder/300/200',
+      features: ['Video Conferencing', 'Presentation Setup', 'Comfortable Seating', 'Catering Services']
+    },
+    {
+      id: 6,
+      name: 'Library & Resource Center',
+      description: 'Comprehensive library with business resources and quiet study areas.',
+      image: '/api/placeholder/300/200',
+      features: ['Business Books', 'Digital Resources', 'Study Areas', 'Research Support']
+    }
+  ]);
 
   // Program states
   const [programs, setPrograms] = useState([
-    { title: "Incubation Program", description: "6-month intensive program", duration: "6 months", benefits: "Mentorship, funding, resources" },
-    { title: "Acceleration Program", description: "3-month growth program", duration: "3 months", benefits: "Scaling support, investor connect" },
+    { 
+      title: "Startup Accelerator Program", 
+      description: "Intensive 6-month program for early-stage startups with mentorship, funding, and market access.", 
+      image: "/api/placeholder/400/200",
+      duration: "6 months", 
+      category: "live",
+      startDate: "Jan 2024",
+      endDate: "Jun 2024",
+      participants: "25",
+      status: "Live"
+    },
   ]);
 
   // Media states
   const [mediaImages, setMediaImages] = useState([
-    { title: "Event 1", image: "", date: "2024-01-15", description: "Annual startup showcase" },
-    { title: "Event 2", image: "", date: "2024-02-20", description: "Innovation summit" },
+    { id: 1, src: "", alt: "", category: "", title: "", description: "", album: "" },
+  ]);
+
+  // Blog states
+  const [blogs, setBlogs] = useState([
+    {
+      id: 1,
+      title: "The Future of Startup Incubation: Trends to Watch in 2024",
+      excerpt: "Explore the latest trends shaping the startup ecosystem and how incubators are adapting to support emerging technologies and business models.",
+      content: "",
+      author: "Dr. Sarah Johnson",
+      date: "March 15, 2024",
+      category: "Innovation",
+      image: "/api/placeholder/400/240",
+      readTime: 5
+    },
   ]);
 
   // Contact states
@@ -241,23 +312,6 @@ export const UpdateContent = () => {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <IconButton
-              sx={{
-                color: "hsl(var(--foreground))",
-                "&:hover": { backgroundColor: "hsl(var(--muted))" },
-              }}
-            >
-              <Bell size={24} />
-            </IconButton>
-            <DarkButton
-              startIcon={<LogOut />}
-              onClick={handleLogout}
-              sx={{ color: "#fff" }}
-            >
-              Logout
-            </DarkButton>
-          </Box>
         </Box>
 
         <Box
@@ -854,27 +908,120 @@ export const UpdateContent = () => {
 
           {selectedPage === "Facilities" && (
             <Box sx={{ mt: 4 }}>
-              {/* Facility Showcase Video */}
+              {/* Facility Showcase Videos */}
               <Typography variant="h5" sx={{ fontFamily: "Poppins", fontWeight: 600, color: "hsl(var(--foreground))", mb: 3 }}>
-                Facility Showcase Video
+                Facility Showcase Videos
               </Typography>
-              <Box sx={{ p: 3, mb: 4, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}>
-                <TextField fullWidth label="Video Link" value={facilityVideo.link} onChange={(e) => setFacilityVideo({ ...facilityVideo, link: e.target.value })} sx={{ ...textFieldStyles, mb: 2 }} />
-                <TextField fullWidth label="Description" value={facilityVideo.description} onChange={(e) => setFacilityVideo({ ...facilityVideo, description: e.target.value })} sx={{ ...textFieldStyles, mb: 2 }} />
-                <TextField fullWidth multiline rows={3} label="Details" value={facilityVideo.details} onChange={(e) => setFacilityVideo({ ...facilityVideo, details: e.target.value })} sx={textFieldStyles} />
-              </Box>
+              {facilityVideos.map((video, index) => (
+                <Box key={index} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  {facilityVideos.length > 1 && (
+                    <IconButton
+                      onClick={() => setFacilityVideos(facilityVideos.filter((_, i) => i !== index))}
+                      sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}
+                    >
+                      <Trash2 size={20} />
+                    </IconButton>
+                  )}
+                  <TextField fullWidth label="Video Link" value={video.link} onChange={(e) => {
+                    const updated = [...facilityVideos];
+                    updated[index].link = e.target.value;
+                    setFacilityVideos(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth label="Description" value={video.description} onChange={(e) => {
+                    const updated = [...facilityVideos];
+                    updated[index].description = e.target.value;
+                    setFacilityVideos(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth multiline rows={3} label="Details" value={video.details} onChange={(e) => {
+                    const updated = [...facilityVideos];
+                    updated[index].details = e.target.value;
+                    setFacilityVideos(updated);
+                  }} sx={textFieldStyles} />
+                </Box>
+              ))}
+              <Button startIcon={<Plus />} onClick={() => setFacilityVideos([...facilityVideos, { link: "", description: "", details: "" }])} sx={{ ...uploadButtonStyles, mb: 4 }}>Add Video</Button>
 
               {/* Shared Infrastructure */}
               <Typography variant="h5" sx={{ fontFamily: "Poppins", fontWeight: 600, color: "hsl(var(--foreground))", mb: 3 }}>
                 Shared Infrastructure
               </Typography>
-              <TextField fullWidth multiline rows={4} label="Shared Infrastructure Details" value={sharedInfra} onChange={(e) => setSharedInfra(e.target.value)} sx={{ ...textFieldStyles, mb: 4 }} />
+              {sharedInfra.map((facility, index) => (
+                <Box key={facility.id} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  {sharedInfra.length > 1 && (
+                    <IconButton
+                      onClick={() => setSharedInfra(sharedInfra.filter((_, i) => i !== index))}
+                      sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}
+                    >
+                      <Trash2 size={20} />
+                    </IconButton>
+                  )}
+                  <TextField fullWidth label="Name" value={facility.name} onChange={(e) => {
+                    const updated = [...sharedInfra];
+                    updated[index].name = e.target.value;
+                    setSharedInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth multiline rows={2} label="Description" value={facility.description} onChange={(e) => {
+                    const updated = [...sharedInfra];
+                    updated[index].description = e.target.value;
+                    setSharedInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth label="Image URL" value={facility.image} onChange={(e) => {
+                    const updated = [...sharedInfra];
+                    updated[index].image = e.target.value;
+                    setSharedInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth multiline rows={2} label="Features (comma-separated)" value={facility.features.join(', ')} onChange={(e) => {
+                    const updated = [...sharedInfra];
+                    updated[index].features = e.target.value.split(',').map(f => f.trim());
+                    setSharedInfra(updated);
+                  }} sx={textFieldStyles} />
+                </Box>
+              ))}
+              <Button startIcon={<Plus />} onClick={() => {
+                const newId = Math.max(...sharedInfra.map(f => f.id), 0) + 1;
+                setSharedInfra([...sharedInfra, { id: newId, name: "", description: "", image: "", features: [] }]);
+              }} sx={{ ...uploadButtonStyles, mb: 4 }}>Add Shared Infrastructure</Button>
 
               {/* TCETBI Infrastructure */}
               <Typography variant="h5" sx={{ fontFamily: "Poppins", fontWeight: 600, color: "hsl(var(--foreground))", mb: 3 }}>
                 TCETBI Infrastructure
               </Typography>
-              <TextField fullWidth multiline rows={4} label="TCETBI Infrastructure Details" value={tcetbiInfra} onChange={(e) => setTcetbiInfra(e.target.value)} sx={textFieldStyles} />
+              {tcetbiInfra.map((facility, index) => (
+                <Box key={facility.id} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  {tcetbiInfra.length > 1 && (
+                    <IconButton
+                      onClick={() => setTcetbiInfra(tcetbiInfra.filter((_, i) => i !== index))}
+                      sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}
+                    >
+                      <Trash2 size={20} />
+                    </IconButton>
+                  )}
+                  <TextField fullWidth label="Name" value={facility.name} onChange={(e) => {
+                    const updated = [...tcetbiInfra];
+                    updated[index].name = e.target.value;
+                    setTcetbiInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth multiline rows={2} label="Description" value={facility.description} onChange={(e) => {
+                    const updated = [...tcetbiInfra];
+                    updated[index].description = e.target.value;
+                    setTcetbiInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth label="Image URL" value={facility.image} onChange={(e) => {
+                    const updated = [...tcetbiInfra];
+                    updated[index].image = e.target.value;
+                    setTcetbiInfra(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  <TextField fullWidth multiline rows={2} label="Features (comma-separated)" value={facility.features.join(', ')} onChange={(e) => {
+                    const updated = [...tcetbiInfra];
+                    updated[index].features = e.target.value.split(',').map(f => f.trim());
+                    setTcetbiInfra(updated);
+                  }} sx={textFieldStyles} />
+                </Box>
+              ))}
+              <Button startIcon={<Plus />} onClick={() => {
+                const newId = Math.max(...tcetbiInfra.map(f => f.id), 0) + 1;
+                setTcetbiInfra([...tcetbiInfra, { id: newId, name: "", description: "", image: "", features: [] }]);
+              }} sx={uploadButtonStyles}>Add TCETBI Infrastructure</Button>
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
                 <DarkButton onClick={handleSave}>Save Changes</DarkButton>
@@ -888,7 +1035,15 @@ export const UpdateContent = () => {
                 Programs
               </Typography>
               {programs.map((program, index) => (
-                <Box key={index} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}>
+                <Box key={index} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  {programs.length > 1 && (
+                    <IconButton
+                      onClick={() => setPrograms(programs.filter((_, i) => i !== index))}
+                      sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}
+                    >
+                      <Trash2 size={20} />
+                    </IconButton>
+                  )}
                   <TextField fullWidth label="Title" value={program.title} onChange={(e) => {
                     const updated = [...programs];
                     updated[index].title = e.target.value;
@@ -899,19 +1054,77 @@ export const UpdateContent = () => {
                     updated[index].description = e.target.value;
                     setPrograms(updated);
                   }} sx={{ ...textFieldStyles, mb: 2 }} />
-                  <TextField fullWidth label="Duration" value={program.duration} onChange={(e) => {
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
+                    <TextField fullWidth label="Duration" value={program.duration} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].duration = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                    <TextField fullWidth label="Category" value={program.category} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].category = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                  </Box>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
+                    <TextField fullWidth label="Start Date" value={program.startDate} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].startDate = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                    <TextField fullWidth label="End Date" value={program.endDate} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].endDate = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                  </Box>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
+                    <TextField fullWidth label="Participants" type="number" value={program.participants} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].participants = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                    <TextField fullWidth label="Status" value={program.status} onChange={(e) => {
+                      const updated = [...programs];
+                      updated[index].status = e.target.value;
+                      setPrograms(updated);
+                    }} sx={textFieldStyles} />
+                  </Box>
+                  <TextField fullWidth label="Image URL" value={program.image} onChange={(e) => {
                     const updated = [...programs];
-                    updated[index].duration = e.target.value;
+                    updated[index].image = e.target.value;
                     setPrograms(updated);
                   }} sx={{ ...textFieldStyles, mb: 2 }} />
-                  <TextField fullWidth multiline rows={2} label="Benefits" value={program.benefits} onChange={(e) => {
-                    const updated = [...programs];
-                    updated[index].benefits = e.target.value;
-                    setPrograms(updated);
-                  }} sx={textFieldStyles} />
+                  <input accept="image/*" style={{ display: "none" }} id={`program-image-${index}`} type="file" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const updated = [...programs];
+                        updated[index].image = reader.result as string;
+                        setPrograms(updated);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} />
+                  <label htmlFor={`program-image-${index}`}>
+                    <Button component="span" variant="outlined" startIcon={<Upload />} sx={uploadButtonStyles}>
+                      Upload Program Image
+                    </Button>
+                  </label>
                 </Box>
               ))}
-              <Button startIcon={<Plus />} onClick={() => setPrograms([...programs, { title: "", description: "", duration: "", benefits: "" }])} sx={uploadButtonStyles}>Add Program</Button>
+              <Button startIcon={<Plus />} onClick={() => setPrograms([...programs, { 
+                title: "", 
+                description: "", 
+                image: "",
+                duration: "", 
+                category: "",
+                startDate: "",
+                endDate: "",
+                participants: "",
+                status: ""
+              }])} sx={uploadButtonStyles}>Add Program</Button>
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
                 <DarkButton onClick={handleSave}>Save Changes</DarkButton>
@@ -925,30 +1138,49 @@ export const UpdateContent = () => {
                 Media Gallery
               </Typography>
               {mediaImages.map((media, index) => (
-                <Box key={index} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}>
+                <Box key={media.id} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  <IconButton onClick={() => setMediaImages(mediaImages.filter(m => m.id !== media.id))} sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}>
+                    <Trash2 size={20} />
+                  </IconButton>
+                  
                   <TextField fullWidth label="Title" value={media.title} onChange={(e) => {
                     const updated = [...mediaImages];
                     updated[index].title = e.target.value;
                     setMediaImages(updated);
                   }} sx={{ ...textFieldStyles, mb: 2 }} />
-                  <TextField fullWidth type="date" label="Date" value={media.date} onChange={(e) => {
+                  
+                  <TextField fullWidth label="Alt Text" value={media.alt} onChange={(e) => {
                     const updated = [...mediaImages];
-                    updated[index].date = e.target.value;
+                    updated[index].alt = e.target.value;
                     setMediaImages(updated);
-                  }} sx={{ ...textFieldStyles, mb: 2 }} InputLabelProps={{ shrink: true }} />
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  
+                  <TextField fullWidth label="Category" value={media.category} onChange={(e) => {
+                    const updated = [...mediaImages];
+                    updated[index].category = e.target.value;
+                    setMediaImages(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} placeholder="e.g., events, workshops, meetings" />
+                  
+                  <TextField fullWidth label="Album" value={media.album} onChange={(e) => {
+                    const updated = [...mediaImages];
+                    updated[index].album = e.target.value;
+                    setMediaImages(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} placeholder="Album name" />
+                  
                   <TextField fullWidth multiline rows={2} label="Description" value={media.description} onChange={(e) => {
                     const updated = [...mediaImages];
                     updated[index].description = e.target.value;
                     setMediaImages(updated);
                   }} sx={{ ...textFieldStyles, mb: 2 }} />
-                  {media.image && <img src={media.image} alt={media.title} style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />}
+                  
+                  {media.src && <img src={media.src} alt={media.alt || media.title} style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />}
                   <input accept="image/*" style={{ display: "none" }} id={`media-image-${index}`} type="file" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
                       reader.onloadend = () => {
                         const updated = [...mediaImages];
-                        updated[index].image = reader.result as string;
+                        updated[index].src = reader.result as string;
                         setMediaImages(updated);
                       };
                       reader.readAsDataURL(file);
@@ -959,7 +1191,15 @@ export const UpdateContent = () => {
                   </label>
                 </Box>
               ))}
-              <Button startIcon={<Plus />} onClick={() => setMediaImages([...mediaImages, { title: "", image: "", date: "", description: "" }])} sx={uploadButtonStyles}>Add Media Item</Button>
+              <Button startIcon={<Plus />} onClick={() => setMediaImages([...mediaImages, { 
+                id: mediaImages.length + 1, 
+                src: "", 
+                alt: "", 
+                category: "", 
+                title: "", 
+                description: "", 
+                album: "" 
+              }])} sx={uploadButtonStyles}>Add Media Item</Button>
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
                 <DarkButton onClick={handleSave}>Save Changes</DarkButton>
@@ -970,17 +1210,100 @@ export const UpdateContent = () => {
           {selectedPage === "Blogs" && (
             <Box sx={{ mt: 4 }}>
               <Typography variant="h5" sx={{ fontFamily: "Poppins", fontWeight: 600, color: "hsl(var(--foreground))", mb: 3 }}>
-                Blogs Content
+                Blog Posts
               </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Blog Description"
-                placeholder="Add blog description..."
-                sx={{ mb: 3 }}
-              />
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              {blogs.map((blog, index) => (
+                <Box key={blog.id} sx={{ p: 3, mb: 3, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", position: "relative" }}>
+                  {blogs.length > 1 && (
+                    <IconButton
+                      onClick={() => setBlogs(blogs.filter(b => b.id !== blog.id))}
+                      sx={{ position: "absolute", top: 8, right: 8, color: "hsl(0 84.2% 60.2%)" }}
+                    >
+                      <Trash2 size={20} />
+                    </IconButton>
+                  )}
+                  
+                  <TextField fullWidth label="Title" value={blog.title} onChange={(e) => {
+                    const updated = [...blogs];
+                    updated[index].title = e.target.value;
+                    setBlogs(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  
+                  <TextField fullWidth multiline rows={2} label="Excerpt" value={blog.excerpt} onChange={(e) => {
+                    const updated = [...blogs];
+                    updated[index].excerpt = e.target.value;
+                    setBlogs(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  
+                  <TextField fullWidth multiline rows={4} label="Content" value={blog.content} onChange={(e) => {
+                    const updated = [...blogs];
+                    updated[index].content = e.target.value;
+                    setBlogs(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
+                    <TextField fullWidth label="Author" value={blog.author} onChange={(e) => {
+                      const updated = [...blogs];
+                      updated[index].author = e.target.value;
+                      setBlogs(updated);
+                    }} sx={textFieldStyles} />
+                    <TextField fullWidth label="Date" value={blog.date} onChange={(e) => {
+                      const updated = [...blogs];
+                      updated[index].date = e.target.value;
+                      setBlogs(updated);
+                    }} sx={textFieldStyles} />
+                  </Box>
+                  
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
+                    <TextField fullWidth label="Category" value={blog.category} onChange={(e) => {
+                      const updated = [...blogs];
+                      updated[index].category = e.target.value;
+                      setBlogs(updated);
+                    }} sx={textFieldStyles} />
+                    <TextField fullWidth label="Read Time (minutes)" type="number" value={blog.readTime} onChange={(e) => {
+                      const updated = [...blogs];
+                      updated[index].readTime = Number(e.target.value);
+                      setBlogs(updated);
+                    }} sx={textFieldStyles} />
+                  </Box>
+                  
+                  <TextField fullWidth label="Image URL" value={blog.image} onChange={(e) => {
+                    const updated = [...blogs];
+                    updated[index].image = e.target.value;
+                    setBlogs(updated);
+                  }} sx={{ ...textFieldStyles, mb: 2 }} />
+                  
+                  {blog.image && <img src={blog.image} alt={blog.title} style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />}
+                  <input accept="image/*" style={{ display: "none" }} id={`blog-image-${index}`} type="file" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const updated = [...blogs];
+                        updated[index].image = reader.result as string;
+                        setBlogs(updated);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} />
+                  <label htmlFor={`blog-image-${index}`}>
+                    <Button variant="outlined" component="span" fullWidth startIcon={<Upload size={16} />} sx={uploadButtonStyles}>Upload Image</Button>
+                  </label>
+                </Box>
+              ))}
+              <Button startIcon={<Plus />} onClick={() => setBlogs([...blogs, { 
+                id: Math.max(...blogs.map(b => b.id), 0) + 1,
+                title: "", 
+                excerpt: "", 
+                content: "",
+                author: "",
+                date: "",
+                category: "",
+                image: "",
+                readTime: 5
+              }])} sx={uploadButtonStyles}>Add Blog Post</Button>
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
                 <DarkButton onClick={handleSave}>Save Changes</DarkButton>
               </Box>
             </Box>

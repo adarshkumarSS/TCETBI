@@ -269,7 +269,7 @@ const AchievementsSection = () => {
                   <Loader
                     targetNumber={achievement.number}
                     suffix={achievement.suffix}
-                    duration={2000 + index * 500}
+                    duration={1000 + index * 200}
                   />
                   <Typography
                     variant="h6"

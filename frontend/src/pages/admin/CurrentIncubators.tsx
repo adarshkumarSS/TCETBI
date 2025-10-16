@@ -1,6 +1,7 @@
-import { Box, Typography, Chip } from "@mui/material";
+import { Box, Typography, Chip, IconButton } from "@mui/material";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Calendar, Users } from "lucide-react";
+import { Building2, Calendar, Users, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Incubator {
   id: string;
@@ -56,6 +57,8 @@ const getStatusColor = (status: string) => {
 };
 
 export const CurrentIncubators = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -71,17 +74,27 @@ export const CurrentIncubators = () => {
           mx: "auto",
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 700,
-            color: "hsl(var(--foreground))",
-            mb: 4,
-          }}
-        >
-          Current Incubators
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
+          <IconButton
+            onClick={() => navigate("/admin")}
+            sx={{
+              color: "hsl(var(--foreground))",
+              "&:hover": { backgroundColor: "hsl(var(--muted))" },
+            }}
+          >
+            <ArrowLeft size={24} />
+          </IconButton>
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 700,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Current Incubators
+          </Typography>
+        </Box>
 
         <Box
           sx={{
