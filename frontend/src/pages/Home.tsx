@@ -7,6 +7,81 @@ import { DarkButton } from "../components/ui/DarkButton";
 import ShinyText from "../components/ShinyText";
 import LogoLoop from "../components/LogoLoop";
 import { Link } from "react-router-dom";
+import { getLandingContent } from "../api/getContentApi";
+import CircularProgress from "@mui/material/CircularProgress";
+
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+
+interface Achievement {
+  number: number;
+  suffix: string;
+  label: string;
+}
+
+interface Logo {
+  id: number;
+  name: string;
+  src: string;
+}
+
+interface SuccessStory {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  sector: string;
+  impact: string;
+}
+
+interface LandingContent {
+  vision: string;
+  mission: string;
+  achievements: Achievement[];
+  govtLogos: Logo[];
+  stateLogos: Logo[];
+  successStories: SuccessStory[];
+}
+
+interface LandingContentContextType {
+  content: LandingContent | null;
+  loading: boolean;
+}
+
+const LandingContentContext = createContext<LandingContentContextType>({
+  content: null,
+  loading: true,
+});
+
+export const LandingContentProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
+  const [content, setContent] = useState<LandingContent | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const data = await getLandingContent();
+      setContent(data);
+      setLoading(false);
+    })();
+  }, []);
+
+  return (
+    <LandingContentContext.Provider value={{ content, loading }}>
+      {children}
+    </LandingContentContext.Provider>
+  );
+};
+
+export const useLandingContent = () => useContext(LandingContentContext);
 
 const HeroSection = () => (
   <Box
@@ -113,10 +188,10 @@ const HeroSection = () => (
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
         >
-          <Link to="/apply-incubation" style={{ textDecoration: 'none' }}>
-          <DarkButton size="large" sx={{ fontSize: "1.1rem", px: 4, py: 2 }}>
-            Apply for Incubation
-          </DarkButton>
+          <Link to="/apply-incubation" style={{ textDecoration: "none" }}>
+            <DarkButton size="large" sx={{ fontSize: "1.1rem", px: 4, py: 2 }}>
+              Apply for Incubation
+            </DarkButton>
           </Link>
         </motion.div>
       </motion.div>
@@ -124,97 +199,102 @@ const HeroSection = () => (
   </Box>
 );
 
-const KnowUsBetterSection = () => (
-  <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
-    <Container maxWidth="lg">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
-      >
-        <Typography
-          variant="h3"
-          align="center"
-          sx={{
-            mb: 6,
-            color: "hsl(var(--foreground))",
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 600,
-          }}
-        >
-          Know Us Better
-        </Typography>
+const KnowUsBetterSection: React.FC = () => {
+  const { content, loading } = useLandingContent();
 
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 4,
-          }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <CardContainer>
-              <Typography
-                variant="h5"
-                sx={{
-                  mb: 3,
-                  color: "hsl(var(--primary))",
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
-                }}
-              >
-                Our Vision
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "hsl(var(--foreground))",
-                  fontFamily: "Poppins, sans-serif",
-                  lineHeight: 1.6,
-                }}
-              >
-                To create a thriving ecosystem that nurtures innovative startups
-                and bridges the gap between academic research and practical
-                business solutions, fostering sustainable growth and social
-                impact.
-              </Typography>
-            </CardContainer>
-          </Box>
+  if (loading || !content)
+  return (
+    <Box display="flex" justifyContent="center" py={6}>
+      <CircularProgress color="primary" />
+    </Box>
+  );
 
-          <Box sx={{ flex: 1 }}>
-            <CardContainer>
-              <Typography
-                variant="h5"
-                sx={{
-                  mb: 3,
-                  color: "hsl(var(--primary))",
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
-                }}
-              >
-                Our Mission
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "hsl(var(--foreground))",
-                  fontFamily: "Poppins, sans-serif",
-                  lineHeight: 1.6,
-                }}
-              >
-                To provide comprehensive support, mentorship, and resources to
-                budding entrepreneurs, enabling them to transform innovative
-                ideas into successful ventures that contribute to economic
-                growth and societal well-being.
-              </Typography>
-            </CardContainer>
+  return (
+    <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
+      <Container maxWidth="lg">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <Typography
+            variant="h3"
+            align="center"
+            sx={{
+              mb: 6,
+              color: "hsl(var(--foreground))",
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 600,
+            }}
+          >
+            Know Us Better
+          </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              gap: 4,
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <CardContainer>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 3,
+                    color: "hsl(var(--primary))",
+                    fontFamily: "Poppins, sans-serif",
+                    fontWeight: 600,
+                  }}
+                >
+                  Our Vision
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "hsl(var(--foreground))",
+                    fontFamily: "Poppins, sans-serif",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {content.vision}
+                </Typography>
+              </CardContainer>
+            </Box>
+
+            <Box sx={{ flex: 1 }}>
+              <CardContainer>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 3,
+                    color: "hsl(var(--primary))",
+                    fontFamily: "Poppins, sans-serif",
+                    fontWeight: 600,
+                  }}
+                >
+                  Our Mission
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "hsl(var(--foreground))",
+                    fontFamily: "Poppins, sans-serif",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {content.mission}
+                </Typography>
+              </CardContainer>
+            </Box>
           </Box>
-        </Box>
-      </motion.div>
-    </Container>
-  </Box>
-);
+        </motion.div>
+      </Container>
+    </Box>
+  );
+};
 
 const AchievementsSection = () => {
   const achievements = [
@@ -292,30 +372,102 @@ const AchievementsSection = () => {
   );
 };
 
-
-
 interface Logo {
   id: number;
   name: string;
   src: string;
 }
 
+// Add this small reusable component above PartnersSection 👇
+
+const GlowingLogo = ({
+  src,
+  alt,
+  size = 140,
+}: {
+  src: string;
+  alt: string;
+  size?: number;
+}) => {
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        justifyContent: "center",
+        alignItems: "center",
+        p: 1.5,
+        borderRadius: "16px",
+        transition: "transform 0.3s ease, filter 0.3s ease",
+        filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))", // 💙 default blue glow
+        "&:hover": {
+          transform: "scale(1.05)",
+          filter: "drop-shadow(0 0 15px rgba(255, 255, 255, 0.9))", // 🌟 brighter on hover
+        },
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          height: size,
+          objectFit: "contain",
+        }}
+      />
+    </Box>
+  );
+};
+
 const PartnersSection = () => {
   const govtLogos: Logo[] = [
-    { id: 1, name: "Ministry of MSME", src: "/asset/PartnerLogos/ministry_msme.png" },
-    { id: 2, name: "Startup India", src: "/asset/PartnerLogos/startup_india.png" },
+    {
+      id: 1,
+      name: "Ministry of MSME",
+      src: "/asset/PartnerLogos/ministry_msme.png",
+    },
+    {
+      id: 2,
+      name: "Startup India",
+      src: "/asset/PartnerLogos/startup_india.png",
+    },
     { id: 3, name: "NSTEDB", src: "/asset/PartnerLogos/nstedb.png" },
   ];
 
   const stateLogos: Logo[] = [
-    { id: 4, name: "Tamil Nadu Govt", src: "/asset/PartnerLogos/govt_india.png" },
+    {
+      id: 4,
+      name: "Tamil Nadu Govt",
+      src: "/asset/PartnerLogos/govt_india.png",
+    },
     { id: 5, name: "TIDCO", src: "/asset/PartnerLogos/tidco.png" },
     { id: 6, name: "TNSCST", src: "/asset/PartnerLogos/tnscst.png" },
   ];
 
   return (
-    <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
-      <Container maxWidth="lg">
+    <Box
+      sx={{
+        position: "relative",
+        py: 8,
+        overflow: "hidden",
+        backgroundColor: "hsl(var(--background))",
+      }}
+    >
+      {/* ✨ Glow background */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "70%",
+          height: "120%",
+          transform: "translate(-50%, -50%)",
+          background:
+            "radial-gradient(circle at center, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0) 70%)",
+          filter: "blur(80px)",
+          zIndex: 0,
+        }}
+      />
+
+      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
         <Typography
           variant="h3"
           align="center"
@@ -345,7 +497,7 @@ const PartnersSection = () => {
           </Typography>
           <LogoLoop
             logos={govtLogos.map((l) => ({
-              node: <img src={l.src} alt={l.name} style={{ height: 140 }} />,
+              node: <GlowingLogo src={l.src} alt={l.name} />,
               title: l.name,
               href: "#",
             }))}
@@ -377,7 +529,7 @@ const PartnersSection = () => {
           </Typography>
           <LogoLoop
             logos={stateLogos.map((l) => ({
-              node: <img src={l.src} alt={l.name} style={{ height: 140 }} />,
+              node: <GlowingLogo src={l.src} alt={l.name} />,
               title: l.name,
               href: "#",
             }))}
@@ -398,7 +550,6 @@ const PartnersSection = () => {
 };
 
 export default PartnersSection;
-
 
 const SuccessStoriesSection = () => {
   const successStories = [
@@ -480,12 +631,14 @@ const SuccessStoriesSection = () => {
 
 export const Home: React.FC = () => {
   return (
-    <Box>
-      <HeroSection />
-      <KnowUsBetterSection />
-      <AchievementsSection />
-      <PartnersSection />
-      <SuccessStoriesSection />
-    </Box>
+    <LandingContentProvider>
+      <Box>
+        <HeroSection />
+        <KnowUsBetterSection />
+        <AchievementsSection />
+        <PartnersSection />
+        <SuccessStoriesSection />
+      </Box>
+    </LandingContentProvider>
   );
 };

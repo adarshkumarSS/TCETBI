@@ -2,10 +2,19 @@ import React from "react";
 import { styled } from "@mui/material/styles";
 
 const StyledWrapper = styled("div")({
+  backgroundColor: "black", // 🖤 dark background
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 9999,
+
   ".loader": {
-    position: "absolute", // merged from the second block
-    top: "calc(50% - 1.25em)",
-    left: "calc(50% - 1.25em)",
+    position: "relative",
     width: "2.5em",
     height: "2.5em",
     transform: "rotate(165deg)",
@@ -21,52 +30,55 @@ const StyledWrapper = styled("div")({
     borderRadius: "0.25em",
     transform: "translate(-50%, -50%)",
   },
+
   ".loader:before": {
-    animation: "before8 2s infinite",
+    animation: "beforeRed 2s infinite",
   },
   ".loader:after": {
-    animation: "after6 2s infinite",
+    animation: "afterRed 2s infinite",
   },
-  "@keyframes before8": {
+
+  "@keyframes beforeRed": {
     "0%": {
       width: "0.5em",
       boxShadow:
-        "1em -0.5em rgba(225, 20, 98, 0.75), -1em 0.5em rgba(111, 202, 220, 0.75)",
+        "1em -0.5em rgba(255, 0, 0, 0.8), -1em 0.5em rgba(200, 0, 0, 0.8)",
     },
     "35%": {
       width: "2.5em",
       boxShadow:
-        "0 -0.5em rgba(225, 20, 98, 0.75), 0 0.5em rgba(111, 202, 220, 0.75)",
+        "0 -0.5em rgba(255, 0, 0, 0.9), 0 0.5em rgba(200, 0, 0, 0.9)",
     },
     "70%": {
       width: "0.5em",
       boxShadow:
-        "-1em -0.5em rgba(225, 20, 98, 0.75), 1em 0.5em rgba(111, 202, 220, 0.75)",
+        "-1em -0.5em rgba(255, 0, 0, 0.8), 1em 0.5em rgba(200, 0, 0, 0.8)",
     },
     "100%": {
       boxShadow:
-        "1em -0.5em rgba(225, 20, 98, 0.75), -1em 0.5em rgba(111, 202, 220, 0.75)",
+        "1em -0.5em rgba(255, 0, 0, 0.8), -1em 0.5em rgba(200, 0, 0, 0.8)",
     },
   },
-  "@keyframes after6": {
+
+  "@keyframes afterRed": {
     "0%": {
       height: "0.5em",
       boxShadow:
-        "0.5em 1em rgba(61, 184, 143, 0.75), -0.5em -1em rgba(233, 169, 32, 0.75)",
+        "0.5em 1em rgba(255, 50, 50, 0.8), -0.5em -1em rgba(200, 0, 0, 0.8)",
     },
     "35%": {
       height: "2.5em",
       boxShadow:
-        "0.5em 0 rgba(61, 184, 143, 0.75), -0.5em 0 rgba(233, 169, 32, 0.75)",
+        "0.5em 0 rgba(255, 50, 50, 0.9), -0.5em 0 rgba(200, 0, 0, 0.9)",
     },
     "70%": {
       height: "0.5em",
       boxShadow:
-        "0.5em -1em rgba(61, 184, 143, 0.75), -0.5em 1em rgba(233, 169, 32, 0.75)",
+        "0.5em -1em rgba(255, 50, 50, 0.8), -0.5em 1em rgba(200, 0, 0, 0.8)",
     },
     "100%": {
       boxShadow:
-        "0.5em 1em rgba(61, 184, 143, 0.75), -0.5em -1em rgba(233, 169, 32, 0.75)",
+        "0.5em 1em rgba(255, 50, 50, 0.8), -0.5em -1em rgba(200, 0, 0, 0.8)",
     },
   },
 });

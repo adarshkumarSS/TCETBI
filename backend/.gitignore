@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.py.class
+
+# --- Virtual Environment ---
+env/
+venv/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# --- Environment Variables ---
+*.env
+.env
+
+# --- Django Stuff ---
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media/
+staticfiles/
+static/
+
+# --- VSCode / IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- Migrations (optional, keep if needed) ---
+# Uncomment below if you don’t want migrations in repo
+# */migrations/
+# !*/migrations/__init__.py
+
+# --- Node (if your backend has npm stuff) ---
+node_modules/
+
+# --- Coverage / Testing ---
+htmlcov/
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/

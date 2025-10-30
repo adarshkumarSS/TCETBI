@@ -54,7 +54,7 @@ const AppContent = () => {
   useEffect(() => {
     if (location.pathname === "/") {
       setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 3000);
+      const timer = setTimeout(() => setLoading(false), 1000);
       return () => clearTimeout(timer);
     } else {
       setLoading(false);
