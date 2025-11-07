@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 interface SuccessStory {
-  id: number;
+  id?: number;
   title: string;
   description: string;
   image: string;

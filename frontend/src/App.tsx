@@ -3,11 +3,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useLocation,
+} from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+
 import { Navigation } from "./components/Navigation";
 import { AdminNavigation } from "./components/AdminNavigation";
+
 import { Home } from "./pages/Home";
 import { Portfolio } from "./pages/Portfolio";
 import { People } from "./pages/People";
@@ -17,6 +23,7 @@ import { Media } from "./pages/Media";
 import { Blogs } from "./pages/Blogs";
 import { Contact } from "./pages/Contact";
 import { Auth } from "./pages/Auth";
+import { ApplyIncubation } from "./pages/ApplyIncubation";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { UpdateContent } from "./pages/admin/UpdateContent";
 import { Applications } from "./pages/admin/Applications";
@@ -26,11 +33,9 @@ import { LinkedinPosts } from "./pages/admin/LinkedinPosts";
 import { CurrentIncubators } from "./pages/admin/CurrentIncubators";
 import { AdminProfile } from "./pages/admin/AdminProfile";
 
-
-import { ApplyIncubation } from "./pages/ApplyIncubation";
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
-import CommonLoader from "./components/CommonLoader"; // ✅ your loader component
+import CommonLoader from "./components/CommonLoader";
 
 const queryClient = new QueryClient();
 
@@ -43,12 +48,11 @@ const theme = createTheme({
   },
 });
 
-// Wrapper so we can use useLocation
+// --- Navigation Wrapper ---
 const AppContent = () => {
   const location = useLocation();
   const hideNav = ["/auth", "/apply-incubation"].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith("/admin");
-
   const [loading, setLoading] = useState(location.pathname === "/");
 
   useEffect(() => {
@@ -67,35 +71,186 @@ const AppContent = () => {
     <>
       {!hideNav && !isAdminRoute && <Navigation />}
       {!hideNav && isAdminRoute && <AdminNavigation />}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/portfolio" element={<Portfolio />} />
-        <Route path="/people" element={<People />} />
-        <Route path="/facilities" element={<Facilities />} />
-        <Route path="/program" element={<Program />} />
-        <Route path="/media" element={<Media />} />
-        <Route path="/blogs" element={<Blogs />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/apply-incubation" element={<ApplyIncubation />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/update-content" element={<UpdateContent />} />
-        <Route path="/admin/applications" element={<Applications />} />
-        <Route path="/admin/settings" element={<Settings />} />
-        <Route path="/admin/rejected" element={<RejectedApplications />} />
-        <Route path="/admin/linkedin" element={<LinkedinPosts />} />
-        <Route path="/admin/incubators" element={<CurrentIncubators />} />
-        <Route path="/admin/profile" element={<AdminProfile />} />
-
-
-        <Route path="*" element={<NotFound />} />
-        <Route path="/test" element={<CubeCarousel />} />
-      </Routes>
     </>
   );
 };
 
+// --- Define all routes ---
+const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: (
+        <>
+          <AppContent />
+          <Home />
+        </>
+      ),
+    },
+    {
+      path: "/portfolio",
+      element: (
+        <>
+          <AppContent />
+          <Portfolio />
+        </>
+      ),
+    },
+    {
+      path: "/people",
+      element: (
+        <>
+          <AppContent />
+          <People />
+        </>
+      ),
+    },
+    {
+      path: "/facilities",
+      element: (
+        <>
+          <AppContent />
+          <Facilities />
+        </>
+      ),
+    },
+    {
+      path: "/program",
+      element: (
+        <>
+          <AppContent />
+          <Program />
+        </>
+      ),
+    },
+    {
+      path: "/media",
+      element: (
+        <>
+          <AppContent />
+          <Media />
+        </>
+      ),
+    },
+    {
+      path: "/blogs",
+      element: (
+        <>
+          <AppContent />
+          <Blogs />
+        </>
+      ),
+    },
+    {
+      path: "/contact",
+      element: (
+        <>
+          <AppContent />
+          <Contact />
+        </>
+      ),
+    },
+    {
+      path: "/auth",
+      element: <Auth />,
+    },
+    {
+      path: "/apply-incubation",
+      element: <ApplyIncubation />,
+    },
+    {
+      path: "/admin",
+      element: (
+        <>
+          <AppContent />
+          <AdminDashboard />
+        </>
+      ),
+    },
+    {
+      path: "/admin/update-content",
+      element: (
+        <>
+          <AppContent />
+          <UpdateContent />
+        </>
+      ),
+    },
+    {
+      path: "/admin/applications",
+      element: (
+        <>
+          <AppContent />
+          <Applications />
+        </>
+      ),
+    },
+    {
+      path: "/admin/settings",
+      element: (
+        <>
+          <AppContent />
+          <Settings />
+        </>
+      ),
+    },
+    {
+      path: "/admin/rejected",
+      element: (
+        <>
+          <AppContent />
+          <RejectedApplications />
+        </>
+      ),
+    },
+    {
+      path: "/admin/linkedin",
+      element: (
+        <>
+          <AppContent />
+          <LinkedinPosts />
+        </>
+      ),
+    },
+    {
+      path: "/admin/incubators",
+      element: (
+        <>
+          <AppContent />
+          <CurrentIncubators />
+        </>
+      ),
+    },
+    {
+      path: "/admin/profile",
+      element: (
+        <>
+          <AppContent />
+          <AdminProfile />
+        </>
+      ),
+    },
+    {
+      path: "/test",
+      element: (
+        <>
+          <AppContent />
+          <CubeCarousel />
+        </>
+      ),
+    },
+    { path: "*", element: <NotFound /> },
+  ],
+  {
+    // ✅ future-proof React Router v7 behavior
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  }
+);
 
+// --- Main App ---
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider theme={theme}>
@@ -103,9 +258,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

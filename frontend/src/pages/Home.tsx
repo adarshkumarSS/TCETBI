@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container } from "@mui/material";
+import { Box, Typography, Container, CircularProgress } from "@mui/material";
 import { CardContainer } from "../components/ui/CardContainer";
 import { Loader } from "../components/ui/Loader";
 import { SuccessStoryCarousel } from "../components/ui/SuccessStoryCarousel";
@@ -7,81 +7,8 @@ import { DarkButton } from "../components/ui/DarkButton";
 import ShinyText from "../components/ShinyText";
 import LogoLoop from "../components/LogoLoop";
 import { Link } from "react-router-dom";
-import { getLandingContent } from "../api/getContentApi";
-import CircularProgress from "@mui/material/CircularProgress";
-
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-
-interface Achievement {
-  number: number;
-  suffix: string;
-  label: string;
-}
-
-interface Logo {
-  id: number;
-  name: string;
-  src: string;
-}
-
-interface SuccessStory {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-  sector: string;
-  impact: string;
-}
-
-interface LandingContent {
-  vision: string;
-  mission: string;
-  achievements: Achievement[];
-  govtLogos: Logo[];
-  stateLogos: Logo[];
-  successStories: SuccessStory[];
-}
-
-interface LandingContentContextType {
-  content: LandingContent | null;
-  loading: boolean;
-}
-
-const LandingContentContext = createContext<LandingContentContextType>({
-  content: null,
-  loading: true,
-});
-
-export const LandingContentProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
-  const [content, setContent] = useState<LandingContent | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const data = await getLandingContent();
-      setContent(data);
-      setLoading(false);
-    })();
-  }, []);
-
-  return (
-    <LandingContentContext.Provider value={{ content, loading }}>
-      {children}
-    </LandingContentContext.Provider>
-  );
-};
-
-export const useLandingContent = () => useContext(LandingContentContext);
+import { useEffect, useState } from "react";
+import { fetchHomeData, HomeData } from "../api/homeService";
 
 const HeroSection = () => (
   <Box
@@ -199,17 +126,7 @@ const HeroSection = () => (
   </Box>
 );
 
-const KnowUsBetterSection: React.FC = () => {
-  const { content, loading } = useLandingContent();
-
-  if (loading || !content)
-  return (
-    <Box display="flex" justifyContent="center" py={6}>
-      <CircularProgress color="primary" />
-    </Box>
-  );
-
-  return (
+const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => (
     <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
       <Container maxWidth="lg">
         <motion.div
@@ -259,7 +176,7 @@ const KnowUsBetterSection: React.FC = () => {
                     lineHeight: 1.6,
                   }}
                 >
-                  {content.vision}
+                {data.vision}
                 </Typography>
               </CardContainer>
             </Box>
@@ -285,7 +202,7 @@ const KnowUsBetterSection: React.FC = () => {
                     lineHeight: 1.6,
                   }}
                 >
-                  {content.mission}
+              {data.mission}
                 </Typography>
               </CardContainer>
             </Box>
@@ -294,17 +211,8 @@ const KnowUsBetterSection: React.FC = () => {
       </Container>
     </Box>
   );
-};
 
-const AchievementsSection = () => {
-  const achievements = [
-    { number: 150, suffix: "+", label: "Startups Incubated" },
-    { number: 500, suffix: "+", label: "Jobs Created" },
-    { number: 50, suffix: "+", label: "Success Stories" },
-    { number: 25, suffix: "+", label: "Awards Won" },
-  ];
-
-  return (
+const AchievementsSection = ({ data }: { data: HomeData["achievements"] }) => (
     <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
       <Container maxWidth="lg">
         <motion.div
@@ -337,7 +245,7 @@ const AchievementsSection = () => {
               gap: 4,
             }}
           >
-            {achievements.map((achievement, index) => (
+            {data.map((achievement, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -369,8 +277,7 @@ const AchievementsSection = () => {
         </motion.div>
       </Container>
     </Box>
-  );
-};
+);
 
 interface Logo {
   id: number;
@@ -379,7 +286,6 @@ interface Logo {
 }
 
 // Add this small reusable component above PartnersSection 👇
-
 const GlowingLogo = ({
   src,
   alt,
@@ -397,11 +303,13 @@ const GlowingLogo = ({
         alignItems: "center",
         p: 1.5,
         borderRadius: "16px",
+        overflow: "hidden", // 🧠 prevents scrollbar on hover
+        height: size + 20, // ensures enough fixed space even when scaled
         transition: "transform 0.3s ease, filter 0.3s ease",
-        filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))", // 💙 default blue glow
+        filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))",
         "&:hover": {
           transform: "scale(1.05)",
-          filter: "drop-shadow(0 0 15px rgba(255, 255, 255, 0.9))", // 🌟 brighter on hover
+          filter: "drop-shadow(0 0 15px rgba(255, 255, 255, 0.9))",
         },
       }}
     >
@@ -410,39 +318,23 @@ const GlowingLogo = ({
         alt={alt}
         style={{
           height: size,
+          width: "auto",
           objectFit: "contain",
+          display: "block",
         }}
       />
     </Box>
   );
 };
 
-const PartnersSection = () => {
-  const govtLogos: Logo[] = [
-    {
-      id: 1,
-      name: "Ministry of MSME",
-      src: "/asset/PartnerLogos/ministry_msme.png",
-    },
-    {
-      id: 2,
-      name: "Startup India",
-      src: "/asset/PartnerLogos/startup_india.png",
-    },
-    { id: 3, name: "NSTEDB", src: "/asset/PartnerLogos/nstedb.png" },
-  ];
 
-  const stateLogos: Logo[] = [
-    {
-      id: 4,
-      name: "Tamil Nadu Govt",
-      src: "/asset/PartnerLogos/govt_india.png",
-    },
-    { id: 5, name: "TIDCO", src: "/asset/PartnerLogos/tidco.png" },
-    { id: 6, name: "TNSCST", src: "/asset/PartnerLogos/tnscst.png" },
-  ];
-
-  return (
+const PartnersSection = ({
+  govtLogos,
+  stateLogos,
+}: {
+  govtLogos: HomeData["govt_logos"];
+  stateLogos: HomeData["state_logos"];
+}) => (
     <Box
       sx={{
         position: "relative",
@@ -547,60 +439,10 @@ const PartnersSection = () => {
       </Container>
     </Box>
   );
-};
 
 export default PartnersSection;
 
-const SuccessStoriesSection = () => {
-  const successStories = [
-    {
-      id: 1,
-      title: "Revolutionary Water Purification",
-      description:
-        "EcoTech Solutions developed an innovative water purification system that has provided clean water access to over 50,000 rural households across Tamil Nadu.",
-      image: "/asset/SuccessStoryimages/water.jpg",
-      sector: "Environmental Technology",
-      impact: "50,000+ households served",
-    },
-    {
-      id: 2,
-      title: "Smart Agriculture Platform",
-      description:
-        "AgriConnect created an IoT-based platform that has helped 10,000+ farmers increase their crop yields by 40% through data-driven farming techniques.",
-      image: "/asset/SuccessStoryimages/agriculture.jpg",
-      sector: "AgriTech",
-      impact: "40% yield increase for farmers",
-    },
-    {
-      id: 3,
-      title: "Rural Healthcare Innovation",
-      description:
-        "HealthTech Innovations launched AI-powered diagnostic tools that have improved healthcare access in 200+ rural health centers.",
-      image: "/asset/SuccessStoryimages/healthcare.png",
-      sector: "HealthTech",
-      impact: "200+ health centers equipped",
-    },
-    {
-      id: 4,
-      title: "Digital Financial Inclusion",
-      description:
-        "FinTech Solutions created a digital banking platform that has brought banking services to 25,000+ unbanked individuals in rural areas.",
-      image: "/asset/SuccessStoryimages/fintech.jpg",
-      sector: "FinTech",
-      impact: "25,000+ people financially included",
-    },
-    {
-      id: 5,
-      title: "Educational Technology Revolution",
-      description:
-        "EduTech Platform developed personalized learning solutions that have improved learning outcomes for 15,000+ students across Tamil Nadu.",
-      image: "/asset/SuccessStoryimages/education.jpg",
-      sector: "EdTech",
-      impact: "15,000+ students impacted",
-    },
-  ];
-
-  return (
+const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories"] }) => (
     <Box sx={{ py: 8, backgroundColor: "hsl(var(--accent))" }}>
       <Container maxWidth="lg">
         <motion.div
@@ -622,23 +464,49 @@ const SuccessStoriesSection = () => {
             Success Stories
           </Typography>
 
-          <SuccessStoryCarousel stories={successStories} />
+          <SuccessStoryCarousel stories={stories} />
         </motion.div>
       </Container>
     </Box>
   );
-};
 
 export const Home: React.FC = () => {
-  return (
-    <LandingContentProvider>
-      <Box>
-        <HeroSection />
-        <KnowUsBetterSection />
-        <AchievementsSection />
-        <PartnersSection />
-        <SuccessStoriesSection />
+  const [data, setData] = useState<HomeData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHomeData()
+      .then((res) => setData(res))
+      .catch(() => console.error("Failed to load home data"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress color="primary" size={80} />
       </Box>
-    </LandingContentProvider>
+    );
+
+  if (!data) return <p>Error loading homepage data.</p>;
+
+  return (
+    <Box>
+      <HeroSection />
+      <KnowUsBetterSection data={data.vision_mission} />
+      <AchievementsSection data={data.achievements} />
+      <PartnersSection
+        govtLogos={data.govt_logos}
+        stateLogos={data.state_logos}
+      />
+      <SuccessStoriesSection stories={data.success_stories} />
+    </Box>
   );
 };

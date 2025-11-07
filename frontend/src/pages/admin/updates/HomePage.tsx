@@ -1,0 +1,751 @@
+import { useEffect, useState } from "react";
+import { Box, Typography, TextField, Button } from "@mui/material";
+import { Upload, Plus, Trash2 } from "lucide-react";
+import { DarkButton } from "@/components/ui/DarkButton";
+import { fetchHomeData, updateHomeData, HomeData } from "@/api/homeService";
+import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { ResizeModal } from "@/components/ResizeModal";
+import { MessageModal } from "@/components/ui/MessageModal";
+import { AddContentModal } from "@/components/AddContentModal";
+import { removeImageBackground } from "@/utils/removeBackground";
+
+export const HomePage: React.FC = () => {
+  const [data, setData] = useState<HomeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadContext, setUploadContext] = useState<{
+    type: string;
+    index: number;
+  } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [resizeModalOpen, setResizeModalOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
+    "info"
+  );
+  const [addModal, setAddModal] = useState<{
+    open: boolean;
+    type: "achievement" | "logo" | "successStory" | null;
+  }>({
+    open: false,
+    type: null,
+  });
+
+  // ✅ Fetch home data on mount
+  useEffect(() => {
+    fetchHomeData()
+      .then((res) => setData(res))
+      .catch(() => console.error("Failed to load home data"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ✅ Update handlers
+  const handleVisionMissionChange = (
+    field: "vision" | "mission",
+    value: string
+  ) => {
+    if (!data) return;
+    setData({
+      ...data,
+      vision_mission: { ...data.vision_mission, [field]: value },
+    });
+  };
+
+  const handleAchievementChange = (
+    index: number,
+    field: string,
+    value: any
+  ) => {
+    if (!data) return;
+    const updated = [...data.achievements];
+    updated[index] = { ...updated[index], [field]: value };
+    setData({ ...data, achievements: updated });
+  };
+
+  const handleLogoChange = (
+    type: "govt_logos" | "state_logos",
+    index: number,
+    field: string,
+    value: any
+  ) => {
+    if (!data) return;
+    const updated = [...data[type]];
+    updated[index] = { ...updated[index], [field]: value };
+    setData({ ...data, [type]: updated });
+  };
+
+  const handleSuccessStoryChange = (
+    index: number,
+    field: string,
+    value: any
+  ) => {
+    if (!data) return;
+    const updated = [...data.success_stories];
+    updated[index] = { ...updated[index], [field]: value };
+    setData({ ...data, success_stories: updated });
+  };
+
+  const handleDelete = (type: string, index: number) => {
+    if (!data) return;
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this item?"
+    );
+    if (!confirmDelete) return;
+
+    if (type === "achievement") {
+      const updated = [...data.achievements];
+      updated.splice(index, 1);
+      setData({ ...data, achievements: updated });
+    } else if (type === "govt") {
+      const updated = [...data.govt_logos];
+      updated.splice(index, 1);
+      setData({ ...data, govt_logos: updated });
+    } else if (type === "state") {
+      const updated = [...data.state_logos];
+      updated.splice(index, 1);
+      setData({ ...data, state_logos: updated });
+    } else if (type === "successStory") {
+      const updated = [...data.success_stories];
+      updated.splice(index, 1);
+      setData({ ...data, success_stories: updated });
+    }
+  };
+
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: string,
+    index: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedImage(reader.result as string);
+      setCurrentFile(file);
+      setUploadContext({ type, index });
+      setResizeModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ✅ Cropping + background removal
+  const handleCroppedImageSave = async (croppedFile: File) => {
+  if (!data || !uploadContext) return;
+
+  let imageURL = URL.createObjectURL(croppedFile);
+
+  // ✅ Only remove background for logos, not for success stories
+  if (uploadContext.type === "govtIndia" || uploadContext.type === "govtTN") {
+    try {
+      const bgRemoved = await removeImageBackground(croppedFile);
+      if (bgRemoved) imageURL = bgRemoved;
+    } catch {
+      console.warn("Background removal failed, using original image.");
+    }
+  }
+
+  if (uploadContext.type === "govtIndia") {
+    const updated = [...data.govt_logos];
+    updated[uploadContext.index].src = imageURL;
+    setData({ ...data, govt_logos: updated });
+  } else if (uploadContext.type === "govtTN") {
+    const updated = [...data.state_logos];
+    updated[uploadContext.index].src = imageURL;
+    setData({ ...data, state_logos: updated });
+  } else if (uploadContext.type === "successStory") {
+    const updated = [...data.success_stories];
+    updated[uploadContext.index].image = imageURL;
+    setData({ ...data, success_stories: updated });
+  }
+
+  setResizeModalOpen(false);
+};
+
+
+  // ✅ Add new entry
+  const handleAddNew = (newData: any) => {
+    if (!data || !addModal.type) return;
+    if (addModal.type === "achievement") {
+      setData({ ...data, achievements: [...data.achievements, newData] });
+    } else if (addModal.type === "logo") {
+      if (newData.category === "govt") {
+        setData({ ...data, govt_logos: [...data.govt_logos, newData] });
+      } else {
+        setData({ ...data, state_logos: [...data.state_logos, newData] });
+      }
+    } else if (addModal.type === "successStory") {
+      setData({ ...data, success_stories: [...data.success_stories, newData] });
+    }
+  };
+
+  // ✅ Save data to backend
+  const handleSave = async () => {
+    if (!data) return;
+    try {
+      setUploading(true);
+      const uploadImageIfLocal = async (
+        urlOrFile: string | File
+      ): Promise<string> => {
+        if (typeof urlOrFile === "string" && urlOrFile.startsWith("blob:")) {
+          const response = await fetch(urlOrFile);
+          const blob = await response.blob();
+          const file = new File([blob], "image.jpg", { type: blob.type });
+          return await uploadToCloudinary(file);
+        }
+        return urlOrFile as string;
+      };
+
+      const updatedData = { ...data };
+      updatedData.govt_logos = await Promise.all(
+        data.govt_logos.map(async (logo) => ({
+          ...logo,
+          src: logo.src ? await uploadImageIfLocal(logo.src) : logo.src,
+          category: "govt",
+        }))
+      );
+
+      updatedData.state_logos = await Promise.all(
+        data.state_logos.map(async (logo) => ({
+          ...logo,
+          src: logo.src ? await uploadImageIfLocal(logo.src) : logo.src,
+          category: "state",
+        }))
+      );
+
+      updatedData.success_stories = await Promise.all(
+        data.success_stories.map(async (story) => ({
+          ...story,
+          image: story.image
+            ? await uploadImageIfLocal(story.image)
+            : story.image,
+        }))
+      );
+
+      const response = await updateHomeData(updatedData);
+      setMessageText(response.message || "✅ Data updated successfully!");
+      setMessageType("success");
+      setMessageOpen(true);
+    } catch (error: any) {
+      console.error("Error updating data:", error);
+      const msg =
+        error.response?.data?.message || "❌ Failed to update home page data!";
+      setMessageText(msg);
+      setMessageType("error");
+      setMessageOpen(true);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const textFieldStyles = {
+    "& .MuiInputBase-input": { color: "hsl(var(--foreground))" },
+    "& .MuiInputLabel-root": { color: "hsl(var(--muted-foreground))" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "hsl(0 84.2% 60.2%)" },
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": { borderColor: "hsl(var(--border))" },
+      "&:hover fieldset": { borderColor: "hsl(0 84.2% 60.2%)" },
+      "&.Mui-focused fieldset": { borderColor: "hsl(0 84.2% 60.2%)" },
+    },
+  };
+
+  const uploadButtonStyles = {
+    backgroundColor: "hsl(0 84.2% 60.2%)",
+    color: "white",
+    borderColor: "hsl(0 84.2% 60.2%)",
+    "&:hover": {
+      backgroundColor: "hsl(0 84.2% 50.2%)",
+      borderColor: "hsl(0 84.2% 50.2%)",
+    },
+  };
+
+  if (loading) return <p>Loading home page data...</p>;
+  if (!data) return <p>Failed to load data.</p>;
+
+  return (
+    <>
+      <Box sx={{ mt: 4 }}>
+        {/* Vision & Mission */}
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 600,
+            color: "hsl(var(--foreground))",
+            mb: 3,
+          }}
+        >
+          Vision & Mission
+        </Typography>
+
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          label="Vision"
+          value={data.vision_mission.vision}
+          onChange={(e) => handleVisionMissionChange("vision", e.target.value)}
+          sx={{ ...textFieldStyles, mb: 3 }}
+        />
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          label="Mission"
+          value={data.vision_mission.mission}
+          onChange={(e) => handleVisionMissionChange("mission", e.target.value)}
+          sx={{ ...textFieldStyles, mb: 4 }}
+        />
+
+        {/* Achievements Section */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 600,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Our Achievements
+          </Typography>
+          <Button
+            startIcon={<Plus size={18} />}
+            onClick={() => setAddModal({ open: true, type: "achievement" })}
+            sx={{
+              backgroundColor: "hsl(0 84.2% 60.2%)",
+              color: "white",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "hsl(0 84.2% 50.2%)",
+              },
+            }}
+          >
+            Add
+          </Button>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          {data.achievements.map((achievement, index) => (
+            <Box
+              key={index}
+              sx={{
+                p: 2,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <TextField
+                fullWidth
+                type="number"
+                label="Number"
+                value={achievement.number}
+                onChange={(e) =>
+                  handleAchievementChange(
+                    index,
+                    "number",
+                    parseInt(e.target.value)
+                  )
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Suffix"
+                value={achievement.suffix}
+                onChange={(e) =>
+                  handleAchievementChange(index, "suffix", e.target.value)
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Label"
+                value={achievement.label}
+                onChange={(e) =>
+                  handleAchievementChange(index, "label", e.target.value)
+                }
+                sx={textFieldStyles}
+              />
+              <Button
+                color="error"
+                startIcon={<Trash2 />}
+                onClick={() => handleDelete("achievement", index)}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Logos Section */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 600,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Partners - Government of India
+          </Typography>
+          <Button
+            startIcon={<Plus size={18} />}
+            onClick={() => setAddModal({ open: true, type: "logo" })}
+            sx={{
+              backgroundColor: "hsl(0 84.2% 60.2%)",
+              color: "white",
+              fontWeight: 600,
+              "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+            }}
+          >
+            Add
+          </Button>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          {data.govt_logos.map((logo, index) => (
+            <Box
+              key={index}
+              sx={{
+                p: 2,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <img
+                src={logo.src}
+                alt={logo.name}
+                style={{
+                  width: "100%",
+                  height: "120px",
+                  objectFit: "contain",
+                  marginBottom: "12px",
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Name"
+                value={logo.name}
+                onChange={(e) =>
+                  handleLogoChange("govt_logos", index, "name", e.target.value)
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <input
+                accept="image/*"
+                style={{ display: "none" }}
+                id={`govt-india-upload-${index}`}
+                type="file"
+                onChange={(e) => handleImageUpload(e, "govtIndia", index)}
+              />
+              <label htmlFor={`govt-india-upload-${index}`}>
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  startIcon={<Upload size={16} />}
+                  sx={uploadButtonStyles}
+                >
+                  Upload Image
+                </Button>
+              </label>
+              <Button
+                color="error"
+                startIcon={<Trash2 />}
+                onClick={() => handleDelete("govt", index)}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Tamil Nadu Logos */}
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 600,
+            color: "hsl(var(--foreground))",
+            mb: 3,
+          }}
+        >
+          Partners - Government of Tamil Nadu
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          {data.state_logos.map((logo, index) => (
+            <Box
+              key={index}
+              sx={{
+                p: 2,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <img
+                src={logo.src}
+                alt={logo.name}
+                style={{
+                  width: "100%",
+                  height: "120px",
+                  objectFit: "contain",
+                  marginBottom: "12px",
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Name"
+                value={logo.name}
+                onChange={(e) =>
+                  handleLogoChange("state_logos", index, "name", e.target.value)
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <input
+                accept="image/*"
+                style={{ display: "none" }}
+                id={`govt-tn-upload-${index}`}
+                type="file"
+                onChange={(e) => handleImageUpload(e, "govtTN", index)}
+              />
+              <label htmlFor={`govt-tn-upload-${index}`}>
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  startIcon={<Upload size={16} />}
+                  sx={uploadButtonStyles}
+                >
+                  Upload Image
+                </Button>
+              </label>
+              <Button
+                color="error"
+                startIcon={<Trash2 />}
+                onClick={() => handleDelete("state", index)}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Success Stories */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 600,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            Success Stories
+          </Typography>
+          <Button
+            startIcon={<Plus size={18} />}
+            onClick={() => setAddModal({ open: true, type: "successStory" })}
+            sx={{
+              backgroundColor: "hsl(0 84.2% 60.2%)",
+              color: "white",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "hsl(0 84.2% 50.2%)",
+              },
+            }}
+          >
+            Add
+          </Button>
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 4 }}>
+          {data.success_stories.map((story, index) => (
+            <Box
+              key={index}
+              sx={{
+                p: 3,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              <img
+                src={story.image}
+                alt={story.title}
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                  marginBottom: "16px",
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Title"
+                value={story.title}
+                onChange={(e) =>
+                  handleSuccessStoryChange(index, "title", e.target.value)
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Description"
+                value={story.description}
+                onChange={(e) =>
+                  handleSuccessStoryChange(index, "description", e.target.value)
+                }
+                sx={{ ...textFieldStyles, mb: 2 }}
+              />
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 2,
+                  mb: 2,
+                }}
+              >
+                <TextField
+                  fullWidth
+                  label="Sector"
+                  value={story.sector}
+                  onChange={(e) =>
+                    handleSuccessStoryChange(index, "sector", e.target.value)
+                  }
+                  sx={textFieldStyles}
+                />
+                <TextField
+                  fullWidth
+                  label="Impact"
+                  value={story.impact}
+                  onChange={(e) =>
+                    handleSuccessStoryChange(index, "impact", e.target.value)
+                  }
+                  sx={textFieldStyles}
+                />
+              </Box>
+              <input
+                accept="image/*"
+                style={{ display: "none" }}
+                id={`success-story-upload-${index}`}
+                type="file"
+                onChange={(e) => handleImageUpload(e, "successStory", index)}
+              />
+              <label htmlFor={`success-story-upload-${index}`}>
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  startIcon={<Upload size={16} />}
+                  sx={uploadButtonStyles}
+                >
+                  Upload Image
+                </Button>
+              </label>
+              <Button
+                color="error"
+                startIcon={<Trash2 />}
+                onClick={() => handleDelete("successStory", index)}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Save Button */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
+          <DarkButton
+            onClick={handleSave}
+            disabled={uploading}
+            sx={{
+              px: 4,
+              py: 1.5,
+              backgroundColor: "hsl(0 84.2% 60.2%)",
+              color: "white",
+              "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+              "&.Mui-disabled": {
+                backgroundColor: "hsl(0 84.2% 60.2% / 0.5)",
+                color: "white",
+              },
+            }}
+          >
+            {uploading ? "Saving..." : "Save Changes"}
+          </DarkButton>
+        </Box>
+
+        {/* Modals */}
+        <ResizeModal
+          open={resizeModalOpen}
+          image={selectedImage || ""}
+          onClose={() => setResizeModalOpen(false)}
+          onSave={handleCroppedImageSave}
+        />
+        <MessageModal
+          open={messageOpen}
+          message={messageText}
+          type={messageType}
+          onClose={() => setMessageOpen(false)}
+        />
+        <AddContentModal
+          open={addModal.open}
+          type={addModal.type}
+          onClose={() => setAddModal({ open: false, type: null })}
+          onSave={handleAddNew}
+        />
+      </Box>
+    </>
+  );
+};

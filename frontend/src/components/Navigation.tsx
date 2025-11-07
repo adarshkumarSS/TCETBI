@@ -14,22 +14,23 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   background: "transparent",
 }));
 
-const NavLink = styled(Link)<{ $isdark: boolean; $forcewhite: boolean }>(
-  ({ $isdark, $forcewhite }) => ({
-    color: $forcewhite ? "#fff" : $isdark ? "#fff" : "#222",
-    textDecoration: "none",
-    fontFamily: "Poppins, sans-serif",
-    fontWeight: 500,
-    padding: "8px 16px",
-    borderRadius: "var(--radius)",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      backgroundColor:
-        $isdark || $forcewhite ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-      color: "#fff",
-    },
-  })
-);
+const NavLink = styled(Link, {
+  shouldForwardProp: (prop) =>
+    typeof prop === "string" && !["$isdark", "$forcewhite"].includes(prop),
+})<{ $isdark?: boolean; $forcewhite?: boolean }>(({ $isdark, $forcewhite }) => ({
+  color: $forcewhite ? "#fff" : $isdark ? "#fff" : "#222",
+  textDecoration: "none",
+  fontFamily: "Poppins, sans-serif",
+  fontWeight: 500,
+  padding: "8px 16px",
+  borderRadius: "var(--radius)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    backgroundColor:
+      $isdark || $forcewhite ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+    color: "#fff",
+  },
+}));
 
 const LogoContainer = styled(Box)(({ theme }) => ({
   display: "flex",
