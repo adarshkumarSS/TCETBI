@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,3 +20,31 @@ class SuccessStorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SuccessStory
         fields = '__all__'
+
+class CEOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CEO
+        fields = ['id', 'name', 'bio', 'image']
+
+class StartupSerializer(serializers.ModelSerializer):
+    ceos = CEOSerializer(many=True, required=False)
+
+    class Meta:
+        model = Startup
+        fields = ['id', 'name', 'logo', 'description', 'sector', 'founded', 'website', 'location', 'linkedin', 'twitter', 'facebook', 'products', 'category', 'ceos']
+
+    def update(self, instance, validated_data):
+        ceos_data = validated_data.pop('ceos', [])
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # update CEOs
+        for ceo_data in ceos_data:
+            CEO.objects.update_or_create(
+                startup=instance,
+                name=ceo_data.get('name'),
+                defaults=ceo_data
+            )
+        return instance
+

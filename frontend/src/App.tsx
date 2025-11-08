@@ -32,6 +32,7 @@ import { RejectedApplications } from "./pages/admin/RejectedApplications";
 import { LinkedinPosts } from "./pages/admin/LinkedinPosts";
 import { CurrentIncubators } from "./pages/admin/CurrentIncubators";
 import { AdminProfile } from "./pages/admin/AdminProfile";
+import { StartupDetailPage } from "./pages/StartupDetailPage";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
@@ -96,6 +97,16 @@ const router = createBrowserRouter(
         </>
       ),
     },
+    {
+      path: "/portfolio/:id",
+      element: (
+        <>
+          <AppContent />
+          <StartupDetailPage />
+        </>
+      ),
+    },
+
     {
       path: "/people",
       element: (
