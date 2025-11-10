@@ -23,6 +23,7 @@ import {
   deleteStartup,
   PortfolioData,
 } from "@/api/portfolioService";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export const PortfolioPage: React.FC = () => {
   const [data, setData] = useState<PortfolioData | null>(null);
@@ -377,41 +378,15 @@ export const PortfolioPage: React.FC = () => {
         </DarkButton>
       </Box>
 
-      {/* 🗑️ Delete Confirmation Modal */}
-      <Dialog
+      <ConfirmModal
         open={deleteModal.open}
-        onClose={() =>
+        title="Delete Startup"
+        message="Are you sure you want to delete this startup? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() =>
           setDeleteModal({ open: false, id: null, category: null })
         }
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>Delete Startup</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this startup? This action cannot be
-            undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() =>
-              setDeleteModal({ open: false, id: null, category: null })
-            }
-            sx={{ color: "gray" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            sx={{
-              color: "white",
-              backgroundColor: "hsl(0 84.2% 60.2%)",
-              "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
 
       {/* ⚠️ Validation Modal */}
       <Dialog open={validationModal} onClose={() => setValidationModal(false)}>

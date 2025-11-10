@@ -51,3 +51,8 @@ export const updateHomeData = async (data: HomeData) => {
   const response = await axios.put(`${BASE_URL}/update-home-data/`, data);
   return response.data;
 };
+
+export const deleteSuccessStory = async (id: number) => {
+  const res = await axios.delete(`${BASE_URL}/delete-success-story/${id}/`);
+  return res.data;
+};

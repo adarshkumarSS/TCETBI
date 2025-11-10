@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,3 +48,17 @@ class StartupSerializer(serializers.ModelSerializer):
             )
         return instance
 
+class FounderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Founder
+        fields = '__all__'
+
+class TBICEOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TBICEO
+        fields = '__all__'
+
+class BoardMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BoardMember
+        fields = '__all__'

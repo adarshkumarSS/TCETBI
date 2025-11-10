@@ -8,6 +8,8 @@ import { ResizeModal } from "@/components/ResizeModal";
 import { MessageModal } from "@/components/ui/MessageModal";
 import { AddContentModal } from "@/components/AddContentModal";
 import { removeImageBackground } from "@/utils/removeBackground";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { deleteSuccessStory } from "@/api/homeService";
 
 export const HomePage: React.FC = () => {
   const [data, setData] = useState<HomeData | null>(null);
@@ -87,29 +89,62 @@ export const HomePage: React.FC = () => {
     setData({ ...data, success_stories: updated });
   };
 
-  const handleDelete = (type: string, index: number) => {
-    if (!data) return;
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this item?"
-    );
-    if (!confirmDelete) return;
+  // 🔹 Modal-based delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    type: string;
+    index: number | null;
+  }>({
+    open: false,
+    type: "",
+    index: null,
+  });
 
-    if (type === "achievement") {
-      const updated = [...data.achievements];
-      updated.splice(index, 1);
-      setData({ ...data, achievements: updated });
-    } else if (type === "govt") {
-      const updated = [...data.govt_logos];
-      updated.splice(index, 1);
-      setData({ ...data, govt_logos: updated });
-    } else if (type === "state") {
-      const updated = [...data.state_logos];
-      updated.splice(index, 1);
-      setData({ ...data, state_logos: updated });
-    } else if (type === "successStory") {
-      const updated = [...data.success_stories];
-      updated.splice(index, 1);
-      setData({ ...data, success_stories: updated });
+  const handleDeleteClick = (type: string, index: number) => {
+    setDeleteConfirm({ open: true, type, index });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!data || deleteConfirm.index === null) return;
+
+    const { type, index } = deleteConfirm;
+
+    try {
+      if (type === "successStory") {
+        const story = data.success_stories[index];
+        if (story.id) {
+          await deleteSuccessStory(story.id); // ✅ Call backend delete
+        }
+
+        setData((prev) => ({
+          ...prev!,
+          success_stories: prev!.success_stories.filter((_, i) => i !== index),
+        }));
+
+        setMessageText("✅ Success story deleted successfully!");
+        setMessageType("success");
+        setMessageOpen(true);
+      } else {
+        // Existing local-only delete logic for other types
+        const updated = { ...data };
+        if (type === "achievement") {
+          updated.achievements = data.achievements.filter(
+            (_, i) => i !== index
+          );
+        } else if (type === "govt") {
+          updated.govt_logos = data.govt_logos.filter((_, i) => i !== index);
+        } else if (type === "state") {
+          updated.state_logos = data.state_logos.filter((_, i) => i !== index);
+        }
+        setData(updated);
+      }
+    } catch (error) {
+      console.error("❌ Error deleting success story:", error);
+      setMessageText("❌ Failed to delete success story!");
+      setMessageType("error");
+      setMessageOpen(true);
+    } finally {
+      setDeleteConfirm({ open: false, type: "", index: null });
     }
   };
 
@@ -133,37 +168,36 @@ export const HomePage: React.FC = () => {
 
   // ✅ Cropping + background removal
   const handleCroppedImageSave = async (croppedFile: File) => {
-  if (!data || !uploadContext) return;
+    if (!data || !uploadContext) return;
 
-  let imageURL = URL.createObjectURL(croppedFile);
+    let imageURL = URL.createObjectURL(croppedFile);
 
-  // ✅ Only remove background for logos, not for success stories
-  if (uploadContext.type === "govtIndia" || uploadContext.type === "govtTN") {
-    try {
-      const bgRemoved = await removeImageBackground(croppedFile);
-      if (bgRemoved) imageURL = bgRemoved;
-    } catch {
-      console.warn("Background removal failed, using original image.");
+    // ✅ Only remove background for logos, not for success stories
+    if (uploadContext.type === "govtIndia" || uploadContext.type === "govtTN") {
+      try {
+        const bgRemoved = await removeImageBackground(croppedFile);
+        if (bgRemoved) imageURL = bgRemoved;
+      } catch {
+        console.warn("Background removal failed, using original image.");
+      }
     }
-  }
 
-  if (uploadContext.type === "govtIndia") {
-    const updated = [...data.govt_logos];
-    updated[uploadContext.index].src = imageURL;
-    setData({ ...data, govt_logos: updated });
-  } else if (uploadContext.type === "govtTN") {
-    const updated = [...data.state_logos];
-    updated[uploadContext.index].src = imageURL;
-    setData({ ...data, state_logos: updated });
-  } else if (uploadContext.type === "successStory") {
-    const updated = [...data.success_stories];
-    updated[uploadContext.index].image = imageURL;
-    setData({ ...data, success_stories: updated });
-  }
+    if (uploadContext.type === "govtIndia") {
+      const updated = [...data.govt_logos];
+      updated[uploadContext.index].src = imageURL;
+      setData({ ...data, govt_logos: updated });
+    } else if (uploadContext.type === "govtTN") {
+      const updated = [...data.state_logos];
+      updated[uploadContext.index].src = imageURL;
+      setData({ ...data, state_logos: updated });
+    } else if (uploadContext.type === "successStory") {
+      const updated = [...data.success_stories];
+      updated[uploadContext.index].image = imageURL;
+      setData({ ...data, success_stories: updated });
+    }
 
-  setResizeModalOpen(false);
-};
-
+    setResizeModalOpen(false);
+  };
 
   // ✅ Add new entry
   const handleAddNew = (newData: any) => {
@@ -241,13 +275,39 @@ export const HomePage: React.FC = () => {
   };
 
   const textFieldStyles = {
-    "& .MuiInputBase-input": { color: "hsl(var(--foreground))" },
-    "& .MuiInputLabel-root": { color: "hsl(var(--muted-foreground))" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "hsl(0 84.2% 60.2%)" },
+    "& .MuiInputBase-root": {
+      backgroundColor: "hsl(var(--card)) !important",
+      color: "hsl(var(--foreground)) !important",
+      transition: "background-color 0.3s ease",
+    },
+    "& .MuiInputBase-input": {
+      color: "hsl(var(--foreground)) !important",
+      caretColor: "hsl(var(--foreground))",
+      "&::selection": {
+        backgroundColor: "hsl(0 84.2% 60.2% / 0.3)",
+        color: "hsl(var(--foreground))",
+      },
+    },
+    "& input, & textarea": {
+      backgroundColor: "transparent !important",
+      color: "hsl(var(--foreground)) !important",
+    },
+    "& .MuiInputLabel-root": {
+      color: "hsl(var(--muted-foreground)) !important",
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "hsl(0 84.2% 60.2%) !important",
+    },
     "& .MuiOutlinedInput-root": {
-      "& fieldset": { borderColor: "hsl(var(--border))" },
-      "&:hover fieldset": { borderColor: "hsl(0 84.2% 60.2%)" },
-      "&.Mui-focused fieldset": { borderColor: "hsl(0 84.2% 60.2%)" },
+      "& fieldset": {
+        borderColor: "hsl(var(--border))",
+      },
+      "&:hover fieldset": {
+        borderColor: "hsl(0 84.2% 60.2%)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "hsl(0 84.2% 60.2%)",
+      },
     },
   };
 
@@ -386,7 +446,7 @@ export const HomePage: React.FC = () => {
               <Button
                 color="error"
                 startIcon={<Trash2 />}
-                onClick={() => handleDelete("achievement", index)}
+                onClick={() => handleDeleteClick("achievement", index)}
                 sx={{ mt: 1 }}
               >
                 Delete
@@ -485,7 +545,7 @@ export const HomePage: React.FC = () => {
               <Button
                 color="error"
                 startIcon={<Trash2 />}
-                onClick={() => handleDelete("govt", index)}
+                onClick={() => handleDeleteClick("govt", index)}
                 sx={{ mt: 1 }}
               >
                 Delete
@@ -563,7 +623,7 @@ export const HomePage: React.FC = () => {
               <Button
                 color="error"
                 startIcon={<Trash2 />}
-                onClick={() => handleDelete("state", index)}
+                onClick={() => handleDeleteClick("state", index)}
                 sx={{ mt: 1 }}
               >
                 Delete
@@ -696,7 +756,7 @@ export const HomePage: React.FC = () => {
               <Button
                 color="error"
                 startIcon={<Trash2 />}
-                onClick={() => handleDelete("successStory", index)}
+                onClick={() => handleDeleteClick("successStory", index)}
                 sx={{ mt: 1 }}
               >
                 Delete
@@ -744,6 +804,13 @@ export const HomePage: React.FC = () => {
           type={addModal.type}
           onClose={() => setAddModal({ open: false, type: null })}
           onSave={handleAddNew}
+        />
+        <ConfirmModal
+          open={deleteConfirm.open}
+          onCancel={() =>
+            setDeleteConfirm({ open: false, type: "", index: null })
+          }
+          onConfirm={handleConfirmDelete}
         />
       </Box>
     </>

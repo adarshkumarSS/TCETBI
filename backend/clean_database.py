@@ -15,7 +15,7 @@ from django.db import connection, transaction
 import cloudinary
 import cloudinary.api
 from utils.seed_data import seed
-
+from utils.seed_portfolio import seed_portfolio
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -84,4 +84,5 @@ if __name__ == "__main__":
     if truncate_all_tables():
         clear_cloudinary("TCETBI")  # ✅ Clears all Cloudinary uploads from this project
         seed()  # ✅ Re-seed database and re-upload images
+        seed_portfolio()  # ✅ Re-seed portfolio data
         print("\n🚀 Database and Cloudinary refreshed successfully!")

@@ -547,6 +547,7 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
             typeof imgURL === "string" ? imgURL : URL.createObjectURL(imgURL)
           )
         }
+        removeBg={true}
       />
 
       {/* 🟦 CEO Cropping Modal (Rectangular, keeps background) */}

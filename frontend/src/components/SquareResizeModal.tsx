@@ -18,6 +18,7 @@ interface SquareResizeModalProps {
   image: string;
   onClose: () => void;
   onSave: (croppedImage: File | string) => void;
+  removeBg?: boolean; // ✅ NEW FLAG
 }
 
 export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
@@ -25,6 +26,7 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
   image,
   onClose,
   onSave,
+  removeBg = true, // ✅ Default to true
 }) => {
   const [zoom, setZoom] = useState(1);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -71,19 +73,22 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
       setProcessing(true);
       const croppedFile = await createCroppedImage();
 
-      // ✅ Try to remove background
-      try {
-        const bgRemoved = await removeImageBackground(croppedFile);
-        if (bgRemoved) {
-          onSave(bgRemoved); // Pass back data URL with bg removed
-        } else {
-          const localURL = URL.createObjectURL(croppedFile);
-          onSave(localURL); // fallback
+      if (removeBg) {
+        // ✅ background removal only if enabled
+        try {
+          const bgRemoved = await removeImageBackground(croppedFile);
+          if (bgRemoved) {
+            onSave(bgRemoved);
+          } else {
+            onSave(URL.createObjectURL(croppedFile));
+          }
+        } catch {
+          console.warn("⚠️ Background removal failed, using original image");
+          onSave(URL.createObjectURL(croppedFile));
         }
-      } catch (err) {
-        console.warn("⚠️ Background removal failed, using original cropped image");
-        const localURL = URL.createObjectURL(croppedFile);
-        onSave(localURL);
+      } else {
+        // ✅ skip background removal (for people page)
+        onSave(URL.createObjectURL(croppedFile));
       }
     } finally {
       setProcessing(false);
@@ -117,7 +122,7 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <CropIcon size={18} />
-          Crop Logo (Square)
+          Crop Image
         </Box>
         <IconButton onClick={onClose} sx={{ color: "hsl(var(--muted-foreground))" }}>
           <X size={20} />
@@ -138,15 +143,13 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
           image={image}
           crop={crop}
           zoom={zoom}
-          aspect={1 / 1}
+          aspect={1}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={onCropComplete}
           showGrid={false}
           style={{
-            containerStyle: {
-              backgroundColor: "rgba(0, 0, 0, 0.9)",
-            },
+            containerStyle: { backgroundColor: "rgba(0, 0, 0, 0.9)" },
             cropAreaStyle: {
               border: "2px solid hsl(0 84.2% 60.2%)",
               borderRadius: "8px",
@@ -155,7 +158,6 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
         />
       </DialogContent>
 
-      {/* Zoom controls */}
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
         <IconButton
           onClick={() => setZoom(Math.max(1, zoom - 0.1))}

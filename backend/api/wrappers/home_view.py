@@ -7,7 +7,7 @@ from ..serializers import (
     LogoSerializer,
     SuccessStorySerializer,
 )
-
+from rest_framework import status
 from utils.cloudinary_utils import delete_cloudinary_image
 
 
@@ -146,3 +146,24 @@ def update_home_data(request):
         remaining.delete()
 
     return Response({"message": "✅ Home data updated only where changed!"})
+
+@api_view(["DELETE"])
+def delete_success_story(request, id):
+    """
+    Deletes a success story by ID and removes its image from Cloudinary if it exists.
+    """
+    try:
+        story = SuccessStory.objects.get(id=id)
+
+        # ✅ Remove image from Cloudinary if present
+        if story.image:
+            delete_cloudinary_image(story.image)
+
+        story.delete()
+        return Response({"message": "✅ Success story deleted successfully!"}, status=status.HTTP_200_OK)
+
+    except SuccessStory.DoesNotExist:
+        return Response({"error": "❌ Success story not found."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": f"❌ Error deleting success story: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
