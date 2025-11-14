@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .wrappers.home_view import get_home_data, update_home_data, delete_success_story
 from .wrappers.portfolio_view import get_portfolio_data,update_portfolio_data,delete_startup
 from .wrappers.people_view import get_people_data, update_people_data, delete_board_member
+from .wrappers.facility_view import get_facilities_data, update_facilities_data, delete_facility_item
 
 router = DefaultRouter()
  
@@ -20,6 +21,11 @@ urlpatterns = [
     path('people-data/', get_people_data, name='get_people_data'),
     path("update-people-data/", update_people_data, name="update_people_data"),
     path("delete-board-member/<int:id>/", delete_board_member, name="delete_board_member"),
+    
+    path("facilities-data/", get_facilities_data, name="facilities_data"),
+    path("update-facilities-data/", update_facilities_data, name="update_facilities_data"),
+    path("delete-facility-item/<int:id>/", delete_facility_item, name="delete_facility_item"),
+
 
 ]
 

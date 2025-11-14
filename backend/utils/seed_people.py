@@ -54,8 +54,6 @@ def seed_people():
         "bio": "Visionary leader with 25+ years of experience in academia and entrepreneurship. "
                 "He has mentored over 200 startups and built Thiagarajar’s thriving innovation ecosystem.",
         "experience": "25+ years",
-        "email": "founder@tbi.edu.in",
-        "linkedin": "https://www.linkedin.com/in/m-chidambaram-founder/",
         "image": upload_to_cloudinary(os.path.join(base_dir, "asset/startup_owners/1.png")),
     }
 

@@ -75,8 +75,6 @@ class CEO(models.Model):
     def __str__(self):
         return f"{self.name} - {self.startup.name}"
 
-from django.db import models
-
 class Founder(models.Model):
     name = models.CharField(max_length=200)
     position = models.CharField(max_length=150)
@@ -112,3 +110,27 @@ class BoardMember(models.Model):
 
     def __str__(self):
         return self.name
+
+class Facility(models.Model):
+    CATEGORY_CHOICES = [
+        ("SHARED", "Shared Infrastructure"),
+        ("TCETBI", "TCETBI Infrastructure"),
+    ]
+
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    image = models.TextField()  # Cloudinary URL
+    features = models.JSONField(default=list)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+
+    def __str__(self):
+        return self.name
+
+class FacilityVideo(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    url = models.TextField()  # store FULL YouTube link
+    thumbnail = models.TextField()
+
+    def __str__(self):
+        return self.title
