@@ -18,6 +18,7 @@ from utils.seed_data import seed
 from utils.seed_portfolio import seed_portfolio
 from utils.seed_people import seed_people
 from utils.seed_facility import seed_facilities
+from utils.seed_programs import seed_programs
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -89,4 +90,5 @@ if __name__ == "__main__":
         seed_portfolio()  # ✅ Re-seed portfolio data
         seed_people()  # ✅ Re-seed people data   
         seed_facilities()  # ✅ Re-seed facilities data
+        seed_programs() # ✅ Re-seed programs data
         print("\n🚀 Database and Cloudinary refreshed successfully!")

@@ -134,3 +134,23 @@ class FacilityVideo(models.Model):
 
     def __str__(self):
         return self.title
+
+class Program(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    image = models.TextField()  # Cloudinary URL
+    duration = models.CharField(max_length=100)
+
+    STATUS_CHOICES = (
+        ('live', 'Live'),
+        ('upcoming', 'Upcoming'),
+        ('ended', 'Ended'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+
+    startDate = models.DateField()
+    endDate = models.DateField()
+
+    def __str__(self):
+        return self.title
+

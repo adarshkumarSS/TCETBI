@@ -70,6 +70,7 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
   };
 
   return (
+    open && (
     <Dialog
       open={open}
       onClose={onClose}
@@ -212,5 +213,6 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
         </Button>
       </DialogActions>
     </Dialog>
+    )
   );
 };

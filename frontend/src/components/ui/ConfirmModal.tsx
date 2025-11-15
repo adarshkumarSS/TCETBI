@@ -16,6 +16,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
 }) => {
   return (
+    open && (
     <Dialog
       open={open}
       onClose={onCancel}
@@ -64,5 +65,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </Button>
       </DialogActions>
     </Dialog>
+    )
   );
 };

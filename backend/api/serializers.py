@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -72,3 +72,12 @@ class FacilityVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacilityVideo
         fields = "__all__"
+
+class ProgramSerializer(serializers.ModelSerializer):
+    startDate = serializers.DateField(format="%Y-%m-%d")
+    endDate = serializers.DateField(format="%Y-%m-%d")
+
+    class Meta:
+        model = Program
+        fields = "__all__"
+
