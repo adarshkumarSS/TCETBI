@@ -7,7 +7,7 @@ import { DarkButton } from "../components/ui/DarkButton";
 import ShinyText from "../components/ShinyText";
 import LogoLoop from "../components/LogoLoop";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { fetchHomeData, HomeData } from "../api/homeService";
 import CommonLoader from "../components/CommonLoader";
 
@@ -127,7 +127,20 @@ const HeroSection = () => (
   </Box>
 );
 
-const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => (
+const KnowUsBetterSection: React.FC<{ data: HomeData["vision_mission"] }> = ({ data }) => {
+  const [maxHeight, setMaxHeight] = useState(0);
+  const visionRef = useRef<HTMLDivElement>(null);
+  const missionRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (visionRef.current && missionRef.current) {
+      const vHeight = visionRef.current.offsetHeight;
+      const mHeight = missionRef.current.offsetHeight;
+      setMaxHeight(Math.max(vHeight, mHeight));
+    }
+  }, [data.vision, data.mission]);
+
+  return (
     <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
       <Container maxWidth="lg">
         <motion.div
@@ -156,8 +169,8 @@ const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => 
               gap: 4,
             }}
           >
-            <Box sx={{ flex: 1 }}>
-              <CardContainer>
+            <Box sx={{ flex: 1 }} ref={visionRef}>
+              <CardContainer style={maxHeight ? { height: maxHeight } : {}}>
                 <Typography
                   variant="h5"
                   sx={{
@@ -177,13 +190,13 @@ const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => 
                     lineHeight: 1.6,
                   }}
                 >
-                {data.vision}
+                  {data.vision}
                 </Typography>
               </CardContainer>
             </Box>
 
-            <Box sx={{ flex: 1 }}>
-              <CardContainer>
+            <Box sx={{ flex: 1 }} ref={missionRef}>
+              <CardContainer style={maxHeight ? { height: maxHeight } : {}}>
                 <Typography
                   variant="h5"
                   sx={{
@@ -203,7 +216,7 @@ const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => 
                     lineHeight: 1.6,
                   }}
                 >
-              {data.mission}
+                  {data.mission}
                 </Typography>
               </CardContainer>
             </Box>
@@ -212,6 +225,7 @@ const KnowUsBetterSection = ({ data }: { data: HomeData["vision_mission"] }) => 
       </Container>
     </Box>
   );
+};
 
 const AchievementsSection = ({ data }: { data: HomeData["achievements"] }) => (
     <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
