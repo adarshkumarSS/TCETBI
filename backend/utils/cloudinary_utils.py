@@ -3,27 +3,31 @@ import cloudinary.uploader
 
 def delete_cloudinary_image(image_url: str):
     """
-    Deletes a Cloudinary image using its public ID extracted from the URL.
-    Works for nested folders + filenames with dots.
+    Deletes a Cloudinary image using its public ID.
+    Handles all Cloudinary URL variations including transformations.
     """
     try:
         if not image_url:
             return False
 
-        # Extract public_id WITHOUT extension
-        match = re.search(r'/upload/(?:v\d+/)?(.+?)(\.\w+)$', image_url)
-        if not match:
-            print(f"⚠️ Could not extract public_id from URL: {image_url}")
+        # Remove protocol + domain
+        # /image/upload/.../folder/file.jpg
+        path = re.sub(r'^https?://[^/]+/', '', image_url)
+
+        # Remove leading 'image/upload/' or 'video/upload/'
+        path = re.sub(r'^(image|video)/upload/.*?/', '', path)
+
+        # Remove file extension (.jpg, .png, .webp)
+        public_id = re.sub(r'\.\w+$', '', path)
+
+        if not public_id:
+            print(f"⚠️ Could not extract public_id from: {image_url}")
             return False
 
-        public_id = match.group(1)
-
         result = cloudinary.uploader.destroy(public_id)
-
-        print(f"🗑️ Deleted Cloudinary image -> {public_id}: {result}")
-
+        print(f"🗑️ Deleted Cloudinary image: {public_id}")
         return result
 
     except Exception as e:
-        print(f"❌ Failed to delete Cloudinary image: {e}")
+        print(f"❌ Error deleting Cloudinary image: {e}")
         return False

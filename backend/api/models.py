@@ -153,4 +153,30 @@ class Program(models.Model):
 
     def __str__(self):
         return self.title
+    
+# api/models.py
+class MediaItem(models.Model):
+    CATEGORY_CHOICES = (
+        ('events', 'Events'),
+        ('facilities', 'Facilities'),
+        ('startups', 'Startups'),
+        ('programs', 'Programs'),
+    )
+
+    title = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    image = models.TextField()
+
+    album = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.title or self.title.strip() == "":
+            self.title = self.album.replace("-", " ").title()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title or "Untitled Media"
 

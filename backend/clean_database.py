@@ -19,6 +19,7 @@ from utils.seed_portfolio import seed_portfolio
 from utils.seed_people import seed_people
 from utils.seed_facility import seed_facilities
 from utils.seed_programs import seed_programs
+from utils.seed_media import seed_media
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -86,9 +87,10 @@ def truncate_all_tables():
 if __name__ == "__main__":
     if truncate_all_tables():
         clear_cloudinary("TCETBI")  # ✅ Clears all Cloudinary uploads from this project
-        seed()  # ✅ Re-seed database and re-upload images
-        seed_portfolio()  # ✅ Re-seed portfolio data
-        seed_people()  # ✅ Re-seed people data   
-        seed_facilities()  # ✅ Re-seed facilities data
-        seed_programs() # ✅ Re-seed programs data
+        seed()  
+        seed_portfolio() 
+        seed_people() 
+        seed_facilities() 
+        seed_programs()
+        seed_media() 
         print("\n🚀 Database and Cloudinary refreshed successfully!")

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -80,4 +80,39 @@ class ProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = Program
         fields = "__all__"
+
+from rest_framework import serializers
+from .models import MediaItem
+
+
+class MediaItemSerializer(serializers.ModelSerializer):
+    title = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MediaItem
+        fields = "__all__"
+
+    def get_title(self, obj):
+        """
+        If title is empty/null → use album name formatted nicely.
+        Example: "innovation-lab" → "Innovation Lab"
+        """
+        if obj.title and obj.title.strip():
+            return obj.title
+
+        # Fallback: album name prettified
+        return " ".join(word.capitalize() for word in obj.album.split("-"))
+
+    def get_description(self, obj):
+        """
+        If description empty/null → use a readable default based on album name.
+        Example: "Photos from Innovation Lab album."
+        """
+        if obj.description and obj.description.strip():
+            return obj.description
+
+        # Fallback: pretty album description
+        album_name = " ".join(word.capitalize() for word in obj.album.split("-"))
+        return f"Photos from the {album_name} album."
 
