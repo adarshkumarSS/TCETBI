@@ -191,3 +191,28 @@ class Blog(models.Model):
 
     def __str__(self):
         return self.title
+    
+class TBIContactInfo(models.Model):
+    # Main contact information
+    address = models.TextField()
+    phone = models.CharField(max_length=50)
+    email = models.EmailField()
+    working_hours = models.TextField()
+
+    # Quick Contact section
+    quick_title = models.CharField(max_length=200, default="Quick Contact")
+    quick_subtitle = models.CharField(
+        max_length=255,
+        default="Reach out to us for immediate assistance",
+    )
+
+    office_address = models.TextField()
+    contact_phone = models.CharField(max_length=50)
+    contact_email = models.EmailField()
+    website = models.URLField(blank=True, null=True)
+
+    # Google Maps embed URL
+    map_embed_url = models.TextField()
+
+    def __str__(self):
+        return "TBI Contact Information"

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,4 +116,9 @@ class BlogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Blog
+        fields = "__all__"
+
+class TBIContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TBIContactInfo
         fields = "__all__"

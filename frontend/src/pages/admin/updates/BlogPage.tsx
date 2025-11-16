@@ -464,14 +464,13 @@ export const BlogPage: React.FC = () => {
               fullWidth
               label="Blog Link (internal or external URL)"
               value={blog.link}
-             onChange={(e) => {
-  const clean = e.target.value
-    .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width chars
-    .replace(/\n/g, "")                    // newlines
-    .trim();
-  handleChange(index, "link", clean);
-}}
-
+              onChange={(e) => {
+                const clean = e.target.value
+                  .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width chars
+                  .replace(/\n/g, "") // newlines
+                  .trim();
+                handleChange(index, "link", clean);
+              }}
               sx={textFieldStyles}
             />
           </Box>

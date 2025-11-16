@@ -7,6 +7,7 @@ from .wrappers.facility_view import get_facilities_data, update_facilities_data,
 from .wrappers.program_view import get_programs_data, update_programs_data, delete_program_item
 from .wrappers.media_view import get_media_data, update_album, delete_album
 from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
+from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_data
 
 router = DefaultRouter()
  
@@ -41,6 +42,7 @@ urlpatterns = [
     path("update-blogs-data/", update_blogs_data, name="update_blogs_data"),
     path("delete-blog-item/<int:id>/", delete_blog_item, name="delete_blog_item"),
 
-
+    path("tbi-contact-data/", get_tbi_contact_data, name="tbi_contact_data"),
+    path("update-tbi-contact-data/", update_tbi_contact_data, name="update_tbi_contact_data"),
 ]
 
