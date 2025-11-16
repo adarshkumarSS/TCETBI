@@ -33,21 +33,12 @@ import { LinkedinPosts } from "./pages/admin/LinkedinPosts";
 import { CurrentIncubators } from "./pages/admin/CurrentIncubators";
 import { AdminProfile } from "./pages/admin/AdminProfile";
 import { StartupDetailPage } from "./pages/StartupDetailPage";
+import { NotificationsPage } from "./pages/admin/NotificationPage";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
-import CommonLoader from "./components/CommonLoader";
 
 const queryClient = new QueryClient();
-
-const theme = createTheme({
-  typography: {
-    fontFamily: "Poppins, sans-serif",
-  },
-  palette: {
-    mode: "light",
-  },
-});
 
 // --- Navigation Wrapper ---
 const AppContent = () => {
@@ -229,6 +220,15 @@ const router = createBrowserRouter(
       ),
     },
     {
+      path: "/admin/notifications",
+      element: (
+        <>
+          <AppContent />
+          <NotificationsPage />
+        </>
+      ),
+    },
+    {
       path: "/test",
       element: (
         <>
@@ -249,17 +249,52 @@ const router = createBrowserRouter(
 );
 
 // --- Main App ---
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <RouterProvider router={router} />
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark');
+          setThemeMode(isDark ? 'dark' : 'light');
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    // Initial set
+    const initialDark = document.documentElement.classList.contains('dark');
+    setThemeMode(initialDark ? 'dark' : 'light');
+
+    return () => observer.disconnect();
+  }, []);
+
+  const theme = createTheme({
+    typography: {
+      fontFamily: "Poppins, sans-serif",
+    },
+    palette: {
+      mode: themeMode,
+    },
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <RouterProvider router={router} />
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

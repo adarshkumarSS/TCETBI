@@ -216,3 +216,40 @@ class TBIContactInfo(models.Model):
 
     def __str__(self):
         return "TBI Contact Information"
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=150)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.subject}"
+    
+from django.db import models
+
+class Notification(models.Model):
+    NOTI_TYPES = (
+        ("contact", "Contact Message"),
+        ("application", "Incubation Application"),
+        ("blog", "Blog Update"),
+        ("program", "Program Update"),
+        ("general", "General"),
+    )
+
+    type = models.CharField(max_length=30, choices=NOTI_TYPES, default="general")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+
+    # 🔥 Add this
+    meta = models.JSONField(null=True, blank=True)
+
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.type}] {self.title}"
+
+

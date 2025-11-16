@@ -8,6 +8,9 @@ import { CardContainer } from "../components/ui/CardContainer";
 import { OutlinedTextField } from "../components/ui/OutlinedTextField";
 import { DarkButton } from "../components/ui/DarkButton";
 
+import { submitContactMessage } from "@/api/contactMessageService";
+import { toast } from "sonner";
+
 import {
   fetchTBIContactData,
   TBICEO,
@@ -32,10 +35,25 @@ const ContactForm = () => {
       }));
     };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // You can later hook this to backend / email service
-    console.log("Form submitted:", formData);
+
+    try {
+      await submitContactMessage(formData);
+      toast.success("Message sent successfully!");
+
+      // Clear form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+      });
+    } catch (err) {
+      toast.error("Failed to submit message.");
+      console.error(err);
+    }
   };
 
   return (

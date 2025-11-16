@@ -8,6 +8,7 @@ from .wrappers.program_view import get_programs_data, update_programs_data, dele
 from .wrappers.media_view import get_media_data, update_album, delete_album
 from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
 from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_data
+from .views import submit_contact_message, get_notifications, mark_notification_read, delete_notification
 
 router = DefaultRouter()
  
@@ -44,5 +45,12 @@ urlpatterns = [
 
     path("tbi-contact-data/", get_tbi_contact_data, name="tbi_contact_data"),
     path("update-tbi-contact-data/", update_tbi_contact_data, name="update_tbi_contact_data"),
+    
+    path("contact-message/", submit_contact_message, name="submit_contact_message"),
+    
+    path("notifications/", get_notifications, name="get_notifications"),
+    path("notifications/read/<int:id>/", mark_notification_read, name="mark_notification_read"),
+    path("notifications/delete/<int:id>/", delete_notification, name="delete_notification"),
+
 ]
 
