@@ -1,33 +1,44 @@
 import re
 import cloudinary.uploader
 
-def delete_cloudinary_image(image_url: str):
+
+def extract_public_id_from_url(url: str) -> str:
     """
-    Deletes a Cloudinary image using its public ID.
-    Handles all Cloudinary URL variations including transformations.
+    Extract public_id from Cloudinary URL.
+    Handles:
+    - folders
+    - version numbers
+    - transformations
+    - file extensions
     """
     try:
-        if not image_url:
-            return False
+        # Find the part after '/upload/' up to the extension
+        match = re.search(r"/upload/(?:v\d+/)?(.+?)(\.\w+)?$", url)
+        if not match:
+            return None
 
-        # Remove protocol + domain
-        # /image/upload/.../folder/file.jpg
-        path = re.sub(r'^https?://[^/]+/', '', image_url)
+        public_id = match.group(1)  # folder/filename (WITHOUT extension)
+        return public_id
+    except:
+        return None
 
-        # Remove leading 'image/upload/' or 'video/upload/'
-        path = re.sub(r'^(image|video)/upload/.*?/', '', path)
 
-        # Remove file extension (.jpg, .png, .webp)
-        public_id = re.sub(r'\.\w+$', '', path)
+def delete_cloudinary_image(url: str):
+    if not url:
+        return False
 
-        if not public_id:
-            print(f"⚠️ Could not extract public_id from: {image_url}")
-            return False
+    public_id = extract_public_id_from_url(url)
 
-        result = cloudinary.uploader.destroy(public_id)
-        print(f"🗑️ Deleted Cloudinary image: {public_id}")
-        return result
+    if not public_id:
+        print(f"⚠️ Could not extract public_id from URL: {url}")
+        return False
 
+    print(f"🗑 Deleting Cloudinary image → {public_id}")
+
+    try:
+        res = cloudinary.uploader.destroy(public_id)
+        print("✔ Cloudinary delete response:", res)
+        return res
     except Exception as e:
-        print(f"❌ Error deleting Cloudinary image: {e}")
+        print("❌ Cloudinary delete error:", e)
         return False

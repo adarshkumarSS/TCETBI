@@ -6,6 +6,7 @@ from .wrappers.people_view import get_people_data, update_people_data, delete_bo
 from .wrappers.facility_view import get_facilities_data, update_facilities_data, delete_facility_item
 from .wrappers.program_view import get_programs_data, update_programs_data, delete_program_item
 from .wrappers.media_view import get_media_data, update_album, delete_album
+from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
 
 router = DefaultRouter()
  
@@ -35,6 +36,11 @@ urlpatterns = [
     path("media-data/", get_media_data, name="media_data"),
     path("update-album/<str:album_name>/", update_album, name="update_album"),
     path("delete-album/<str:album_name>/", delete_album, name="delete_album"),
+    
+    path("blogs-data/", get_blogs_data, name="blogs_data"),
+    path("update-blogs-data/", update_blogs_data, name="update_blogs_data"),
+    path("delete-blog-item/<int:id>/", delete_blog_item, name="delete_blog_item"),
+
 
 ]
 

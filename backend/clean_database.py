@@ -20,6 +20,7 @@ from utils.seed_people import seed_people
 from utils.seed_facility import seed_facilities
 from utils.seed_programs import seed_programs
 from utils.seed_media import seed_media
+from utils.seed_blog import seed_blogs
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -93,4 +94,5 @@ if __name__ == "__main__":
         seed_facilities() 
         seed_programs()
         seed_media() 
+        seed_blogs()
         print("\n🚀 Database and Cloudinary refreshed successfully!")

@@ -54,19 +54,6 @@ const AppContent = () => {
   const location = useLocation();
   const hideNav = ["/auth", "/apply-incubation"].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const [loading, setLoading] = useState(location.pathname === "/");
-
-  useEffect(() => {
-    if (location.pathname === "/") {
-      setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setLoading(false);
-    }
-  }, [location.pathname]);
-
-  if (loading) return <CommonLoader />;
 
   return (
     <>

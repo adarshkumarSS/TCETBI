@@ -140,3 +140,11 @@
     -webkit-text-fill-color: transparent;
   }
 }
+
+/* Fix Chrome autofill yellow background */
+input:-webkit-autofill,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+

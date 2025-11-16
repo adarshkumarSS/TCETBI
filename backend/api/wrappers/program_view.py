@@ -15,9 +15,6 @@ def parse_date(date_str):
 
 @api_view(["GET"])
 def get_programs_data(request):
-    """
-    Returns all programs
-    """
     programs = ProgramSerializer(Program.objects.all(), many=True).data
     return Response({"programs": programs})
 
@@ -25,8 +22,6 @@ def get_programs_data(request):
 @api_view(["PUT"])
 @transaction.atomic
 def update_programs_data(request):
-    print("🔥 ENTERED UPDATE PROGRAMS API")
-    print("Incoming payload:", request.data)
 
     payload = request.data or {}
     existing_programs = {p.id: p for p in Program.objects.all()}

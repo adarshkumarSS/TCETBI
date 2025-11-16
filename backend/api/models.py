@@ -180,3 +180,14 @@ class MediaItem(models.Model):
     def __str__(self):
         return self.title or "Untitled Media"
 
+class Blog(models.Model):
+    title = models.CharField(max_length=255)
+    excerpt = models.TextField()
+    author = models.CharField(max_length=255)
+    category = models.CharField(max_length=100)
+    image = models.TextField()     # Cloudinary URL
+    readTime = models.PositiveIntegerField(default=5)
+    link = models.TextField()      # internal/external blog URL
+
+    def __str__(self):
+        return self.title

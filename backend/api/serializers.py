@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -81,10 +81,6 @@ class ProgramSerializer(serializers.ModelSerializer):
         model = Program
         fields = "__all__"
 
-from rest_framework import serializers
-from .models import MediaItem
-
-
 class MediaItemSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
@@ -116,3 +112,8 @@ class MediaItemSerializer(serializers.ModelSerializer):
         album_name = " ".join(word.capitalize() for word in obj.album.split("-"))
         return f"Photos from the {album_name} album."
 
+class BlogSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Blog
+        fields = "__all__"
