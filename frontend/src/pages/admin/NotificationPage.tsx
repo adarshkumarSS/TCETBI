@@ -1,13 +1,10 @@
+// src/pages/admin/NotificationPage.tsx
 import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   IconButton,
   Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
 } from "@mui/material";
 import {
@@ -21,7 +18,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { AnimatedScroll, AnimatedItem } from "../../components/AdminNavigation";
 
 import {
   fetchNotifications,
@@ -29,6 +25,10 @@ import {
   deleteNotification,
   Notification,
 } from "@/api/notificationservice";
+
+// If you exported these from your AnimatedList file:
+import { AnimatedScroll, AnimatedItem } from "../../components/AdminNavigation";
+// ^ adjust import path if needed
 
 // ====== Type Theme Styles ======
 const typeStyles = {
@@ -42,125 +42,25 @@ const typeStyles = {
 export const NotificationsPage: React.FC = () => {
   const [items, setItems] = useState<Notification[]>([]);
   const [selected, setSelected] = useState<Notification | null>(null);
-  const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const navigate = useNavigate();
 
-  const contactModal = selected && (
-    <Dialog
-      open={true}
-      onClose={() => setSelected(null)}
-      fullWidth
-      maxWidth="sm"
-      PaperProps={{
-        sx: {
-          backgroundColor: "hsl(var(--card))",
-          color: "hsl(var(--foreground))",
-          borderRadius: "16px",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          fontWeight: 700,
-          fontFamily: "Poppins",
-          color: "hsl(var(--foreground))",
-          fontSize: "1.3rem",
-        }}
-      >
-        Contact Message
-      </DialogTitle>
+  const load = async () => {
+    const data = await fetchNotifications();
+    setItems(data);
+    // If nothing selected, pick first contact or first item
+    if (!selected && data.length > 0) {
+      setSelected(data[0]);
+    }
+  };
 
-      <DialogContent
-        dividers
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          fontSize: "15px",
-        }}
-      >
-        <Box>
-          <Typography
-            component="div"
-            sx={{ color: "hsl(var(--destructive))", fontWeight: 600 }}
-          >
-            Name:
-          </Typography>
-          <Typography component="div">
-            {selected.meta?.name ?? "N/A"}
-          </Typography>
-        </Box>
+  useEffect(() => {
+    document.body.style.backgroundColor = "hsl(var(--background))";
+  }, []);
 
-        <Box>
-          <Typography
-            component="div"
-            sx={{ color: "hsl(var(--destructive))", fontWeight: 600 }}
-          >
-            Email:
-          </Typography>
-          <Typography component="div">
-            {selected.meta?.email ?? "N/A"}
-          </Typography>
-        </Box>
-
-        <Box>
-          <Typography
-            component="div"
-            sx={{ color: "hsl(var(--destructive))", fontWeight: 600 }}
-          >
-            Phone:
-          </Typography>
-          <Typography component="div">
-            {selected.meta?.phone ?? "N/A"}
-          </Typography>
-        </Box>
-
-        <Box>
-          <Typography
-            component="div"
-            sx={{ color: "hsl(var(--destructive))", fontWeight: 600 }}
-          >
-            Subject:
-          </Typography>
-          <Typography component="div">
-            {selected.meta?.subject ?? "N/A"}
-          </Typography>
-        </Box>
-
-        <Box>
-          <Typography
-            component="div"
-            sx={{ color: "hsl(var(--destructive))", fontWeight: 600 }}
-          >
-            Message:
-          </Typography>
-          <Typography component="div">
-            {selected.meta?.message ?? "No message provided"}
-          </Typography>
-        </Box>
-
-        <Typography component="div" sx={{ mt: 2, fontSize: 13, opacity: 0.6 }}>
-          Sent at: {new Date(selected.created_at).toLocaleString()}
-        </Typography>
-      </DialogContent>
-
-      <DialogActions>
-        <Button
-          onClick={() => setSelected(null)}
-          sx={{
-            color: "white",
-            backgroundColor: "hsl(var(--destructive))",
-            "&:hover": { backgroundColor: "hsl(var(--destructive) / 0.8)" },
-            borderRadius: "10px",
-            px: 3,
-          }}
-        >
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+  useEffect(() => {
+    load();
+  }, []);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) =>
@@ -172,7 +72,7 @@ export const NotificationsPage: React.FC = () => {
     for (const id of selectedIds) {
       await markNotificationRead(id);
     }
-    load();
+    await load();
     setSelectedIds([]);
   };
 
@@ -180,220 +80,505 @@ export const NotificationsPage: React.FC = () => {
     for (const id of selectedIds) {
       await deleteNotification(id);
     }
-    load();
+    await load();
     setSelectedIds([]);
+    setSelected(null);
   };
-
-  const load = async () => {
-    const data = await fetchNotifications();
-    setItems(data);
-  };
-
-  useEffect(() => {
-    document.body.style.backgroundColor = "hsl(var(--background))";
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const unreadCount = items.filter((n) => !n.is_read).length;
 
   return (
     <Box sx={{ mt: 12, px: 3 }}>
-      {/* ==== HEADER + SELECT ALL ==== */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-        <IconButton
-          onClick={() => navigate(-1)}
-          sx={{
-            color: "hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--muted))",
-            borderRadius: "12px",
-            p: 1.2,
-            "&:hover": { backgroundColor: "hsl(var(--muted) / 0.8)" },
-          }}
-        >
-          <ArrowLeft size={20} />
-        </IconButton>
-
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 600,
-            color: "hsl(var(--foreground))",
-            fontFamily: "Poppins, sans-serif",
-          }}
-        >
-          Notifications
-        </Typography>
-
-        <Box sx={{ flex: 1 }} />
-
-        {/* Select all */}
-        <input
-          type="checkbox"
-          checked={items.length > 0 && selectedIds.length === items.length}
-          onChange={(e) =>
-            setSelectedIds(e.target.checked ? items.map((i) => i.id) : [])
-          }
-          style={{ transform: "scale(1.3)" }}
-        />
-      </Box>
-
-      {/* ==== BULK ACTIONS ==== */}
-      {selectedIds.length > 0 && (
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            mb: 3,
-            p: 1.5,
-            borderRadius: "12px",
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-          }}
-        >
-          <Button
-            onClick={bulkMarkRead}
+      <Box
+        sx={{
+          maxWidth: 1120,
+          mx: "auto",
+        }}
+      >
+        {/* ==== HEADER + SELECT ALL ==== */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+          <IconButton
+            onClick={() => navigate(-1)}
             sx={{
-              backgroundColor: "#dc2626",
-              color: "white",
-              "&:hover": { backgroundColor: "#b91c1c" },
-              px: 2,
-              py: 1,
-              borderRadius: "10px",
+              color: "hsl(var(--foreground))",
+              backgroundColor: "hsl(var(--muted))",
+              borderRadius: "12px",
+              p: 1.2,
+              "&:hover": { backgroundColor: "hsl(var(--muted) / 0.8)" },
             }}
           >
-            Mark as Read
-          </Button>
+            <ArrowLeft size={20} />
+          </IconButton>
 
-          <Button
-            onClick={bulkDelete}
+          <Typography
+            variant="h5"
             sx={{
-              backgroundColor: "#dc2626",
-              color: "white",
-              "&:hover": { backgroundColor: "#b91c1c" },
-              px: 2,
-              py: 1,
-              borderRadius: "10px",
+              fontWeight: 600,
+              color: "hsl(var(--foreground))",
+              fontFamily: "Poppins, sans-serif",
             }}
           >
-            Delete
-          </Button>
-        </Box>
-      )}
+            Notifications
+          </Typography>
 
-      {/* ==== NOTIFICATION LIST ==== */}
-      <AnimatedScroll>
-        {items.map((n, index) => {
-          const style = typeStyles[n.type] || typeStyles.general;
-          const isSelected = selectedIds.includes(n.id);
-
-          return (
-            <AnimatedItem
-              key={n.id}
-              index={index}
-              onClick={() => n.type === "contact" && setSelected(n)}
+          {unreadCount > 0 && (
+            <Box
+              sx={{
+                ml: 1,
+                px: 1.6,
+                py: 0.4,
+                borderRadius: "999px",
+                backgroundColor: "hsl(var(--destructive))",
+              }}
             >
-              <Paper
+              <Typography
                 sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  borderLeft: `4px solid ${style.color}`,
-                  backgroundColor: n.is_read
-                    ? "hsl(var(--muted))"
-                    : "hsl(var(--card))",
-                  cursor: "pointer",
-                  transition: "0.2s",
-                  "&:hover": {
-                    backgroundColor: "hsl(var(--card) / 0.85)",
-                  },
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: 600,
                 }}
               >
-                {/* Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    toggleSelect(n.id);
+                {unreadCount}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* Select all */}
+          <input
+            type="checkbox"
+            checked={items.length > 0 && selectedIds.length === items.length}
+            onChange={(e) =>
+              setSelectedIds(e.target.checked ? items.map((i) => i.id) : [])
+            }
+            style={{ transform: "scale(1.3)" }}
+          />
+        </Box>
+
+        {/* ==== BULK ACTIONS ==== */}
+        {selectedIds.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              mb: 3,
+              p: 1.5,
+              borderRadius: "12px",
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+            }}
+          >
+            <Button
+              onClick={bulkMarkRead}
+              sx={{
+                backgroundColor: "#16a34a",
+                color: "white",
+                "&:hover": { backgroundColor: "#15803d" },
+                px: 2,
+                py: 1,
+                borderRadius: "10px",
+              }}
+            >
+              Mark as Read
+            </Button>
+
+            <Button
+              onClick={bulkDelete}
+              sx={{
+                backgroundColor: "#dc2626",
+                color: "white",
+                "&:hover": { backgroundColor: "#b91c1c" },
+                px: 2,
+                py: 1,
+                borderRadius: "10px",
+              }}
+            >
+              Delete
+            </Button>
+          </Box>
+        )}
+
+        {/* ==== MAIN SPLIT LAYOUT (Gmail-style) ==== */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 2.3fr) minmax(0, 3fr)" },
+            gap: 3,
+            alignItems: "flex-start",
+          }}
+        >
+          {/* ========= LEFT: LIST ========= */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              overflow: "auto",
+              scrollbarWidth: "thin",
+              scrollbarColor: "hsl(var(--muted)) transparent",
+            }}
+            className="
+              [&::-webkit-scrollbar]:w-[8px]
+              [&::-webkit-scrollbar-track]:bg-transparent
+              [&::-webkit-scrollbar-thumb]:bg-[hsl(var(--muted))]
+              [&::-webkit-scrollbar-thumb]:rounded-[4px]
+            "
+          >
+            <Box
+              sx={{
+                width: "100%",
+                height: "70vh",
+                padding: "12px",
+              }}
+            >
+              {items.map((n, index) => {
+                const style = typeStyles[n.type] || typeStyles.general;
+                const isSelected = selectedIds.includes(n.id);
+                const isActive = selected?.id === n.id;
+
+                return (
+                  <AnimatedItem
+                    key={n.id}
+                    index={index}
+                    delay={0.03 * index}
+                    onClick={() => setSelected(n)}
+                  >
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderLeft: `4px solid ${style.color}`,
+                        borderRadius: 0,
+                        backgroundColor: isActive
+                          ? "hsl(var(--muted))"
+                          : n.is_read
+                          ? "hsl(var(--background))"
+                          : "hsl(var(--card))",
+                        cursor: "pointer",
+                        transition: "0.2s",
+                        "&:hover": {
+                          backgroundColor: "hsl(var(--card) / 0.85)",
+                        },
+                      }}
+                    >
+                      {/* Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelect(n.id);
+                        }}
+                        style={{ transform: "scale(1.2)" }}
+                      />
+
+                      {/* Icon */}
+                      <Box sx={{ color: style.color }}>{style.icon}</Box>
+
+                      {/* Text */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          component="div"
+                          sx={{
+                            fontWeight: n.is_read ? 500 : 700,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            color: "hsl(var(--foreground))",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {!n.is_read && (
+                            <Box
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                backgroundColor: style.color,
+                              }}
+                            />
+                          )}
+                          {n.title}
+                        </Typography>
+
+                        <Typography
+                          component="div"
+                          sx={{
+                            fontSize: 13,
+                            opacity: 0.7,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {n.message}
+                        </Typography>
+                      </Box>
+
+                      {/* Time */}
+                      <Typography
+                        component="div"
+                        sx={{
+                          fontSize: 11,
+                          opacity: 0.6,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {new Date(n.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Typography>
+
+                      {/* Single Mark Read */}
+                      {!n.is_read && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markNotificationRead(n.id).then(load);
+                          }}
+                          sx={{
+                            color: "#16a34a",
+                            "&:hover": { background: "#16a34a22" },
+                          }}
+                        >
+                          <CheckCircle size={18} />
+                        </IconButton>
+                      )}
+
+                      {/* Single Delete */}
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(n.id).then(load);
+                        }}
+                        sx={{
+                          color: "#dc2626",
+                          "&:hover": { background: "#dc262620" },
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Paper>
+                  </AnimatedItem>
+                );
+              })}
+            </Box>
+          </Box>
+
+          {/* ========= RIGHT: DETAILS PANEL ========= */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              p: 3,
+              height: "70vh",
+              overflowY: "auto",
+              scrollbarWidth: "thin",
+              scrollbarColor: "hsl(var(--muted)) transparent",
+            }}
+            className="
+              [&::-webkit-scrollbar]:w-[8px]
+              [&::-webkit-scrollbar-track]:bg-transparent
+              [&::-webkit-scrollbar-thumb]:bg-[hsl(var(--muted))]
+              [&::-webkit-scrollbar-thumb]:rounded-[4px]
+            "
+          >
+            {selected ? (
+              <>
+                {/* Header: title & type chip */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 2,
                   }}
-                  style={{ transform: "scale(1.3)" }}
-                />
-
-                {/* Icon */}
-                <Box sx={{ color: style.color }}>{style.icon}</Box>
-
-                {/* Text */}
-                <Box sx={{ flex: 1 }}>
+                >
                   <Typography
+                    component="div"
                     sx={{
-                      fontWeight: n.is_read ? 500 : 700,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
+                      fontSize: 20,
+                      fontWeight: 600,
+                      fontFamily: "Poppins, sans-serif",
                       color: "hsl(var(--foreground))",
                     }}
                   >
-                    {!n.is_read && (
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          backgroundColor: style.color,
-                        }}
-                      />
-                    )}
-                    {n.title}
+                    {selected.title}
                   </Typography>
 
-                  <Typography sx={{ fontSize: 14, opacity: 0.7 }}>
-                    {n.message}
-                  </Typography>
-
-                  <Typography sx={{ fontSize: 12, opacity: 0.6, mt: 0.5 }}>
-                    {new Date(n.created_at).toLocaleString()}
-                  </Typography>
-                </Box>
-
-                {!n.is_read && (
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markNotificationRead(n.id).then(load);
-                    }}
+                  <Box
                     sx={{
-                      color: "#16a34a",
-                      "&:hover": { background: "#16a34a22" },
+                      ml: "auto",
+                      px: 1.5,
+                      py: 0.3,
+                      borderRadius: "999px",
+                      border: "1px solid hsl(var(--border))",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.6,
+                      fontSize: 12,
+                      color: "hsl(var(--muted-foreground))",
                     }}
                   >
-                    <CheckCircle size={20} />
-                  </IconButton>
-                )}
+                    {typeStyles[selected.type]?.icon}
+                    <span style={{ textTransform: "capitalize" }}>
+                      {selected.type}
+                    </span>
+                  </Box>
+                </Box>
 
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(n.id).then(load);
-                  }}
+                <Typography
+                  component="div"
                   sx={{
-                    color: "#dc2626",
-                    "&:hover": { background: "#dc262620" },
+                    fontSize: 12,
+                    opacity: 0.7,
+                    mb: 2,
                   }}
                 >
-                  <Trash2 size={20} />
-                </IconButton>
-              </Paper>
-            </AnimatedItem>
-          );
-        })}
-      </AnimatedScroll>
+                  Sent at:{" "}
+                  {new Date(selected.created_at).toLocaleString()}
+                </Typography>
 
-      {/* ==== CONTACT MESSAGE MODAL ==== */}
-      {contactModal}
+                {/* Contact-style layout only for contact */}
+                {selected.type === "contact" && selected.meta ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Box>
+                      <Typography
+                        component="div"
+                        sx={{
+                          color: "hsl(var(--destructive))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Name:
+                      </Typography>
+                      <Typography component="div">
+                        {selected.meta.name ?? "N/A"}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography
+                        component="div"
+                        sx={{
+                          color: "hsl(var(--destructive))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Email:
+                      </Typography>
+                      <Typography component="div">
+                        {selected.meta.email ?? "N/A"}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography
+                        component="div"
+                        sx={{
+                          color: "hsl(var(--destructive))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Phone:
+                      </Typography>
+                      <Typography component="div">
+                        {selected.meta.phone ?? "N/A"}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 1 }}>
+                      <Typography
+                        component="div"
+                        sx={{
+                          color: "hsl(var(--destructive))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Subject:
+                      </Typography>
+                      <Typography component="div">
+                        {selected.meta.subject ?? "N/A"}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 1 }}>
+                      <Typography
+                        component="div"
+                        sx={{
+                          color: "hsl(var(--destructive))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Message:
+                      </Typography>
+                      <Typography component="div">
+                        {selected.meta.message ?? "No message provided"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ) : (
+                  // Generic detail view
+                  <Typography
+                    component="div"
+                    sx={{
+                      mt: 1,
+                      fontSize: 15,
+                      lineHeight: 1.6,
+                      color: "hsl(var(--foreground))",
+                    }}
+                  >
+                    {selected.message}
+                  </Typography>
+                )}
+              </>
+            ) : (
+              // Empty state
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  gap: 1,
+                }}
+              >
+                <Bell size={32} style={{ opacity: 0.5 }} />
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 600,
+                    color: "hsl(var(--foreground))",
+                  }}
+                >
+                  No notification selected
+                </Typography>
+                <Typography
+                  component="div"
+                  sx={{
+                    fontSize: 14,
+                    opacity: 0.7,
+                  }}
+                >
+                  Click on a notification from the left to view full details.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };
