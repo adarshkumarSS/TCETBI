@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Box, Typography, IconButton } from '@mui/material';
 import { CardContainer } from './CardContainer';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface SuccessStory {
   id?: number;
@@ -19,21 +19,35 @@ interface SuccessStoryCarouselProps {
 
 export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stories }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % stories.length);
-  };
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % stories.length);
+  }, [stories.length]);
 
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + stories.length) % stories.length);
-  };
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + stories.length) % stories.length);
+  }, [stories.length]);
 
-  const goToSlide = (index: number) => {
+  const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isHovered) {
+      const interval = setInterval(() => {
+        nextSlide();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isHovered, nextSlide]);
 
   return (
-    <Box sx={{ position: 'relative', maxWidth: '100%', mx: 'auto' }}>
+    <Box
+      sx={{ position: 'relative', maxWidth: '100%', mx: 'auto' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Main Carousel */}
       <Box sx={{ overflow: 'hidden', borderRadius: 'var(--radius)' }}>
         <motion.div

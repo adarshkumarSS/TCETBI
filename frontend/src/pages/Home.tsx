@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container, CircularProgress } from "@mui/material";
+import { Box, Typography, Container } from "@mui/material";
 import { CardContainer } from "../components/ui/CardContainer";
 import { Loader } from "../components/ui/Loader";
 import { SuccessStoryCarousel } from "../components/ui/SuccessStoryCarousel";
@@ -9,6 +9,7 @@ import LogoLoop from "../components/LogoLoop";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchHomeData, HomeData } from "../api/homeService";
+import CommonLoader from "../components/CommonLoader";
 
 const HeroSection = () => (
   <Box
@@ -19,7 +20,6 @@ const HeroSection = () => (
       alignItems: "center",
       justifyContent: "center",
       overflow: "hidden", // Ensure video doesn't overflow
-      // Remove background and ::before overlay
     }}
   >
     <video
@@ -27,6 +27,7 @@ const HeroSection = () => (
       loop
       muted
       playsInline
+      preload="auto"
       style={{
         position: "absolute",
         top: 0,
@@ -443,7 +444,7 @@ const PartnersSection = ({
 export default PartnersSection;
 
 const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories"] }) => (
-    <Box sx={{ py: 8, backgroundColor: "hsl(var(--accent))" }}>
+    <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
       <Container maxWidth="lg">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -475,25 +476,25 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const startTime = Date.now();
     fetchHomeData()
-      .then((res) => setData(res))
+      .then((res) => {
+        const loadTime = Date.now() - startTime;
+        // Only show loader if loading took more than 300ms to prevent flashing
+        const minLoadTime = 300;
+        if (loadTime < minLoadTime) {
+          setTimeout(() => setData(res), minLoadTime - loadTime);
+        } else {
+          setData(res);
+        }
+      })
       .catch(() => console.error("Failed to load home data"))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setTimeout(() => setLoading(false), 300);
+      });
   }, []);
 
-  if (loading)
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress color="primary" size={80} />
-      </Box>
-    );
+  if (loading) return <CommonLoader />;
 
   if (!data) return <p>Error loading homepage data.</p>;
 

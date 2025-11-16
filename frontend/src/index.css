@@ -125,6 +125,7 @@
   /* Smooth scroll */
   html {
     scroll-behavior: smooth;
+    overflow-y: scroll; /* Prevents scroll bar tremble by keeping it always visible */
   }
 }
 
@@ -147,4 +148,3 @@ textarea:-webkit-autofill {
   -webkit-box-shadow: 0 0 0px 1000px hsl(var(--background)) inset !important;
   -webkit-text-fill-color: hsl(var(--foreground)) !important;
 }
-

@@ -10,6 +10,7 @@ import {
   Avatar,
   Container,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
@@ -37,16 +38,9 @@ export const StartupDetailPage: React.FC = () => {
 
   if (!startup)
     return (
-      <Typography
-        sx={{
-          mt: 10,
-          textAlign: "center",
-          color: "hsl(var(--muted-foreground))",
-          fontFamily: "Poppins, sans-serif",
-        }}
-      >
-        Loading startup details...
-      </Typography>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "hsl(var(--background))" }}>
+        <CircularProgress />
+      </Box>
     );
 
   const iconBtnStyle = {

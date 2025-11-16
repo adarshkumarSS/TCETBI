@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container, Link, CircularProgress } from "@mui/material";
+import { Box, Typography, Container, Link } from "@mui/material";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import { CardContainer } from "../components/ui/CardContainer";
 import { useEffect, useState } from "react";
 import { fetchPeopleData, PeopleData } from "../api/peopleService";
+import CommonLoader from "../components/CommonLoader";
 
 // 🟢 Founder Section
 const FounderSection = ({ data }: { data: PeopleData["founder"] }) => {
@@ -469,18 +470,25 @@ export const People: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const startTime = Date.now();
     fetchPeopleData()
-      .then((res) => setData(res))
+      .then((res) => {
+        const loadTime = Date.now() - startTime;
+        // Only show loader if loading took more than 300ms to prevent flashing
+        const minLoadTime = 300;
+        if (loadTime < minLoadTime) {
+          setTimeout(() => setData(res), minLoadTime - loadTime);
+        } else {
+          setData(res);
+        }
+      })
       .catch(() => console.error("❌ Failed to load people data"))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setTimeout(() => setLoading(false), 300);
+      });
   }, []);
 
-  if (loading)
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress color="primary" size={80} />
-      </Box>
-    );
+  if (loading) return <CommonLoader />;
 
   if (!data) return <p>Error loading people data.</p>;
 

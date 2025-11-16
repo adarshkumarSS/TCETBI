@@ -91,10 +91,10 @@ export const Navigation: React.FC = () => {
         position="fixed"
         elevation={0}
         sx={{
-          background: isDarkMode 
+          background: isDarkMode
             ? (isHome ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.9)")
-            : "transparent",
-          borderBottom: isDarkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(255, 255, 255, 0.2)",
+            : (isHome ? "transparent" : "hsl(var(--background))"),
+          borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>

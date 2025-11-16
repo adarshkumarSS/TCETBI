@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Box, Typography, Container, CircularProgress } from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
 import { CardContainer } from "../components/ui/CardContainer";
 import LogoLoop from "../components/LogoLoop";
 import {
@@ -279,7 +279,11 @@ export const Portfolio: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Loading portfolio...</p>;
+  if (loading) return (
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "hsl(var(--background))" }}>
+      <CircularProgress />
+    </Box>
+  );
   if (!portfolio) return <p>Failed to load portfolio data.</p>;
 
   const handleStartupClick = (startup: Startup) => {
