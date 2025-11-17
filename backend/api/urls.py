@@ -8,7 +8,7 @@ from .wrappers.program_view import get_programs_data, update_programs_data, dele
 from .wrappers.media_view import get_media_data, update_album, delete_album
 from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
 from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_data
-from .views import submit_contact_message, get_notifications, mark_notification_read, delete_notification
+from .views import submit_contact_message, get_notifications, mark_notification_read, delete_notification, submit_incubation, get_incubation_applications, update_application_status
 
 router = DefaultRouter()
  
@@ -52,5 +52,8 @@ urlpatterns = [
     path("notifications/read/<int:id>/", mark_notification_read, name="mark_notification_read"),
     path("notifications/delete/<int:id>/", delete_notification, name="delete_notification"),
 
-]
+    path("apply-incubation/", submit_incubation, name="submit_incubation"),
+    path("incubation-applications/", get_incubation_applications, name="get_incubation_applications"),
+    path("incubation-applications/<int:id>/status/", update_application_status, name="update_application_status"),
 
+]

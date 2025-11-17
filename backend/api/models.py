@@ -252,4 +252,54 @@ class Notification(models.Model):
     def __str__(self):
         return f"[{self.type}] {self.title}"
 
+from django.db import models
 
+class IncubationApplication(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    # Image + PDF
+    profile_image = models.URLField(blank=True, null=True)
+    resume_pdf = models.URLField(blank=True, null=True)
+
+    # Personal
+    businessName = models.CharField(max_length=255)
+    salutation = models.CharField(max_length=50)
+    fullName = models.CharField(max_length=255)
+    fatherName = models.CharField(max_length=255)
+    age = models.IntegerField()
+    email = models.EmailField()
+    resMobile = models.CharField(max_length=20)
+    offMobile = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    post = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
+
+    # Business
+    businessType = models.CharField(max_length=100)
+    legalEntity = models.CharField(max_length=100)
+    businessDescription = models.TextField()
+
+    # Services (JSON field)
+    services = models.JSONField(default=dict)
+
+    numChairs = models.IntegerField(blank=True, null=True)
+    fullTimeEmployees = models.IntegerField(blank=True, null=True)
+    partTimeEmployees = models.IntegerField(blank=True, null=True)
+    consultants = models.IntegerField(blank=True, null=True)
+
+    # References
+    reference1 = models.JSONField(default=dict)
+    reference2 = models.JSONField(default=dict)
+
+    declaration = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.fullName} - {self.businessName}"

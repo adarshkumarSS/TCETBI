@@ -541,6 +541,26 @@ export const NotificationsPage: React.FC = () => {
                     {selected.message}
                   </Typography>
                 )}
+
+                {/* View Application button for application notifications */}
+                {selected.type === "application" && selected.meta && (
+                  <Box sx={{ mt: 3 }}>
+                    <Button
+                      onClick={() => navigate("/admin/applications")}
+                      sx={{
+                        backgroundColor: "#2563eb",
+                        color: "white",
+                        "&:hover": { backgroundColor: "#1d4ed8" },
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      View Application
+                    </Button>
+                  </Box>
+                )}
               </>
             ) : (
               // Empty state

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -133,3 +133,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = "__all__"
 
+class IncubationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IncubationApplication
+        fields = "__all__"

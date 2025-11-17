@@ -22,6 +22,9 @@ import {
 import { styled } from "@mui/material/styles";
 import { CloudUpload, ArrowBack } from "@mui/icons-material";
 import { Link,useNavigate } from "react-router-dom";
+import { ConfirmSubmitModal } from "../components/ConfirmSubmitModal";
+import { SubmitLoader } from "./SubmitLoader";
+import { submitIncubationApplication } from "../api/incubationService";
 
 const StyledBox = styled(Box)(() => ({
   minHeight: "100vh",
@@ -164,7 +167,13 @@ const BackButton = () => {
 };
 
 export const ApplyIncubation = () => {
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     businessName: "",
     salutation: "Mr",
@@ -206,20 +215,59 @@ export const ApplyIncubation = () => {
     declaration: false,
   });
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setProfileFile(file);
+    setProfileImage(URL.createObjectURL(file));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (file && file.size > 2 * 1024 * 1024) {
+      alert("Resume must be less than 2MB");
+      return;
+    }
+
+    setResumeFile(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted", formData);
+    setConfirmOpen(true);
+  };
+
+  const actuallySubmit = async () => {
+    setConfirmOpen(false);
+    setLoading(true);
+
+    const form = new FormData();
+
+    // Attach files
+    if (profileFile) form.append("profile_image", profileFile);
+    if (resumeFile) form.append("resume", resumeFile);
+
+    // Attach all form fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value === "object") {
+        form.append(key, JSON.stringify(value));
+      } else {
+        form.append(key, value as any);
+      }
+    });
+
+    try {
+      const result = await submitIncubationApplication(form);
+      console.log("Submitted:", result);
+
+      setLoading(false);
+
+      navigate("/contact");
+    } catch (err) {
+      console.error(err);
+      alert(err.error || "Submission failed");
+      setLoading(false);
+    }
   };
 
   return (
@@ -264,7 +312,7 @@ export const ApplyIncubation = () => {
               </Box>
 
               <StyledPaper>
-                <form onSubmit={handleSubmit}>
+                <form>
                   {/* Profile Picture */}
                   <Box
                     sx={{ display: "flex", justifyContent: "center", mb: 6 }}
@@ -313,12 +361,20 @@ export const ApplyIncubation = () => {
                         required
                       />
                     </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                      <Typography sx={{ fontStyle: 'italic', color: 'hsl(var(--foreground))', fontSize: '14px', mt: 1 }}>
+                        * If business entity has not been formed yet, please indicate the name of the lead entrepreneur
+                      </Typography>
+                    </Grid>
+
                     <Grid size={{ xs: 12, md: 4 }}>
                       <input
                         accept=".pdf,.doc,.docx"
                         style={{ display: "none" }}
                         id="resume-upload"
                         type="file"
+                        onChange={handleResumeUpload}
                       />
                       <label htmlFor="resume-upload">
                         <UploadBox>
@@ -431,6 +487,9 @@ export const ApplyIncubation = () => {
                         required
                       />
                     </Grid>
+
+
+
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <StyledTextField
                         fullWidth
@@ -697,6 +756,17 @@ export const ApplyIncubation = () => {
                   {/* Services Expected */}
                   <SectionTitle>Services Expected from TCE-TBI</SectionTitle>
                   <FormGroup>
+                    <Typography
+                      sx={{
+                        fontFamily: "Poppins, sans-serif",
+                        color: "hsl(var(--foreground))",
+                        mb: 2,
+                        fontSize: "14px",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Number of employees that will be resident (if applicable)
+                    </Typography>
                     <Grid container spacing={2}>
                       {Object.keys(formData.services).map((service) => (
                         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={service}>
@@ -1025,7 +1095,8 @@ export const ApplyIncubation = () => {
 
                   <Box sx={{ mt: 6, textAlign: "center" }}>
                     <PrimaryButton
-                      type="submit"
+                      type="button"
+                      onClick={() => setConfirmOpen(true)}
                       size="large"
                       sx={{ minWidth: "200px" }}
                     >
@@ -1074,6 +1145,14 @@ export const ApplyIncubation = () => {
           </Box>
         </Box>
       </Container>
+
+      <ConfirmSubmitModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={actuallySubmit}
+      />
+
+      {loading && <SubmitLoader />}
     </StyledBox>
   );
 };

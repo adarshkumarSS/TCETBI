@@ -1,40 +1,34 @@
-import { useState } from "react";
-import { Box, Typography, Modal, Backdrop, Fade, IconButton } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Typography, Modal, Backdrop, Fade, IconButton, Avatar, TextField, InputAdornment, Tabs, Tab } from "@mui/material";
+import { Search as SearchIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { Check, X, ArrowLeft } from "lucide-react";
+import { Check, X, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getIncubationApplications, updateApplicationStatus } from "@/api/incubationService";
 
 interface Application {
-  id: string;
-  profilePicture?: string;
+  id: number;
+  profile_image?: string;
+  resume_pdf?: string;
   businessName: string;
-  entrepreneurResume?: string;
   salutation: string;
-  leadName: string;
+  fullName: string;
   fatherName: string;
   age: number;
   email: string;
-  residentialMobile: string;
-  officeMobile?: string;
+  resMobile: string;
+  offMobile?: string;
   address: string;
   city: string;
   state: string;
-  postcode: string;
+  post: string;
   country: string;
   businessType: string;
   legalEntity: string;
   businessDescription: string;
-  servicesExpected: {
-    chair: boolean;
-    table: boolean;
-    monitor: boolean;
-    telephone: boolean;
-    fax: boolean;
-    webAccess: boolean;
-    conferenceRooms: boolean;
-  };
-  numberOfChairs?: number;
+  services: { [key: string]: boolean };
+  numChairs?: number;
   fullTimeEmployees?: number;
   partTimeEmployees?: number;
   consultants?: number;
@@ -50,108 +44,61 @@ interface Application {
     email: string;
     address: string;
   };
-  declarationAccepted: boolean;
+  declaration: boolean;
   status: "pending" | "approved" | "rejected";
-  appliedDate: string;
+  created_at: string;
 }
-
-const mockApplications: Application[] = [
-  {
-    id: "1",
-    businessName: "Tech Innovations Ltd",
-    salutation: "Mr",
-    leadName: "John Doe",
-    fatherName: "Richard Doe",
-    age: 35,
-    email: "john@techinno.com",
-    residentialMobile: "+91 98765 43210",
-    address: "123 Innovation Street",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    postcode: "600001",
-    country: "India",
-    businessType: "High Technology",
-    legalEntity: "Corporation",
-    businessDescription: "We develop cutting-edge technology solutions for businesses.",
-    servicesExpected: {
-      chair: true,
-      table: true,
-      monitor: true,
-      telephone: false,
-      fax: false,
-      webAccess: true,
-      conferenceRooms: true,
-    },
-    numberOfChairs: 5,
-    fullTimeEmployees: 3,
-    partTimeEmployees: 2,
-    consultants: 1,
-    reference1: {
-      name: "Dr. Smith",
-      mobile: "+91 98765 11111",
-      email: "smith@example.com",
-      address: "456 Tech Park"
-    },
-    reference2: {
-      name: "Prof. Johnson",
-      mobile: "+91 98765 22222",
-      email: "johnson@example.com",
-      address: "789 Research Center"
-    },
-    declarationAccepted: true,
-    status: "pending",
-    appliedDate: "2025-09-15",
-  },
-  {
-    id: "2",
-    businessName: "Green Solutions",
-    salutation: "Mrs",
-    leadName: "Jane Smith",
-    fatherName: "Robert Smith",
-    age: 32,
-    email: "jane@greensolutions.com",
-    residentialMobile: "+91 98765 43211",
-    address: "456 Eco Street",
-    city: "Bangalore",
-    state: "Karnataka",
-    postcode: "560001",
-    country: "India",
-    businessType: "Services",
-    legalEntity: "Partnership",
-    businessDescription: "Sustainable environmental solutions for businesses and communities.",
-    servicesExpected: {
-      chair: true,
-      table: true,
-      monitor: false,
-      telephone: true,
-      fax: false,
-      webAccess: true,
-      conferenceRooms: false,
-    },
-    fullTimeEmployees: 2,
-    reference1: {
-      name: "Dr. Kumar",
-      mobile: "+91 98765 33333",
-      email: "kumar@example.com",
-      address: "321 Green Avenue"
-    },
-    reference2: {
-      name: "Ms. Patel",
-      mobile: "+91 98765 44444",
-      email: "patel@example.com",
-      address: "654 Eco Park"
-    },
-    declarationAccepted: true,
-    status: "pending",
-    appliedDate: "2025-09-20",
-  },
-];
 
 export const Applications = () => {
   const navigate = useNavigate();
-  const [applications] = useState<Application[]>(mockApplications);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+
+  useEffect(() => {
+    loadApplications();
+  }, []);
+
+  useEffect(() => {
+    // Filter applications based on search term and status
+    const filtered = applications.filter(app => {
+      // Status filter
+      if (statusFilter !== "all" && app.status !== statusFilter) {
+        return false;
+      }
+
+      // Search filter
+      if (searchTerm) {
+        return (
+          app.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.businessType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.status.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      return true;
+    });
+    setFilteredApplications(filtered);
+  }, [applications, searchTerm, statusFilter]);
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      const data = await getIncubationApplications();
+      setApplications(data.applications);
+    } catch (error) {
+      console.error("Failed to load applications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpen = (app: Application) => {
     setSelectedApp(app);
@@ -163,14 +110,32 @@ export const Applications = () => {
     setSelectedApp(null);
   };
 
-  const handleApprove = () => {
-    console.log("Approved:", selectedApp);
-    handleClose();
+  const handleApprove = async () => {
+    if (!selectedApp) return;
+    try {
+      setUpdating(true);
+      await updateApplicationStatus(selectedApp.id, "approved");
+      await loadApplications(); // Refresh list
+      handleClose();
+    } catch (error) {
+      console.error("Failed to approve application:", error);
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleReject = () => {
-    console.log("Rejected:", selectedApp);
-    handleClose();
+  const handleReject = async () => {
+    if (!selectedApp) return;
+    try {
+      setUpdating(true);
+      await updateApplicationStatus(selectedApp.id, "rejected");
+      await loadApplications(); // Refresh list
+      handleClose();
+    } catch (error) {
+      console.error("Failed to reject application:", error);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -210,36 +175,135 @@ export const Applications = () => {
           </Typography>
         </Box>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-            gap: 3,
-          }}
-        >
-          {applications.map((app) => (
-            <Card
-              key={app.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleOpen(app)}
-            >
-              <CardHeader>
-                <CardTitle>{app.businessName}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Lead: {app.leadName}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Type: {app.businessType}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground))" }}>
-                  Applied: {app.appliedDate}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Search Bar */}
+        <Box sx={{ mb: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search applications by name, email, business type, status..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon size={20} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'hsl(var(--card))',
+                '& fieldset': {
+                  borderColor: 'hsl(var(--border))',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'hsl(var(--ring))',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'hsl(var(--ring))',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: 'hsl(var(--foreground))',
+                '&::placeholder': {
+                  color: 'hsl(var(--muted-foreground))',
+                },
+              },
+            }}
+          />
         </Box>
+
+        {/* Status Filter Tabs */}
+        <Box sx={{ mb: 4 }}>
+          <Tabs
+            value={statusFilter}
+            onChange={(_, newValue) => setStatusFilter(newValue)}
+            sx={{
+              '& .MuiTab-root': {
+                color: 'hsl(var(--muted-foreground))',
+                '&.Mui-selected': {
+                  color: 'hsl(var(--primary))',
+                },
+                minHeight: 48,
+                textTransform: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: 'hsl(var(--primary))',
+              },
+            }}
+          >
+            <Tab
+              value="all"
+              label={`All Applications (${applications.length})`}
+            />
+            <Tab
+              value="pending"
+              label={`Pending (${applications.filter(app => app.status === 'pending').length})`}
+            />
+            <Tab
+              value="approved"
+              label={`Approved (${applications.filter(app => app.status === 'approved').length})`}
+            />
+            <Tab
+              value="rejected"
+              label={`Rejected (${applications.filter(app => app.status === 'rejected').length})`}
+            />
+          </Tabs>
+        </Box>
+
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+            <Loader2 size={32} className="animate-spin" />
+            <Typography variant="body1" sx={{ ml: 2 }}>Loading applications...</Typography>
+          </Box>
+        ) : applications.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Typography variant="h6">No applications found</Typography>
+          </Box>
+        ) : filteredApplications.length === 0 && searchTerm ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Typography variant="h6">No applications match your search</Typography>
+            <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground))", mt: 1 }}>
+              Try adjusting your search terms
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
+              gap: 3,
+            }}
+          >
+            {filteredApplications.map((app) => (
+              <Card
+                key={app.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleOpen(app)}
+              >
+                <CardHeader>
+                  <CardTitle>{app.businessName}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Lead: {app.fullName}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Type: {app.businessType}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1, textTransform: "capitalize" }}>
+                    Status: {app.status}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground))" }}>
+                    Applied: {new Date(app.created_at).toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        )}
 
         <Modal
           open={open}
@@ -271,17 +335,92 @@ export const Applications = () => {
             >
               {selectedApp && (
                 <>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 700,
-                      color: "hsl(var(--foreground))",
-                      mb: 3,
-                    }}
-                  >
-                    Application Details
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontFamily: "Poppins, sans-serif",
+                        fontWeight: 700,
+                        color: "hsl(var(--foreground))",
+                      }}
+                    >
+                      Application #{selectedApp.id}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "hsl(var(--muted-foreground))",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {selectedApp.businessName}
+                    </Typography>
+                  </Box>
+
+                  {/* Uploaded Files */}
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "hsl(var(--primary))" }}>
+                    Attachments
                   </Typography>
+                  <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+                    {selectedApp.profile_image ? (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar
+                          src={selectedApp.profile_image}
+                          sx={{ width: 56, height: 56 }}
+                        />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            Profile Image
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "hsl(var(--muted-foreground))" }}>
+                            <a href={selectedApp.profile_image} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>
+                              View Full Size
+                            </a>
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground))" }}>
+                        No profile image uploaded
+                      </Typography>
+                    )}
+
+                    {selectedApp.resume_pdf && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            Resume PDF
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "hsl(var(--muted-foreground))" }}>
+                            <a href={selectedApp.resume_pdf} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>
+                              View PDF (Size: less than 2MB)
+                            </a>
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* Status */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
+                      Status
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        textTransform: "capitalize",
+                        fontWeight: 600,
+                        color: selectedApp.status === "approved"
+                          ? "#16a34a"
+                          : selectedApp.status === "rejected"
+                          ? "#dc2626"
+                          : "#6b7280"
+                      }}
+                    >
+                      {selectedApp.status}
+                    </Typography>
+                  </Box>
 
                   {/* Business Information */}
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "hsl(var(--primary))" }}>
@@ -303,7 +442,7 @@ export const Applications = () => {
                       <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
                         Salutation & Name
                       </Typography>
-                      <Typography variant="body1">{selectedApp.salutation} {selectedApp.leadName}</Typography>
+                      <Typography variant="body1">{selectedApp.salutation} {selectedApp.fullName}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
@@ -333,14 +472,14 @@ export const Applications = () => {
                       <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
                         Residential Mobile
                       </Typography>
-                      <Typography variant="body1">{selectedApp.residentialMobile}</Typography>
+                      <Typography variant="body1">{selectedApp.resMobile}</Typography>
                     </Box>
-                    {selectedApp.officeMobile && (
+                    {selectedApp.offMobile && (
                       <Box>
                         <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
                           Office Mobile
                         </Typography>
-                        <Typography variant="body1">{selectedApp.officeMobile}</Typography>
+                        <Typography variant="body1">{selectedApp.offMobile}</Typography>
                       </Box>
                     )}
                   </Box>
@@ -349,7 +488,7 @@ export const Applications = () => {
                     <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
                       Address
                     </Typography>
-                    <Typography variant="body1">{selectedApp.address}, {selectedApp.city}, {selectedApp.state} - {selectedApp.postcode}, {selectedApp.country}</Typography>
+                    <Typography variant="body1">{selectedApp.address}, {selectedApp.city}, {selectedApp.state} - {selectedApp.post}, {selectedApp.country}</Typography>
                   </Box>
 
                   {/* Business Details */}
@@ -384,7 +523,7 @@ export const Applications = () => {
                   </Typography>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2">
-                      {Object.entries(selectedApp.servicesExpected)
+                      {Object.entries(selectedApp.services)
                         .filter(([_, value]) => value)
                         .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'))
                         .join(", ") || "None"}
@@ -447,16 +586,21 @@ export const Applications = () => {
                     <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))" }}>
                       Applied Date
                     </Typography>
-                    <Typography variant="body1">{selectedApp.appliedDate}</Typography>
+                    <Typography variant="body1">{new Date(selectedApp.created_at).toLocaleString()}</Typography>
                   </Box>
 
                   <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
                     <DarkButton
                       startIcon={<X />}
                       onClick={handleReject}
+                      disabled={selectedApp.status !== "pending"}
                       sx={{
                         backgroundColor: "hsl(var(--destructive))",
                         "&:hover": { backgroundColor: "hsl(var(--destructive) / 0.9)" },
+                        "&.Mui-disabled": {
+                          backgroundColor: "hsl(var(--muted))",
+                          color: "hsl(var(--muted-foreground))",
+                        },
                       }}
                     >
                       Reject
@@ -464,7 +608,15 @@ export const Applications = () => {
                     <DarkButton
                       startIcon={<Check />}
                       onClick={handleApprove}
-                      sx={{ backgroundColor: "#22c55e", "&:hover": { backgroundColor: "#16a34a" } }}
+                      disabled={selectedApp.status !== "pending"}
+                      sx={{
+                        backgroundColor: "#22c55e",
+                        "&:hover": { backgroundColor: "#16a34a" },
+                        "&.Mui-disabled": {
+                          backgroundColor: "hsl(var(--muted))",
+                          color: "hsl(var(--muted-foreground))",
+                        },
+                      }}
                     >
                       Approve
                     </DarkButton>

@@ -110,12 +110,8 @@ export const AdminDashboard: React.FC = () => {
       >
         {cards.map((card, index) => (
           <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
+            size={{ xs: 12, sm: 6, md: 4 }}
             key={index}
-            {...({} as any)} // ✅ bypass MUI's type overload bug safely
           >
             <Card
               onClick={() => navigate(card.path)}
