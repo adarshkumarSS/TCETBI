@@ -16,6 +16,7 @@ import {
   Trash2,
   CheckCircle,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -44,23 +45,64 @@ export const NotificationsPage: React.FC = () => {
   const [selected, setSelected] = useState<Notification | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const navigate = useNavigate();
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const load = async () => {
-    const data = await fetchNotifications();
-    setItems(data);
-    // If nothing selected, pick first contact or first item
-    if (!selected && data.length > 0) {
-      setSelected(data[0]);
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      navigate('/auth');
+    } else {
+      setIsAuthenticated(true);
     }
-  };
+    setIsAuthLoading(false);
+  }, [navigate]);
 
   useEffect(() => {
     document.body.style.backgroundColor = "hsl(var(--background))";
   }, []);
 
+  const load = async () => {
+    try {
+      const data = await fetchNotifications();
+      setItems(data);
+      // If nothing selected, pick first contact or first item
+      if (!selected && data.length > 0) {
+        setSelected(data[0]);
+      }
+    } catch (error) {
+      console.log('Error loading notifications:', error);
+      setItems([]);
+      // If we get a 401, the interceptor will redirect to login
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
+
+  if (isAuthLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "hsl(var(--background))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Loader2 size={32} className="animate-spin" />
+          <Typography variant="body1">Checking authentication...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) =>

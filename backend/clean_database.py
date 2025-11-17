@@ -38,20 +38,25 @@ def clear_cloudinary(folder_prefix="TCETBI"):
     print("\n🧹 Clearing Cloudinary storage...")
 
     try:
-        # Get all images recursively in the specified folder
+        # Get all resources recursively in the specified folder (includes PDFs)
         resources = cloudinary.api.resources(type="upload", prefix=folder_prefix, max_results=500)
+        raw_resources = cloudinary.api.resources(type="upload", prefix=folder_prefix, resource_type="raw", max_results=500)
 
-        if not resources["resources"]:
+        # Get all resource IDs
+        public_ids = [res["public_id"] for res in resources.get("resources", [])]
+        raw_public_ids = [res["public_id"] for res in raw_resources.get("resources", [])]
+
+        all_public_ids = public_ids + raw_public_ids
+
+        if not all_public_ids:
             print("⚠️ No Cloudinary resources found to delete.")
             return
 
-        public_ids = [res["public_id"] for res in resources["resources"]]
-
         # Batch delete all resources
-        result = cloudinary.api.delete_resources(public_ids)
+        result = cloudinary.api.delete_resources(all_public_ids, resource_type="auto")
         deleted = result.get("deleted", {})
 
-        print(f"✅ Deleted {len(deleted)} images from Cloudinary.")
+        print(f"✅ Deleted {len(deleted)} images and PDFs from Cloudinary.")
     except Exception as e:
         print(f"❌ Failed to clear Cloudinary resources: {e}")
 

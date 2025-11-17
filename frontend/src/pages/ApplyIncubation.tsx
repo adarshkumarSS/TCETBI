@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Box,
@@ -17,6 +17,10 @@ import {
   Paper,
   Avatar,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
 import { styled } from "@mui/material/styles";
@@ -172,6 +176,9 @@ export const ApplyIncubation = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -232,14 +239,85 @@ export const ApplyIncubation = () => {
     setResumeFile(file);
   };
 
+  // Robust input handler for reference fields to catch paste/autofill
+  const handleReferenceChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Multi-event handler for text fields (catches onChange, onPaste, onInput, onBlur)
+  const createTextFieldHandlers = (fieldKey: string) => ({
+    value: formData[fieldKey as keyof typeof formData] as string,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleReferenceChange(fieldKey, e.target.value),
+    onPaste: (e: React.ClipboardEvent<HTMLInputElement>) =>
+      // Trigger state update after paste
+      setTimeout(() => handleReferenceChange(fieldKey, e.currentTarget.value), 0),
+    onInput: (e: React.FormEvent<HTMLInputElement>) =>
+      handleReferenceChange(fieldKey, (e.target as HTMLInputElement).value),
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) =>
+      handleReferenceChange(fieldKey, e.target.value),
+  });
+
+  const validateFormData = () => {
+    const errors: string[] = [];
+
+    // Business Information
+    if (!formData.businessName.trim()) errors.push("Business Name");
+    if (!formData.businessDescription.trim()) errors.push("Business Description");
+
+    // Personal Information
+    if (!formData.fullName.trim()) errors.push("Full Name");
+    if (!formData.fatherName.trim()) errors.push("Father Name");
+    if (!formData.age.trim()) errors.push("Age");
+    if (!formData.email.trim()) errors.push("Email");
+    if (!formData.resMobile.trim()) errors.push("Residential Mobile");
+    if (!formData.address.trim()) errors.push("Address");
+    if (!formData.city.trim()) errors.push("City");
+    if (!formData.state.trim()) errors.push("State");
+    if (!formData.post.trim()) errors.push("Post");
+    if (!formData.country.trim()) errors.push("Country");
+
+    // References (all fields required for now)
+    if (!formData.reference1Name.trim()) errors.push("Reference 1 Name");
+    if (!formData.reference1Mobile.trim()) errors.push("Reference 1 Mobile");
+    if (!formData.reference1Email.trim()) errors.push("Reference 1 Email");
+    if (!formData.reference1Address.trim()) errors.push("Reference 1 Address");
+
+    if (!formData.reference2Name.trim()) errors.push("Reference 2 Name");
+    if (!formData.reference2Mobile.trim()) errors.push("Reference 2 Mobile");
+    if (!formData.reference2Email.trim()) errors.push("Reference 2 Email");
+    if (!formData.reference2Address.trim()) errors.push("Reference 2 Address");
+
+    // Declaration
+    if (!formData.declaration) errors.push("Declaration agreement");
+
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate form data
+    const validationErrors = validateFormData();
+    if (validationErrors.length > 0) {
+      setValidationErrors(validationErrors);
+      setShowValidationModal(true);
+      return;
+    }
+
     setConfirmOpen(true);
   };
 
-  const actuallySubmit = async () => {
-    setConfirmOpen(false);
+  const submitRef = useRef(false);
+  const actuallySubmit = useCallback(async () => {
+    if (submitRef.current || loading) return; // Prevent multiple submissions
+    submitRef.current = true;
     setLoading(true);
+
+    console.log("FORM SUBMIT: Single submission initiated");
 
     const form = new FormData();
 
@@ -258,17 +336,26 @@ export const ApplyIncubation = () => {
 
     try {
       const result = await submitIncubationApplication(form);
-      console.log("Submitted:", result);
+      console.log("FORM SUBMIT: Success", result);
 
-      setLoading(false);
+      // Show success modal for 3 seconds, then navigate
+      setLoading(false); // Remove loading indicator
+      setShowSuccessModal(true);
 
-      navigate("/contact");
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        submitRef.current = false; // Reset for next submission
+        navigate("/contact");
+      }, 3000);
+
+      return; // Don't execute finally block
     } catch (err) {
-      console.error(err);
+      console.error("FORM SUBMIT: Error", err);
       alert(err.error || "Submission failed");
+      submitRef.current = false; // Reset on error to allow retry
       setLoading(false);
     }
-  };
+  }, [loading, profileFile, resumeFile, formData, navigate]);
 
   return (
     <StyledBox>
@@ -312,7 +399,7 @@ export const ApplyIncubation = () => {
               </Box>
 
               <StyledPaper>
-                <form>
+                <form onSubmit={handleSubmit}>
                   {/* Profile Picture */}
                   <Box
                     sx={{ display: "flex", justifyContent: "center", mb: 6 }}
@@ -910,13 +997,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Name"
-                          value={formData.reference1Name}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference1Name: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference1Name")}
                           required
                         />
                       </Grid>
@@ -924,13 +1005,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Mobile"
-                          value={formData.reference1Mobile}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference1Mobile: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference1Mobile")}
                           required
                         />
                       </Grid>
@@ -939,13 +1014,7 @@ export const ApplyIncubation = () => {
                           fullWidth
                           label="Email"
                           type="email"
-                          value={formData.reference1Email}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference1Email: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference1Email")}
                           required
                         />
                       </Grid>
@@ -953,13 +1022,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Address"
-                          value={formData.reference1Address}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference1Address: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference1Address")}
                           required
                         />
                       </Grid>
@@ -991,13 +1054,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Name"
-                          value={formData.reference2Name}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference2Name: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference2Name")}
                           required
                         />
                       </Grid>
@@ -1005,13 +1062,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Mobile"
-                          value={formData.reference2Mobile}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference2Mobile: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference2Mobile")}
                           required
                         />
                       </Grid>
@@ -1020,13 +1071,7 @@ export const ApplyIncubation = () => {
                           fullWidth
                           label="Email"
                           type="email"
-                          value={formData.reference2Email}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference2Email: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference2Email")}
                           required
                         />
                       </Grid>
@@ -1034,13 +1079,7 @@ export const ApplyIncubation = () => {
                         <StyledTextField
                           fullWidth
                           label="Address"
-                          value={formData.reference2Address}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              reference2Address: e.target.value,
-                            })
-                          }
+                          {...createTextFieldHandlers("reference2Address")}
                           required
                         />
                       </Grid>
@@ -1095,12 +1134,12 @@ export const ApplyIncubation = () => {
 
                   <Box sx={{ mt: 6, textAlign: "center" }}>
                     <PrimaryButton
-                      type="button"
-                      onClick={() => setConfirmOpen(true)}
+                      type="submit"
                       size="large"
                       sx={{ minWidth: "200px" }}
+                      disabled={loading}
                     >
-                      Submit Application
+                      {loading ? "Submitting..." : "Submit Application"}
                     </PrimaryButton>
                   </Box>
 
@@ -1149,8 +1188,158 @@ export const ApplyIncubation = () => {
       <ConfirmSubmitModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        onConfirm={actuallySubmit}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          setTimeout(() => actuallySubmit(), 50); // prevents StrictMode double fire
+        }}
       />
+
+      {/* Validation Modal */}
+      <Dialog
+        open={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        aria-labelledby="validation-dialog-title"
+        aria-describedby="validation-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          id="validation-dialog-title"
+          sx={{
+            fontFamily: "Poppins, sans-serif",
+            color: "hsl(var(--primary))",
+            fontSize: "24px",
+            textAlign: "center",
+            pt: 3,
+          }}
+        >
+          Please Fill Required Fields
+        </DialogTitle>
+        <DialogContent
+          id="validation-dialog-description"
+          sx={{
+            color: "hsl(var(--foreground))",
+            fontFamily: "Poppins, sans-serif",
+            px: 4,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              color: "hsl(var(--muted-foreground))",
+              mb: 2,
+              fontSize: "14px",
+            }}
+          >
+            The following fields are required but missing or empty:
+          </Typography>
+          <Box
+            component="ul"
+            sx={{
+              pl: 3,
+              m: 0,
+              fontFamily: "Poppins, sans-serif",
+              fontSize: "14px",
+              lineHeight: 1.6,
+            }}
+          >
+            {validationErrors.map((error, index) => (
+              <li key={index} style={{ color: "hsl(var(--destructive))" }}>
+                {error}
+              </li>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 4, pb: 3, justifyContent: "center" }}>
+          <PrimaryButton
+            onClick={() => setShowValidationModal(false)}
+            sx={{
+              minWidth: "120px",
+              backgroundColor: "hsl(var(--primary))",
+              "&:hover": {
+                backgroundColor: "hsl(var(--destructive))",
+              },
+            }}
+          >
+            OK, I'll Fill Them
+          </PrimaryButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog
+        open={showSuccessModal}
+        sx={{
+          "& .MuiPaper-root": {
+            borderRadius: "12px",
+            padding: "16px",
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontFamily: "Poppins, sans-serif",
+            color: "hsl(var(--success, #16a34a))",
+            fontSize: "28px",
+            textAlign: "center",
+            paddingBottom: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+          }}
+        >
+          <Box
+            sx={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              backgroundColor: "hsl(var(--success, #16a34a))",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✓
+          </Box>
+          Application Submitted Successfully!
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: "center", pb: 3 }}>
+          <Typography
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              color: "hsl(var(--foreground))",
+              fontSize: "16px",
+              mb: 2,
+            }}
+          >
+            Thank you for submitting your incubation application.
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              color: "hsl(var(--muted-foreground))",
+              fontSize: "14px",
+              lineHeight: 1.5,
+            }}
+          >
+            Your application for <strong>{formData.businessName}</strong> has been received and is being reviewed.
+            <br />
+            A confirmation notification has been sent and an email dispatched to the CEO.
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: "Poppins, sans-serif",
+              color: "hsl(var(--muted-foreground))",
+              fontSize: "14px",
+              mt: 2,
+              fontStyle: "italic",
+            }}
+          >
+            Redirecting in a few seconds...
+          </Typography>
+        </DialogContent>
+      </Dialog>
 
       {loading && <SubmitLoader />}
     </StyledBox>

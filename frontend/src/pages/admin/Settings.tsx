@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { Box, Typography, Switch, FormControlLabel, IconButton } from "@mui/material";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
 import { Settings2, Database, Bell, Shield, Palette, ArrowLeft } from "lucide-react";
@@ -6,6 +8,41 @@ import { useNavigate } from "react-router-dom";
 
 export const Settings = () => {
   const navigate = useNavigate();
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      navigate('/auth');
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsAuthLoading(false);
+  }, [navigate]);
+
+  if (isAuthLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "hsl(var(--background))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Loader2 size={32} className="animate-spin" />
+          <Typography variant="body1">Checking authentication...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box

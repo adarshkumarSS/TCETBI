@@ -1,12 +1,48 @@
+import { useEffect, useState } from "react";
 import { Box, Typography, Avatar, IconButton } from "@mui/material";
 import { Card, CardContent } from "@/components/ui/card";
 import { OutlinedTextField } from "@/components/ui/OutlinedTextField";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { User, Mail, Phone, MapPin, ArrowLeft } from "lucide-react";
+import { User, Mail, Phone, MapPin, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const AdminProfile = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      navigate('/auth');
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "hsl(var(--background))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Loader2 size={32} className="animate-spin" />
+          <Typography variant="body1">Checking authentication...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box

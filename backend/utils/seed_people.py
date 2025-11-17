@@ -64,7 +64,7 @@ def seed_people():
         "bio": "Dynamic leader with expertise in startup ecosystems and innovation management. "
                 "He has driven over 100 incubation programs and partnerships with global accelerators.",
         "experience": "15+ years",
-        "email": "ceo@tbi.edu.in",
+        "email": "adarshkumar@student.tce.edu",
         "linkedin": "https://www.linkedin.com/in/vinoth-rajendran-123456789/",
         "image": upload_to_cloudinary(os.path.join(base_dir, "asset/startup_owners/2.png")),
     }

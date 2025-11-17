@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Box, Typography, Modal, Backdrop, Fade, IconButton, Avatar, TextField, InputAdornment, Tabs, Tab } from "@mui/material";
 import { Search as SearchIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,10 +59,36 @@ export const Applications = () => {
   const [updating, setUpdating] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    loadApplications();
-  }, []);
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      navigate('/auth');
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsAuthLoading(false);
+  }, [navigate]);
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      const data = await getIncubationApplications();
+      setApplications(data.applications);
+    } catch (error) {
+      console.error("Failed to load applications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadApplications();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Filter applications based on search term and status
@@ -88,17 +114,13 @@ export const Applications = () => {
     setFilteredApplications(filtered);
   }, [applications, searchTerm, statusFilter]);
 
-  const loadApplications = async () => {
-    try {
-      setLoading(true);
-      const data = await getIncubationApplications();
-      setApplications(data.applications);
-    } catch (error) {
-      console.error("Failed to load applications:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Memoize status counts to prevent recalculation on every render
+  const statusCounts = useMemo(() => ({
+    all: applications.length,
+    pending: applications.filter(app => app.status === 'pending').length,
+    approved: applications.filter(app => app.status === 'approved').length,
+    rejected: applications.filter(app => app.status === 'rejected').length,
+  }), [applications]);
 
   const handleOpen = (app: Application) => {
     setSelectedApp(app);
@@ -137,6 +159,29 @@ export const Applications = () => {
       setUpdating(false);
     }
   };
+
+  if (isAuthLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "hsl(var(--background))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Loader2 size={32} className="animate-spin" />
+          <Typography variant="body1">Checking authentication...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box
@@ -236,19 +281,19 @@ export const Applications = () => {
           >
             <Tab
               value="all"
-              label={`All Applications (${applications.length})`}
+              label={`All Applications (${statusCounts.all})`}
             />
             <Tab
               value="pending"
-              label={`Pending (${applications.filter(app => app.status === 'pending').length})`}
+              label={`Pending (${statusCounts.pending})`}
             />
             <Tab
               value="approved"
-              label={`Approved (${applications.filter(app => app.status === 'approved').length})`}
+              label={`Approved (${statusCounts.approved})`}
             />
             <Tab
               value="rejected"
-              label={`Rejected (${applications.filter(app => app.status === 'rejected').length})`}
+              label={`Rejected (${statusCounts.rejected})`}
             />
           </Tabs>
         </Box>
@@ -568,17 +613,17 @@ export const Applications = () => {
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 2 }}>
                     <Box sx={{ p: 2, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Reference 1</Typography>
-                      <Typography variant="body2"><strong>Name:</strong> {selectedApp.reference1.name}</Typography>
-                      <Typography variant="body2"><strong>Mobile:</strong> {selectedApp.reference1.mobile}</Typography>
-                      <Typography variant="body2"><strong>Email:</strong> {selectedApp.reference1.email}</Typography>
-                      <Typography variant="body2"><strong>Address:</strong> {selectedApp.reference1.address}</Typography>
+                      <Typography variant="body2"><strong>Name:</strong> {selectedApp.reference1?.name || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Mobile:</strong> {selectedApp.reference1?.mobile || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Email:</strong> {selectedApp.reference1?.email || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Address:</strong> {selectedApp.reference1?.address || 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ p: 2, border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Reference 2</Typography>
-                      <Typography variant="body2"><strong>Name:</strong> {selectedApp.reference2.name}</Typography>
-                      <Typography variant="body2"><strong>Mobile:</strong> {selectedApp.reference2.mobile}</Typography>
-                      <Typography variant="body2"><strong>Email:</strong> {selectedApp.reference2.email}</Typography>
-                      <Typography variant="body2"><strong>Address:</strong> {selectedApp.reference2.address}</Typography>
+                      <Typography variant="body2"><strong>Name:</strong> {selectedApp.reference2?.name || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Mobile:</strong> {selectedApp.reference2?.mobile || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Email:</strong> {selectedApp.reference2?.email || 'N/A'}</Typography>
+                      <Typography variant="body2"><strong>Address:</strong> {selectedApp.reference2?.address || 'N/A'}</Typography>
                     </Box>
                   </Box>
 

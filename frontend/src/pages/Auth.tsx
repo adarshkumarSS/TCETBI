@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, Container, Typography, TextField, Button, IconButton, InputAdornment, Divider, useTheme } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, IconButton, InputAdornment, Divider, useTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Visibility, VisibilityOff, Google, LinkedIn, ArrowBack } from '@mui/icons-material';
 import { Link, useNavigate  } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
+import authService from '../api/authService';
 
 const StyledBox = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -164,6 +165,8 @@ export const Auth = () => {
     password: '',
     confirmPassword: '',
   });
+  const [loginError, setLoginError] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const validatePassword = (password: string) => {
     const minLength = 8;
@@ -207,18 +210,32 @@ export const Auth = () => {
 
   const navigate = useNavigate();
 
-   const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Handle form submission
-    console.log('Form submitted', formData);
-    
-    // Redirect to /admin page after login
-    if (isLogin) {
-      navigate('/admin');
-    } else {
-      // For registration, you might want to handle differently
-      // For now, we'll just log and stay on the same page
+
+    // Handle admin login
+    if (isLogin && formData.email && formData.password) {
+      try {
+        const response = await authService.adminLogin({
+          email: formData.email,
+          password: formData.password
+        });
+
+        // Store tokens
+        localStorage.setItem('admin_token', response.access);
+        localStorage.setItem('admin_refresh', response.refresh);
+        localStorage.setItem('admin_user', JSON.stringify(response.user));
+
+        // Redirect to admin dashboard
+        navigate('/admin');
+      } catch (error: any) {
+        console.error('Login failed:', error);
+        const errorMessage = error.response?.data?.error || 'Login failed. Please check your credentials.';
+        setLoginError(errorMessage);
+        setShowErrorModal(true);
+      }
+    } else if (!isLogin) {
+      // For user registration, you might want to handle differently
       console.log('Registration successful');
     }
   };
@@ -467,6 +484,45 @@ export const Auth = () => {
             </motion.div>
           </Box>
         </Box>
+
+        {/* Error Modal for Invalid Credentials */}
+        <Dialog
+          open={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle
+            sx={{
+              color: 'hsl(var(--destructive))',
+              fontFamily: 'Poppins, sans-serif',
+              fontWeight: 600,
+            }}
+          >
+            Login Failed
+          </DialogTitle>
+          <DialogContent>
+            <Typography
+              sx={{
+                fontFamily: 'Poppins, sans-serif',
+                color: 'hsl(var(--foreground))',
+              }}
+            >
+              {loginError}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setShowErrorModal(false)}
+              sx={{
+                fontFamily: 'Poppins, sans-serif',
+                color: 'hsl(var(--primary))',
+              }}
+            >
+              Try Again
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </StyledBox>
   );

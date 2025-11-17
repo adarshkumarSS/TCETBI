@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,6 +15,7 @@ import {
   Linkedin,
   Building2,
   UserCog,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -65,6 +66,41 @@ const cards = [
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      navigate('/auth');
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "hsl(var(--background))",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Loader2 size={32} className="animate-spin" />
+          <Typography variant="body1">Checking authentication...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box

@@ -103,16 +103,33 @@ export const AdminNavigation: React.FC = () => {
   };
 
   const [notifCount, setNotifCount] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const notifs = await fetchNotifications();
-        setNotifCount(notifs.filter((n) => !n.is_read).length);
-      } catch {}
+        const token = localStorage.getItem('admin_token');
+        setIsLoggedIn(!!token);
+        if (token) {
+          const notifs = await fetchNotifications();
+          setNotifCount(notifs.filter((n) => !n.is_read).length);
+        }
+      } catch (error) {
+        console.log('Error loading notifications:', error);
+        setNotifCount(0);
+        // If we get a 401, token might be invalid - this will be handled by the interceptor
+      }
     };
     load();
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refresh');
+    localStorage.removeItem('admin_user');
+    setIsLoggedIn(false);
+    window.location.href = '/';
+  };
 
 
 
@@ -223,8 +240,9 @@ export const AdminNavigation: React.FC = () => {
               )}
             </IconButton>
 
-            <Link to="/auth" style={{ textDecoration: "none" }}>
+            {isLoggedIn ? (
               <IconButton
+                onClick={handleLogout}
                 sx={{
                   color: "hsl(var(--foreground))",
                   "&:hover": {
@@ -232,9 +250,22 @@ export const AdminNavigation: React.FC = () => {
                   },
                 }}
               >
-                <LogIn size={20} />
+                <LogOut size={20} />
               </IconButton>
-            </Link>
+            ) : (
+              <Link to="/auth" style={{ textDecoration: "none" }}>
+                <IconButton
+                  sx={{
+                    color: "hsl(var(--foreground))",
+                    "&:hover": {
+                      backgroundColor: "hsl(var(--muted))",
+                    },
+                  }}
+                >
+                  <LogIn size={20} />
+                </IconButton>
+              </Link>
+            )}
           </Box>
         </Toolbar>
       </StyledAppBar>
