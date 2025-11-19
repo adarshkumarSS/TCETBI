@@ -34,6 +34,8 @@ import { CurrentIncubators } from "./pages/admin/CurrentIncubators";
 import { AdminProfile } from "./pages/admin/AdminProfile";
 import { StartupDetailPage } from "./pages/StartupDetailPage";
 import { NotificationsPage } from "./pages/admin/NotificationPage";
+import { UserManagement } from "./pages/admin/UserManagement";
+import { UserDashboard } from "./pages/UserDashboard";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
@@ -148,6 +150,15 @@ const router = createBrowserRouter(
       element: <ApplyIncubation />,
     },
     {
+      path: "/user/dashboard",
+      element: (
+        <>
+          <AppContent />
+          <UserDashboard />
+        </>
+      ),
+    },
+    {
       path: "/admin",
       element: (
         <>
@@ -229,6 +240,15 @@ const router = createBrowserRouter(
       ),
     },
     {
+      path: "/admin/users",
+      element: (
+        <>
+          <AppContent />
+          <UserManagement />
+        </>
+      ),
+    },
+    {
       path: "/test",
       element: (
         <>
@@ -253,11 +273,27 @@ const App = () => {
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
 
   useEffect(() => {
+    // Load saved theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // Fallback to system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
           const isDark = document.documentElement.classList.contains('dark');
           setThemeMode(isDark ? 'dark' : 'light');
+          // Save to localStorage when theme changes
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
       });
     });

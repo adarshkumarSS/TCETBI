@@ -338,15 +338,10 @@ export const ApplyIncubation = () => {
       const result = await submitIncubationApplication(form);
       console.log("FORM SUBMIT: Success", result);
 
-      // Show success modal for 3 seconds, then navigate
+      // Show success modal
       setLoading(false); // Remove loading indicator
       setShowSuccessModal(true);
-
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        submitRef.current = false; // Reset for next submission
-        navigate("/contact");
-      }, 3000);
+      submitRef.current = false; // Reset for next submission
 
       return; // Don't execute finally block
     } catch (err) {
@@ -1336,9 +1331,22 @@ export const ApplyIncubation = () => {
               fontStyle: "italic",
             }}
           >
-            Redirecting in a few seconds...
+            Click the button below to continue.
           </Typography>
         </DialogContent>
+        <DialogActions sx={{ px: 4, pb: 3, justifyContent: "center" }}>
+          <PrimaryButton
+            onClick={() => {
+              setShowSuccessModal(false);
+              navigate("/contact");
+            }}
+            sx={{
+              minWidth: "200px",
+            }}
+          >
+            Go to Contact Page
+          </PrimaryButton>
+        </DialogActions>
       </Dialog>
 
       {loading && <SubmitLoader />}

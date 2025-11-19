@@ -234,6 +234,7 @@ class Notification(models.Model):
     NOTI_TYPES = (
         ("contact", "Contact Message"),
         ("application", "Incubation Application"),
+        ("user_registration", "User Registration"),
         ("blog", "Blog Update"),
         ("program", "Program Update"),
         ("general", "General"),
@@ -303,3 +304,36 @@ class IncubationApplication(models.Model):
 
     def __str__(self):
         return f"{self.fullName} - {self.businessName}"
+
+
+from django.contrib.auth.models import AbstractUser
+
+class AppUser(AbstractUser):
+    STATUS_CHOICES = (
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('blocked', 'Blocked'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name='appuser_set',
+        related_query_name='appuser',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='appuser_set',
+        related_query_name='appuser',
+    )
+
+    def __str__(self):
+        return f"{self.username} ({self.status})"

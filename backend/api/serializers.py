@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser
+import os
+from django.contrib.auth.models import User as DjangoUser
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -137,3 +139,45 @@ class IncubationSerializer(serializers.ModelSerializer):
     class Meta:
         model = IncubationApplication
         fields = "__all__"
+
+class AppUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppUser
+        fields = ['id', 'username', 'email', 'full_name', 'phone', 'status', 'date_joined', 'last_login', 'is_staff', 'is_superuser']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+    password_confirm = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = AppUser
+        fields = ['username', 'email', 'full_name', 'phone', 'password', 'password_confirm']
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError("Passwords do not match")
+
+        # Check email uniqueness
+        if AppUser.objects.filter(email=data['email']).exists():
+            raise serializers.ValidationError("A user with this email id already exists")
+
+        # Check email not admin or CEO
+        admin_email = os.getenv('ADMIN_EMAIL', 'admin@tcetbi.edu')
+        ceo = TBICEO.objects.first()
+        ceo_email = ceo.email if ceo else None
+
+        if data['email'].lower() == admin_email.lower():
+            raise serializers.ValidationError("You cannot register with admin email")
+
+        if ceo_email and data['email'].lower() == ceo_email.lower():
+            raise serializers.ValidationError("You cannot register with CEO email")
+
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = AppUser.objects.create_user(**validated_data)
+        return user

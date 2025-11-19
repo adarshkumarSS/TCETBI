@@ -81,12 +81,23 @@ export const AdminNavigation: React.FC = () => {
   const isHome = location.pathname === "/";
 
   useEffect(() => {
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    setIsDarkMode(prefersDark);
-    if (prefersDark) {
+    // Check for saved theme in localStorage first
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
       document.documentElement.classList.add("dark");
+    } else if (savedTheme === 'light') {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove("dark");
+    } else {
+      // Fallback to system preference
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      setIsDarkMode(prefersDark);
+      if (prefersDark) {
+        document.documentElement.classList.add("dark");
+      }
     }
 
     const handleScroll = () => {
@@ -100,6 +111,8 @@ export const AdminNavigation: React.FC = () => {
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle("dark");
+    const isDark = document.documentElement.classList.contains("dark");
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
   };
 
   const [notifCount, setNotifCount] = useState(0);

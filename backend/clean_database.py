@@ -53,7 +53,7 @@ def clear_cloudinary(folder_prefix="TCETBI"):
             return
 
         # Batch delete all resources
-        result = cloudinary.api.delete_resources(all_public_ids, resource_type="auto")
+        result = cloudinary.api.delete_resources(all_public_ids)
         deleted = result.get("deleted", {})
 
         print(f"✅ Deleted {len(deleted)} images and PDFs from Cloudinary.")

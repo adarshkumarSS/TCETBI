@@ -15,10 +15,23 @@ interface User {
   is_superuser: boolean;
 }
 
+interface UserAuth {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+}
+
 interface AuthResponse {
   refresh: string;
   access: string;
   user: User;
+}
+
+interface UserAuthResponse {
+  refresh: string;
+  access: string;
+  user: UserAuth;
 }
 
 interface PasswordChangeData {
@@ -27,8 +40,22 @@ interface PasswordChangeData {
   confirm_password: string;
 }
 
+interface UserRegistrationData {
+  username: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  password: string;
+  password_confirm: string;
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const getUserAuthHeaders = () => {
+  const token = localStorage.getItem('user_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -66,6 +93,28 @@ export const authService = {
     });
     return response.data;
   },
+
+  async userRegister(data: UserRegistrationData): Promise<{message: string, user: User}> {
+    const response = await axios.post(`${BASE_URL}/auth/user-register/`, data);
+    return response.data;
+  },
+
+  async userLogin(data: {username: string, password: string}): Promise<UserAuthResponse> {
+    const response = await axios.post<UserAuthResponse>(`${BASE_URL}/auth/user-login/`, data);
+    return response.data;
+  },
+
+  async userLogout(): Promise<void> {
+    const refresh = localStorage.getItem('user_refresh');
+    if (refresh) {
+      await axios.post(`${BASE_URL}/auth/user-logout/`, { refresh }, {
+        headers: getUserAuthHeaders()
+      });
+    }
+  },
+
+  // User auth headers getter for other services
+  getUserAuthHeaders: getUserAuthHeaders,
 };
 
 export default authService;

@@ -5,12 +5,14 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from django.forms import ValidationError
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as DjangoUser
+from .models import AppUser
 from django.core.cache import cache
 import os
+import json
 
-from .models import Notification, IncubationApplication, TBICEO
-from .serializers import ContactMessageSerializer, NotificationSerializer
+from .models import Notification, IncubationApplication, TBICEO, AppUser
+from .serializers import ContactMessageSerializer, NotificationSerializer, UserRegistrationSerializer, AppUserSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import parser_classes
 from .serializers import IncubationSerializer
@@ -276,9 +278,9 @@ def submit_incubation(request):
             "email": str(data.get("reference1Email", "")).strip(),
             "address": str(data.get("reference1Address", "")).strip(),
         }
-        data["reference1"] = reference1 if any(reference1.values()) else {}
+        data["reference1"] = json.dumps(reference1 if any(reference1.values()) else {})
     else:
-        data["reference1"] = {}
+        data["reference1"] = json.dumps({})
 
     if ref2_exists:
         reference2 = {
@@ -287,9 +289,9 @@ def submit_incubation(request):
             "email": str(data.get("reference2Email", "")).strip(),
             "address": str(data.get("reference2Address", "")).strip(),
         }
-        data["reference2"] = reference2 if any(reference2.values()) else {}
+        data["reference2"] = json.dumps(reference2 if any(reference2.values()) else {})
     else:
-        data["reference2"] = {}
+        data["reference2"] = json.dumps({})
 
     # Remove the individual reference fields
     fields_to_remove = [
@@ -367,19 +369,34 @@ def update_application_status(request, id):
 
 # Authentication Views
 def create_admin_user():
-    """Create admin user if it doesn't exist"""
+    """Create admin user as AppUser instance if it doesn't exist"""
     admin_email = os.getenv('ADMIN_EMAIL', 'admin@tcetbi.edu')
     admin_password = os.getenv('ADMIN_PASSWORD', 'Admin@123')
-    if not User.objects.filter(username=admin_email).exists():
-        User.objects.create_superuser(
-            username=admin_email,
-            email=admin_email,
-            password=admin_password,
-            is_staff=True,
-            is_superuser=True,
-            first_name='Admin',
-            last_name='TCETBI'
-        )
+    try:
+        if not AppUser.objects.filter(username=admin_email).exists():
+            user = AppUser.objects.create_user(
+                username=admin_email,
+                email=admin_email,
+                password=admin_password,
+                full_name='Admin TCETBI',
+                phone='',
+                status='approved'
+            )
+            # Mark as admin by setting special attributes
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+            print(f"✅ Admin user created: {user.username} (AppUser)")
+        else:
+            user = AppUser.objects.get(username=admin_email)
+            user.set_password(admin_password)
+            user.is_staff = True
+            user.is_superuser = True
+            user.status = 'approved'
+            user.save()
+            print(f"✅ Admin user updated: {user.username} (AppUser)")
+    except Exception as e:
+        print(f"❌ Error creating admin user: {e}")
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -393,14 +410,13 @@ def admin_login(request):
     # Create admin user if not exists
     create_admin_user()
 
-    # Authenticate using email as username (since we set username to email)
-    user = authenticate(username=email, password=password)
-
-    if user is None:
+    try:
+        # Since AUTH_USER_MODEL is AppUser now, we use AppUser instead of DjangoUser
+        user = AppUser.objects.get(username=email)
+        if not user.check_password(password) or not user.is_staff:
+            return Response({'error': 'Invalid credentials or access denied'}, status=status.HTTP_401_UNAUTHORIZED)
+    except AppUser.DoesNotExist:
         return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
-
-    if not user.is_staff:
-        return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
 
     refresh = RefreshToken.for_user(user)
     return Response({
@@ -416,7 +432,7 @@ def admin_login(request):
     })
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def refresh_token(request):
     refresh_token = request.data.get('refresh')
     if not refresh_token:
@@ -428,6 +444,17 @@ def refresh_token(request):
         return Response({'access': access_token})
     except Exception as e:
         return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def user_logout(request):
+    try:
+        refresh_token = request.data.get('refresh')
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        return Response({'message': 'Successfully logged out'})
+    except Exception as e:
+        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -500,3 +527,170 @@ def change_admin_password(request):
         pass
 
     return Response({'message': 'Password changed successfully'})
+
+# User Views
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_register(request):
+    serializer = UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        # Create notification for admin
+        Notification.objects.create(
+            type="user_registration",
+            title="New User Registration",
+            message=f"User {user.full_name} ({user.email}) registered and is waiting for approval.",
+            meta={
+                "user_id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "phone": user.phone,
+            }
+        )
+        return Response({
+            'message': 'Registration successful. Your account is pending admin approval.',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'full_name': user.full_name,
+            }
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    if not username or not password:
+        return Response({'error': 'Please provide both username and password'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Use Django's authenticate function with our custom backend
+    user = authenticate(username=username, password=password)
+
+    if user is None:
+        return Response({'error': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Check user status after authentication
+    if user.status == 'pending':
+        # Get CEO contact details
+        ceo = TBICEO.objects.first()
+        ceo_info = {}
+        if ceo:
+            ceo_info = {
+                'name': ceo.name,
+                'position': ceo.position,
+                'email': ceo.email,
+            }
+
+        return Response({
+            'error': 'Account pending approval',
+            'message': 'Your account is waiting for admin approval. Please contact the administrator for status update.',
+            'action': 'Contact admin to approve your account',
+            'ceo_contact': ceo_info,
+            'user_status': 'pending'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    elif user.status == 'blocked':
+        # Get CEO contact details
+        ceo = TBICEO.objects.first()
+        ceo_info = {}
+        if ceo:
+            ceo_info = {
+                'name': ceo.name,
+                'position': ceo.position,
+                'email': ceo.email,
+            }
+
+        return Response({
+            'error': 'Account blocked',
+            'message': 'Your account has been blocked. Please contact the administrator to unblock your account.',
+            'action': 'Contact admin to unblock your account',
+            'ceo_contact': ceo_info,
+            'user_status': 'blocked'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # User is approved, proceed with login
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'full_name': user.full_name if hasattr(user, 'full_name') else getattr(user, 'first_name', ''),
+        }
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_users(request):
+    # Check if user is Django User (admin) with staff rights
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    users = AppUser.objects.all().order_by('-date_joined')
+    serializer = AppUserSerializer(users, many=True)
+    return Response({'users': serializer.data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_user_status(request, user_id):
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        user = AppUser.objects.get(id=user_id)
+        new_status = request.data.get('status')
+        if new_status in ['pending', 'approved', 'blocked']:
+            user.status = new_status
+            user.save()
+            return Response({'message': f'User status updated to {new_status}'})
+        else:
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+    except AppUser.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_user(request, user_id):
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        user = AppUser.objects.get(id=user_id)
+        user.delete()
+        return Response({'message': 'User deleted successfully'})
+    except AppUser.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_pending_users(request):
+    if not request.user.is_staff:
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    users = AppUser.objects.filter(status='pending').order_by('-date_joined')
+    serializer = AppUserSerializer(users, many=True)
+    return Response({'users': serializer.data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_user(request):
+    if not request.user.is_staff:
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        # Set as approved since admin is creating directly
+        user.status = 'approved'
+        user.save()
+        return Response({
+            'message': 'User created successfully.',
+            'user': AppUserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

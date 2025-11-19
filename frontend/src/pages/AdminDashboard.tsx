@@ -11,7 +11,6 @@ import {
   FileEdit,
   ClipboardList,
   Settings,
-  XCircle,
   Linkedin,
   Building2,
   UserCog,
@@ -39,12 +38,6 @@ const cards = [
     path: "/admin/settings",
   },
   {
-    icon: <XCircle size={28} color="#DC2626" />, // Red
-    title: "Rejected Applications",
-    description: "View declined applications",
-    path: "/admin/rejected",
-  },
-  {
     icon: <Linkedin size={28} color="#2563EB" />, // Blue
     title: "LinkedIn Posts",
     description: "Manage social media content",
@@ -58,6 +51,12 @@ const cards = [
   },
   {
     icon: <UserCog size={28} color="#10B981" />, // Emerald
+    title: "User Management",
+    description: "Manage registered users",
+    path: "/admin/users",
+  },
+  {
+    icon: <UserCog size={28} color="#EF4444" />, // Red
     title: "Admin Profile",
     description: "Manage your account",
     path: "/admin/profile",

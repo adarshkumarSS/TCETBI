@@ -11,7 +11,8 @@ from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
     submit_incubation, get_incubation_applications, update_application_status,
-    admin_login, refresh_token, admin_logout, admin_profile, change_admin_password
+    admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password,
+    user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user
 )
 
 router = DefaultRouter()
@@ -66,5 +67,15 @@ urlpatterns = [
     path('auth/admin-logout/', admin_logout, name='admin_logout'),
     path('auth/admin-profile/', admin_profile, name='admin_profile'),
     path('auth/change-password/', change_admin_password, name='change_password'),
+
+    # User endpoints
+    path('auth/user-register/', user_register, name='user_register'),
+    path('auth/user-login/', user_login, name='user_login'),
+    path('auth/user-logout/', user_logout, name='user_logout'),
+    path('users/', get_users, name='get_users'),
+    path('users/<int:user_id>/status/', update_user_status, name='update_user_status'),
+    path('users/<int:user_id>/', delete_user, name='delete_user'),
+    path('users/pending/', get_pending_users, name='get_pending_users'),
+    path('users/create/', create_user, name='create_user'),
 
 ]

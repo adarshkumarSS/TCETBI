@@ -61,7 +61,7 @@ export interface Notification {
   id: number;
   title: string;
   message: string;
-  type: "contact" | "program" | "blog" | "application" | "general";
+  type: "contact" | "program" | "blog" | "application" | "user_registration" | "general";
   is_read: boolean;
   created_at: string;
 

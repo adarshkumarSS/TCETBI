@@ -10,6 +10,9 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-key")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Custom User Model
+AUTH_USER_MODEL = 'api.AppUser'  # Using AppUser as the main user model
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -125,6 +128,12 @@ cloudinary.config(
 )
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# Custom Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'api.backends.MultiModelAuthBackend',  # Custom backend for multiple user models
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
