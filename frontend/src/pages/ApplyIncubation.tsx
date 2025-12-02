@@ -294,6 +294,10 @@ export const ApplyIncubation = () => {
     // Declaration
     if (!formData.declaration) errors.push("Declaration agreement");
 
+    // File Validation
+    if (!profileFile && !profileImage) errors.push("Profile Photo");
+    if (!resumeFile) errors.push("Resume");
+
     return errors;
   };
 

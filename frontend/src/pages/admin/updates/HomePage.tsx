@@ -11,7 +11,11 @@ import { removeImageBackground } from "@/utils/removeBackground";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { deleteSuccessStory } from "@/api/homeService";
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+  setIsDirty?: (isDirty: boolean) => void;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -53,6 +57,7 @@ export const HomePage: React.FC = () => {
       ...data,
       vision_mission: { ...data.vision_mission, [field]: value },
     });
+    setIsDirty?.(true);
   };
 
   const handleAchievementChange = (
@@ -64,6 +69,7 @@ export const HomePage: React.FC = () => {
     const updated = [...data.achievements];
     updated[index] = { ...updated[index], [field]: value };
     setData({ ...data, achievements: updated });
+    setIsDirty?.(true);
   };
 
   const handleLogoChange = (
@@ -76,6 +82,7 @@ export const HomePage: React.FC = () => {
     const updated = [...data[type]];
     updated[index] = { ...updated[index], [field]: value };
     setData({ ...data, [type]: updated });
+    setIsDirty?.(true);
   };
 
   const handleSuccessStoryChange = (
@@ -87,6 +94,7 @@ export const HomePage: React.FC = () => {
     const updated = [...data.success_stories];
     updated[index] = { ...updated[index], [field]: value };
     setData({ ...data, success_stories: updated });
+    setIsDirty?.(true);
   };
 
   // 🔹 Modal-based delete confirmation
@@ -137,6 +145,7 @@ export const HomePage: React.FC = () => {
           updated.state_logos = data.state_logos.filter((_, i) => i !== index);
         }
         setData(updated);
+        setIsDirty?.(true);
       }
     } catch (error) {
       console.error("❌ Error deleting success story:", error);
@@ -167,13 +176,13 @@ export const HomePage: React.FC = () => {
   };
 
   // ✅ Cropping + background removal
-  const handleCroppedImageSave = async (croppedFile: File) => {
+  const handleCroppedImageSave = async (croppedFile: File, removeBg: boolean) => {
     if (!data || !uploadContext) return;
 
     let imageURL = URL.createObjectURL(croppedFile);
 
-    // ✅ Only remove background for logos, not for success stories
-    if (uploadContext.type === "govtIndia" || uploadContext.type === "govtTN") {
+    // ✅ Remove background if requested
+    if (removeBg) {
       try {
         const bgRemoved = await removeImageBackground(croppedFile);
         if (bgRemoved) imageURL = bgRemoved;
@@ -186,14 +195,17 @@ export const HomePage: React.FC = () => {
       const updated = [...data.govt_logos];
       updated[uploadContext.index].src = imageURL;
       setData({ ...data, govt_logos: updated });
+      setIsDirty?.(true);
     } else if (uploadContext.type === "govtTN") {
       const updated = [...data.state_logos];
       updated[uploadContext.index].src = imageURL;
       setData({ ...data, state_logos: updated });
+      setIsDirty?.(true);
     } else if (uploadContext.type === "successStory") {
       const updated = [...data.success_stories];
       updated[uploadContext.index].image = imageURL;
       setData({ ...data, success_stories: updated });
+      setIsDirty?.(true);
     }
 
     setResizeModalOpen(false);
@@ -213,6 +225,7 @@ export const HomePage: React.FC = () => {
     } else if (addModal.type === "successStory") {
       setData({ ...data, success_stories: [...data.success_stories, newData] });
     }
+    setIsDirty?.(true);
   };
 
   // ✅ Save data to backend
@@ -262,6 +275,7 @@ export const HomePage: React.FC = () => {
       setMessageText(response.message || "✅ Data updated successfully!");
       setMessageType("success");
       setMessageOpen(true);
+      setIsDirty?.(false);
     } catch (error: any) {
       console.error("Error updating data:", error);
       const msg =

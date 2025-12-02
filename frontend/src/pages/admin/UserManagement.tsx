@@ -83,32 +83,39 @@ export const UserManagement = () => {
   };
 
   const handleToggleBlock = async (userId: number, currentStatus: string) => {
+    // If currently blocked, approve. If approved or pending, block.
     const newStatus = currentStatus === "blocked" ? "approved" : "blocked";
     try {
       await userService.updateUserStatus(userId, newStatus);
+      setSnackbar({ open: true, message: `User ${newStatus === 'blocked' ? 'blocked' : 'unblocked'} successfully`, severity: 'success' });
       loadUsers();
     } catch (error) {
       console.error("Failed to update user status:", error);
+      setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
     }
   };
 
   const handleSetToPending = async (userId: number) => {
     try {
       await userService.updateUserStatus(userId, "pending");
+      setSnackbar({ open: true, message: 'User status set to pending', severity: 'success' });
       loadUsers();
       loadPendingUsers(); // Also refresh pending users since they might appear there now
     } catch (error) {
       console.error("Failed to set user status to pending:", error);
+      setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
     }
   };
 
   const handleDeleteUser = async (userId: number) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       try {
         await userService.deleteUser(userId);
+        setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
         loadUsers();
       } catch (error) {
         console.error("Failed to delete user:", error);
+        setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
       }
     }
   };
@@ -133,7 +140,15 @@ export const UserManagement = () => {
       setCreateUserForm({ email: '', password: '', full_name: '', phone: '' });
       loadUsers(); // Refresh the users list
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to create user.';
+      console.error("Create user error:", error);
+      let errorMessage = 'Failed to create user.';
+      if (error.response?.data) {
+        if (error.response.data.error) errorMessage = error.response.data.error;
+        else if (error.response.data.message) errorMessage = error.response.data.message;
+        else if (error.response.data.email) errorMessage = `Email: ${error.response.data.email[0]}`;
+        else if (error.response.data.username) errorMessage = `Username: ${error.response.data.username[0]}`;
+        else if (error.response.data.password) errorMessage = `Password: ${error.response.data.password[0]}`;
+      }
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     } finally {
       setUserCreationLoading(false);
@@ -172,7 +187,7 @@ export const UserManagement = () => {
       sx={{
         minHeight: "100vh",
         backgroundColor: "hsl(var(--background))",
-        pt: 12,
+        pt: 16,
         px: 4,
       }}
     >

@@ -5,11 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
 import { Settings2, Database, Bell, Shield, Palette, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const Settings = () => {
   const navigate = useNavigate();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [settings, setSettings] = useState({
+    enableNotifications: true,
+    maintenanceMode: false,
+    allowNewApplications: true,
+    emailNotifications: true,
+    pushNotifications: true,
+    smsNotifications: false,
+    darkMode: false,
+  });
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -19,9 +29,22 @@ export const Settings = () => {
       setIsAuthenticated(true);
     }
     setIsAuthLoading(false);
+
+    const savedSettings = localStorage.getItem('admin_settings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
   }, [navigate]);
 
+  const handleSettingChange = (setting: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newSettings = { ...settings, [setting]: event.target.checked };
+    setSettings(newSettings);
+    localStorage.setItem('admin_settings', JSON.stringify(newSettings));
+    toast.success("Settings updated");
+  };
+
   if (isAuthLoading) {
+    // ... (keep existing loading state)
     return (
       <Box
         sx={{
@@ -97,17 +120,17 @@ export const Settings = () => {
             </CardHeader>
             <CardContent>
               <FormControlLabel
-                control={<Switch defaultChecked />}
+                control={<Switch checked={settings.enableNotifications} onChange={handleSettingChange('enableNotifications')} />}
                 label="Enable Notifications"
                 sx={{ mb: 2, display: "block" }}
               />
               <FormControlLabel
-                control={<Switch />}
+                control={<Switch checked={settings.maintenanceMode} onChange={handleSettingChange('maintenanceMode')} />}
                 label="Maintenance Mode"
                 sx={{ mb: 2, display: "block" }}
               />
               <FormControlLabel
-                control={<Switch defaultChecked />}
+                control={<Switch checked={settings.allowNewApplications} onChange={handleSettingChange('allowNewApplications')} />}
                 label="Allow New Applications"
                 sx={{ display: "block" }}
               />
@@ -122,13 +145,13 @@ export const Settings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <DarkButton fullWidth sx={{ mb: 2 }}>
+              <DarkButton fullWidth sx={{ mb: 2 }} onClick={() => toast.info("Database backup coming soon")}>
                 Backup Database
               </DarkButton>
-              <DarkButton fullWidth sx={{ mb: 2 }}>
+              <DarkButton fullWidth sx={{ mb: 2 }} onClick={() => toast.info("Data export coming soon")}>
                 Export Data
               </DarkButton>
-              <DarkButton fullWidth>Clear Cache</DarkButton>
+              <DarkButton fullWidth onClick={() => toast.info("Cache clear coming soon")}>Clear Cache</DarkButton>
             </CardContent>
           </Card>
 
@@ -141,17 +164,17 @@ export const Settings = () => {
             </CardHeader>
             <CardContent>
               <FormControlLabel
-                control={<Switch defaultChecked />}
+                control={<Switch checked={settings.emailNotifications} onChange={handleSettingChange('emailNotifications')} />}
                 label="Email Notifications"
                 sx={{ mb: 2, display: "block" }}
               />
               <FormControlLabel
-                control={<Switch defaultChecked />}
+                control={<Switch checked={settings.pushNotifications} onChange={handleSettingChange('pushNotifications')} />}
                 label="Push Notifications"
                 sx={{ mb: 2, display: "block" }}
               />
               <FormControlLabel
-                control={<Switch />}
+                control={<Switch checked={settings.smsNotifications} onChange={handleSettingChange('smsNotifications')} />}
                 label="SMS Notifications"
                 sx={{ display: "block" }}
               />
@@ -166,13 +189,13 @@ export const Settings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <DarkButton fullWidth sx={{ mb: 2 }}>
+              <DarkButton fullWidth sx={{ mb: 2 }} onClick={() => toast.info("Password change coming soon")}>
                 Change Password
               </DarkButton>
-              <DarkButton fullWidth sx={{ mb: 2 }}>
+              <DarkButton fullWidth sx={{ mb: 2 }} onClick={() => toast.info("2FA coming soon")}>
                 Two-Factor Auth
               </DarkButton>
-              <DarkButton fullWidth>View Audit Logs</DarkButton>
+              <DarkButton fullWidth onClick={() => toast.info("Audit logs coming soon")}>View Audit Logs</DarkButton>
             </CardContent>
           </Card>
 
@@ -189,7 +212,7 @@ export const Settings = () => {
                 label="Dark Mode"
                 sx={{ mb: 2, display: "block" }}
               />
-              <DarkButton fullWidth>Reset Theme</DarkButton>
+              <DarkButton fullWidth onClick={() => toast.info("Theme reset coming soon")}>Reset Theme</DarkButton>
             </CardContent>
           </Card>
         </Box>

@@ -6,19 +6,20 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from django.forms import ValidationError
 from django.contrib.auth.models import User as DjangoUser
-from .models import AppUser
+from .models import AppUser, UserCompanyRequest
 from django.core.cache import cache
 import os
 import json
 
-from .models import Notification, IncubationApplication, TBICEO, AppUser
-from .serializers import ContactMessageSerializer, NotificationSerializer, UserRegistrationSerializer, AppUserSerializer
+from .models import Notification, IncubationApplication, TBICEO, AppUser, UserCompanyRequest, Startup, CEO
+from .serializers import ContactMessageSerializer, NotificationSerializer, UserRegistrationSerializer, AppUserSerializer, UserCompanyRequestSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import parser_classes
 from .serializers import IncubationSerializer
 import cloudinary.uploader
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
+from ..utils.cloudinary_utils import delete_cloudinary_image
 
 @api_view(["POST"])
 def submit_contact_message(request):
@@ -694,3 +695,433 @@ def create_user(request):
             'user': AppUserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    serializer = AppUserSerializer(request.user)
+    return Response({'user': serializer.data})
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request):
+    user = request.user
+    serializer = AppUserSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'message': 'Profile updated successfully',
+            'user': serializer.data
+        })
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# User Company Request Views
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_company_request(request):
+    # Get the most recent request that's not rejected, or the most recent rejected one if all are rejected
+    company_requests = UserCompanyRequest.objects.filter(user=request.user).order_by('-created_at')
+
+    # First try to find a non-rejected request
+    active_request = company_requests.exclude(status='rejected').first()
+
+    # If no active request, get the most recent rejected one
+    if not active_request:
+        active_request = company_requests.filter(status='rejected').first()
+
+    # If no requests at all, check if user has an approved startup for potential edit requests
+    if not active_request:
+        # Check if user has any approved companies
+        approved_requests = UserCompanyRequest.objects.filter(
+            user=request.user,
+            status='approved',
+            is_edit_request=False
+        ).order_by('-created_at')
+
+        if approved_requests.exists():
+            # User has approved company, return a placeholder for edit request creation
+            return Response({
+                'company_request': None,
+                'has_approved_company': True,
+                'approved_company': UserCompanyRequestSerializer(approved_requests.first()).data
+            })
+
+    if active_request:
+        serializer = UserCompanyRequestSerializer(active_request)
+        return Response({'company_request': serializer.data})
+    else:
+        return Response({'company_request': None})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_or_update_company_request(request):
+    user = request.user
+
+    # Check if user has any active (non-rejected) requests
+    active_requests = UserCompanyRequest.objects.filter(
+        user=user
+    ).exclude(status='rejected')
+
+    if active_requests.exists():
+        # Get the most recent active request
+        company_request = active_requests.order_by('-created_at').first()
+
+        if company_request.status in ['submitted', 'approved']:
+            return Response({
+                'error': 'Cannot modify request while it is under review or approved. Wait for admin decision.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update existing request
+        # Check for image replacements and delete old images from Cloudinary
+        if 'logo' in request.data and request.data['logo'] != company_request.logo:
+            delete_cloudinary_image(company_request.logo)
+        
+        if 'ceo_image' in request.data and request.data['ceo_image'] != company_request.ceo_image:
+            delete_cloudinary_image(company_request.ceo_image)
+
+        serializer = UserCompanyRequestSerializer(company_request, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Company details saved as draft',
+                'company_request': serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # Check if user has rejected requests - allow editing the most recent one
+        rejected_requests = UserCompanyRequest.objects.filter(
+            user=user,
+            status='rejected'
+        ).order_by('-created_at')
+
+        if rejected_requests.exists():
+            # Get the most recent rejected request to edit
+            company_request = rejected_requests.first()
+
+            # Reset to draft status when editing
+            request.data['status'] = 'draft'
+            serializer = UserCompanyRequestSerializer(company_request, data=request.data, partial=True)
+            if serializer.is_valid():
+                company_request = serializer.save()
+                return Response({
+                    'message': 'Company details updated from previous rejection',
+                    'company_request': serializer.data
+                })
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # No requests at all - create new one
+            serializer = UserCompanyRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                company_request = serializer.save(user=user)
+                return Response({
+                    'message': 'Company details saved as draft',
+                    'company_request': UserCompanyRequestSerializer(company_request).data
+                })
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_company_request(request):
+    user = request.user
+
+    # Get the most recent draft request (should be the one user just edited)
+    # First try to get draft requests, if none exist, check if user has any requests at all
+    company_request = UserCompanyRequest.objects.filter(
+        user=user,
+        status='draft'
+    ).order_by('-updated_at').first()
+
+    # If no draft requests, check if user has any requests and get the most recent one
+    if not company_request:
+        company_request = UserCompanyRequest.objects.filter(
+            user=user
+        ).order_by('-updated_at').first()
+
+        if not company_request:
+            return Response({'error': 'No company request found. Please create a request first.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # If the request is not draft, it might be rejected - allow resubmission
+        if company_request.status != 'draft':
+            company_request.status = 'draft'
+            company_request.save()
+
+    # Validate required fields
+    required_fields = ['name', 'description', 'sector', 'founded', 'website', 'location']
+    missing_fields = [field for field in required_fields if not getattr(company_request, field)]
+
+    if missing_fields:
+        return Response({
+            'error': f'Missing required fields: {", ".join(missing_fields)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    company_request.status = 'submitted'
+    company_request.save()
+
+    # Create notification for admin
+    if company_request.is_edit_request:
+        notification_title = f"Company Edit Request: {company_request.name}"
+        notification_message = f"User {user.full_name} ({user.email}) submitted an edit request for their approved company."
+    else:
+        notification_title = f"New Company Portfolio Request: {company_request.name}"
+        notification_message = f"User {user.full_name} ({user.email}) submitted company details for portfolio inclusion."
+
+    Notification.objects.create(
+        type="company_request",
+        title=notification_title,
+        message=notification_message,
+        meta={
+            "user_id": user.id,
+            "company_request_id": company_request.id,
+            "company_name": company_request.name,
+            "is_edit_request": company_request.is_edit_request,
+            "changes_summary": company_request.edit_changes_summary,
+        }
+    )
+
+    return Response({
+        'message': 'Company request submitted for review. You will be notified once reviewed.',
+        'company_request': UserCompanyRequestSerializer(company_request).data
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_company_edit_request(request):
+    user = request.user
+
+    # Extract the edit_changes_summary and edited data from request
+    edit_changes_summary = request.data.get('edit_changes_summary', '').strip()
+
+    if not edit_changes_summary:
+        return Response({'error': 'Edit changes summary is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if user has an approved company
+    approved_request = UserCompanyRequest.objects.filter(
+        user=user,
+        status='approved',
+        is_edit_request=False
+    ).order_by('-created_at').first()
+
+    if not approved_request:
+        return Response({'error': 'No approved company found to edit.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if user already has a pending edit request
+    pending_edit = UserCompanyRequest.objects.filter(
+        user=user,
+        is_edit_request=True,
+        status__in=['draft', 'submitted']
+    ).first()
+
+    if pending_edit:
+        return Response({'error': 'You already have a pending edit request.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get the original startup
+    original_startup = None
+    if approved_request.original_startup:
+        original_startup = approved_request.original_startup
+    else:
+        # Find the startup that was created from this request
+        try:
+            original_startup = Startup.objects.filter(name=approved_request.name).first()
+        except:
+            pass
+
+    if not original_startup:
+        return Response({'error': 'Could not find the original startup record.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create edit request data using the edited data from frontend
+    edit_data = {
+        'is_edit_request': True,
+        'original_startup': original_startup.id,
+        'edit_changes_summary': edit_changes_summary,
+        # Use the edited data sent from frontend (this contains the proposed changes)
+        'name': request.data.get('name', original_startup.name),
+        'logo': request.data.get('logo', original_startup.logo),
+        'description': request.data.get('description', original_startup.description),
+        'sector': request.data.get('sector', original_startup.sector),
+        'founded': request.data.get('founded', original_startup.founded),
+        'website': request.data.get('website', original_startup.website),
+        'location': request.data.get('location', original_startup.location),
+        'linkedin': request.data.get('linkedin', original_startup.linkedin),
+        'twitter': request.data.get('twitter', original_startup.twitter),
+        'facebook': request.data.get('facebook', original_startup.facebook),
+        'products': request.data.get('products', original_startup.products),
+        'ceo_name': request.data.get('ceo_name'),
+        'ceo_image': request.data.get('ceo_image'),
+        'ceo_bio': request.data.get('ceo_bio'),
+    }
+
+    # Clean up empty strings to None for optional fields
+    for field in ['ceo_name', 'ceo_image', 'ceo_bio', 'logo', 'description', 'website', 'linkedin', 'twitter', 'facebook']:
+        if edit_data[field] == '':
+            edit_data[field] = None
+
+    # Create the edit request with the proposed changes
+    serializer = UserCompanyRequestSerializer(data=edit_data)
+    if serializer.is_valid():
+        edit_request = serializer.save(user=user)
+        return Response({
+            'message': 'Edit request created successfully',
+            'company_request': serializer.data
+        })
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_company_request(request):
+    user = request.user
+
+    # Get the most recent active (non-rejected) request
+    company_request = UserCompanyRequest.objects.filter(
+        user=user
+    ).exclude(status='rejected').order_by('-created_at').first()
+
+    if not company_request:
+        return Response({'error': 'No active company request found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if company_request.status in ['submitted', 'approved']:
+        return Response({
+            'error': 'Cannot delete request while it is under review or approved.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    company_request.delete()
+    return Response({'message': 'Company request deleted'})
+
+# Admin Company Request Management Views
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_company_requests_admin(request):
+    if not request.user.is_staff:
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    requests = UserCompanyRequest.objects.filter(status='submitted').select_related('user').order_by('-created_at')
+    serializer = UserCompanyRequestSerializer(requests, many=True)
+    return Response({'company_requests': serializer.data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def review_company_request(request, request_id):
+    if not request.user.is_staff:
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        company_request = UserCompanyRequest.objects.get(id=request_id)
+    except UserCompanyRequest.DoesNotExist:
+        return Response({'error': 'Company request not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    action = request.data.get('action')  # 'approve' or 'reject'
+    remarks = request.data.get('remarks', '')
+
+    if action not in ['approve', 'reject']:
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if action == 'approve':
+        try:
+            if company_request.is_edit_request and company_request.original_startup:
+                # This is an edit request - update existing startup
+                startup = company_request.original_startup
+
+                # Update startup fields
+                startup.name = company_request.name
+                startup.logo = company_request.logo or ''
+                startup.description = company_request.description or ''
+                startup.sector = company_request.sector
+                startup.founded = company_request.founded
+                startup.website = company_request.website or ''
+                startup.location = company_request.location
+                startup.linkedin = company_request.linkedin or ''
+                startup.twitter = company_request.twitter or ''
+                startup.facebook = company_request.facebook or ''
+                startup.products = company_request.products
+                startup.save()
+
+                # Update or create CEO
+                if company_request.ceo_name:
+                    CEO.objects.update_or_create(
+                        startup=startup,
+                        defaults={
+                            'name': company_request.ceo_name,
+                            'image': company_request.ceo_image or '',
+                            'bio': company_request.ceo_bio or ''
+                        }
+                    )
+                else:
+                    # Remove CEO if not provided in edit
+                    startup.ceos.all().delete()
+
+                message_title = "Company Edit Request Approved"
+                message_text = f"Your edit request for '{company_request.name}' has been approved and the portfolio has been updated."
+            else:
+                # This is a new company request - create new startup
+                startup = Startup.objects.create(
+                    name=company_request.name,
+                    logo=company_request.logo or '',
+                    description=company_request.description or '',
+                    sector=company_request.sector,
+                    founded=company_request.founded,
+                    website=company_request.website or '',
+                    location=company_request.location,
+                    linkedin=company_request.linkedin or '',
+                    twitter=company_request.twitter or '',
+                    facebook=company_request.facebook or '',
+                    products=company_request.products,
+                    category='current'  # Default to current startup
+                )
+
+                # Create CEO if provided
+                if company_request.ceo_name:
+                    CEO.objects.create(
+                        startup=startup,
+                        name=company_request.ceo_name,
+                        image=company_request.ceo_image or '',
+                        bio=company_request.ceo_bio or ''
+                    )
+
+                message_title = "Company Portfolio Request Approved"
+                message_text = f"Your company portfolio request for '{company_request.name}' has been approved and added to the TCE-TBI website."
+
+            company_request.status = 'approved'
+            company_request.admin_notes = remarks
+            company_request.save()
+
+            # Create notification for user
+            Notification.objects.create(
+                type="company_request",
+                title=message_title,
+                message=message_text,
+                meta={
+                    "company_request_id": company_request.id,
+                    "startup_id": startup.id,
+                    "company_name": company_request.name,
+                    "is_edit_request": company_request.is_edit_request,
+                }
+            )
+
+            return Response({
+                'message': 'Company request approved and portfolio updated',
+                'company_request': UserCompanyRequestSerializer(company_request).data
+            })
+
+        except Exception as e:
+            return Response({'error': f'Failed to process request: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    elif action == 'reject':
+        company_request.status = 'rejected'
+        company_request.admin_notes = remarks
+        company_request.save()
+
+        # Create notification for user
+        Notification.objects.create(
+            type="company_request",
+            title="Company Portfolio Request Rejected",
+            message=f"Your company portfolio request for '{company_request.name}' has been rejected.",
+            meta={
+                "company_request_id": company_request.id,
+                "company_name": company_request.name,
+                "rejection_reason": remarks,
+            }
+        )
+
+        return Response({
+            'message': 'Company request rejected',
+            'company_request': UserCompanyRequestSerializer(company_request).data
+        })

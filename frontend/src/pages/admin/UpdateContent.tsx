@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useBlocker } from "react-router-dom";
 import { LeaveReminderModal } from "@/components/LeaveReminderModal";
 
 // pages
@@ -32,15 +32,18 @@ const pages = [
   "Contact",
 ];
 
-
 export const UpdateContent = () => {
   const [selectedPage, setSelectedPage] = useState<string>("Home");
-  const [showReminder, setShowReminder] = useState(false);
-  const [pendingNav, setPendingNav] = useState<string | null>(null);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const navigate = useNavigate();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Block navigation if there are unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -75,45 +78,25 @@ export const UpdateContent = () => {
     return null;
   }
 
-  const handleSave = async () => {
-    console.log("✅ Changes saved");
-    setIsSaved(true);
-  };
-
-  // When user tries to navigate away
   const handleBack = () => {
-    if (!isSaved) {
-      setShowReminder(true);
-      setPendingNav("/admin");
-    } else {
-      navigate("/admin");
-    }
+    navigate("/admin");
   };
 
   const handlePageChange = (value: string) => {
-    if (!isSaved) {
-      setShowReminder(true);
-      setPendingNav(value);
+    if (isDirty) {
+      if (window.confirm("You have unsaved changes. Are you sure you want to switch pages?")) {
+        setIsDirty(false);
+        setSelectedPage(value);
+      }
     } else {
       setSelectedPage(value);
     }
   };
 
-  const confirmLeave = () => {
-    setShowReminder(false);
-    if (pendingNav === "/admin") navigate("/admin");
-    else if (pendingNav) setSelectedPage(pendingNav);
-  };
-
-  const stayHere = () => {
-    setShowReminder(false);
-    setPendingNav(null);
-  };
-
   const renderPageContent = () => {
     switch (selectedPage) {
       case "Home":
-        return <HomePage />;
+        return <HomePage setIsDirty={setIsDirty} />;
       case "Portfolio":
         return <PortfolioPage />;
       case "People":
@@ -129,7 +112,7 @@ export const UpdateContent = () => {
       case "Contact":
         return <ContactPage />;
       default:
-        return <HomePage />;
+        return <HomePage setIsDirty={setIsDirty} />;
     }
   };
 
@@ -217,12 +200,14 @@ export const UpdateContent = () => {
         </Box>
       </Box>
 
-      {/* 👇 The Reminder Modal */}
-      <LeaveReminderModal
-        open={showReminder}
-        onStay={stayHere}
-        onLeave={confirmLeave}
-      />
+      {/* Reminder Modal controlled by blocker */}
+      {blocker.state === "blocked" && (
+        <LeaveReminderModal
+          open={true}
+          onStay={() => blocker.reset()}
+          onLeave={() => blocker.proceed()}
+        />
+      )}
     </>
   );
 };

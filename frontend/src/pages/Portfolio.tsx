@@ -1,8 +1,23 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container, CircularProgress } from "@mui/material";
-import { useEffect, useState, useCallback } from "react";
-import { CardContainer } from "../components/ui/CardContainer";
-import LogoLoop from "../components/LogoLoop";
+import {
+  Box,
+  Typography,
+  Container,
+  CircularProgress,
+  TextField,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Avatar
+} from "@mui/material";
+import { useEffect, useState, useMemo } from "react";
+import { Search } from "@mui/icons-material";
 import {
   fetchPortfolioData,
   PortfolioData,
@@ -10,266 +25,120 @@ import {
 } from "@/api/portfolioService";
 import { useNavigate } from "react-router-dom";
 
-// ✨ Reusable glowing logo component
-const GlowingLogo = ({ src, alt, size = 90 }: { src: string; alt: string; size?: number }) => (
-  <Box
+// 🧩 Company Row Component
+const CompanyRow = ({
+  startup,
+  status,
+  onClick,
+  index
+}: {
+  startup: Startup;
+  status: "Current" | "Graduated";
+  onClick: (startup: Startup) => void;
+  index: number;
+}) => (
+  <TableRow
+    component={motion.tr}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay: index * 0.05 }}
+    hover
+    onClick={() => onClick(startup)}
     sx={{
-      display: "inline-flex",
-      justifyContent: "center",
-      alignItems: "center",
-      p: 1.2,
-      borderRadius: "14px",
-      overflow: "hidden",
-      height: size + 12,
-      transition: "transform 0.3s ease, filter 0.3s ease",
-      filter: "drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))",
+      cursor: "pointer",
       "&:hover": {
-        transform: "scale(1.05)",
-        filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))",
-      },
+        backgroundColor: "hsl(var(--muted) / 0.5)",
+      }
     }}
   >
-    <img
-      src={src}
-      alt={alt}
-      style={{
-        height: size,
-        width: "auto",
-        objectFit: "contain",
-        display: "block",
-      }}
-    />
-  </Box>
-);
-
-
-// 🧩 Current Startups Section
-const CurrentStartupsSection = ({
-  startups,
-  onStartupClick,
-}: {
-  startups: Startup[];
-  onStartupClick: (startup: Startup) => void;
-}) => (
-  <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
-    <Container maxWidth="lg">
+    <TableCell>
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
+        whileHover={{ scale: 1.1 }}
+        transition={{ duration: 0.2 }}
       >
-        <Typography
-          variant="h3"
-          sx={{
-            mb: 6,
-            color: "hsl(var(--foreground))",
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 600,
-          }}
-        >
-          Current Startups
-        </Typography>
-
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-            },
-            gap: 3,
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "hsl(var(--muted))"
           }}
         >
-          {startups.map((startup, index) => (
-            <motion.div
-              key={startup.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <CardContainer
-                className="cursor-pointer h-full"
-                onClick={() => onStartupClick(startup)}
-              >
-                <Box sx={{ textAlign: "center", p: 3 }}>
-                  <motion.img
-                    src={startup.logo}
-                    alt={startup.name}
-                    style={{
-                      width: 140,
-                      height: 140,
-                      objectFit: "contain",
-                      borderRadius: "16px",
-                      marginBottom: 20,
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mb: 2,
-                      color: "hsl(var(--foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {startup.name}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "hsl(var(--muted-foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      mb: 2,
-                    }}
-                  >
-                    {startup.sector}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "hsl(var(--muted-foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Founded: {startup.founded}
-                  </Typography>
-                </Box>
-              </CardContainer>
-            </motion.div>
-          ))}
-        </Box>
-      </motion.div>
-    </Container>
-  </Box>
-);
-
-// 🧩 Graduated Startups Section
-// 🧩 Graduated Startups Section
-const GraduatedStartupsSection = ({
-  startups,
-  onStartupClick,
-}: {
-  startups: Startup[];
-  onStartupClick: (startup: Startup) => void;
-}) => {
-  const logoData = startups.map((startup) => ({
-    node: <GlowingLogo src={startup.logo} alt={startup.name} size={80} />, // ⬅️ Reduced size
-    title: startup.name,
-    href: "#",
-  }));
-
-  return (
-    <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
-      <Container maxWidth="lg">
-        <Typography
-          variant="h3"
-          sx={{
-            mb: 6,
-            color: "hsl(var(--foreground))",
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 600,
-          }}
-        >
-          Graduated Startups
-        </Typography>
-
-        {/* 🔁 Rolling Logos */}
-        <Box sx={{ mb: 6 }}>
-          <LogoLoop
-            logos={logoData}
-            speed={16}
-            direction="right"
-            logoHeight={80} // ⬅️ Reduced from 140
-            gap={60} // ⬅️ Reduced from 80
-            pauseOnHover
-            scaleOnHover
-            fadeOut
-            fadeOutColor="hsl(var(--muted))"
-            ariaLabel="Graduated Startups"
+          <img
+            src={startup.logo}
+            alt={startup.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block"
+            }}
           />
         </Box>
-
-        {/* Grid of Startup Cards */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(4, 1fr)",
-            },
-            gap: 3,
-          }}
-        >
-          {startups.map((startup, index) => (
-            <motion.div
-              key={startup.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <CardContainer
-                className="cursor-pointer h-full"
-                onClick={() => onStartupClick(startup)}
-              >
-                <Box sx={{ textAlign: "center", p: 3 }}>
-                  <img
-                    src={startup.logo}
-                    alt={startup.name}
-                    style={{
-                      width: 90, // ⬅️ smaller size
-                      height: 90,
-                      objectFit: "contain",
-                      borderRadius: "10px",
-                      marginBottom: 14,
-                      display: "block",
-                      marginInline: "auto",
-                    }}
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mb: 1,
-                      color: "hsl(var(--foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 600,
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {startup.name}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "hsl(var(--muted-foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    {startup.sector}
-                  </Typography>
-                </Box>
-              </CardContainer>
-            </motion.div>
-          ))}
-        </Box>
-      </Container>
-    </Box>
-  );
-};
-
+      </motion.div>
+    </TableCell>
+    <TableCell>
+      <Typography
+        variant="h6"
+        sx={{
+          color: "hsl(var(--foreground))",
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 600,
+          fontSize: "1rem",
+        }}
+      >
+        {startup.name}
+      </Typography>
+    </TableCell>
+    <TableCell>
+      <Chip
+        label={status}
+        size="small"
+        sx={{
+          backgroundColor: status === "Current"
+            ? "hsl(142 76% 36%)"
+            : "hsl(221 83% 53%)",
+          color: "white",
+          fontWeight: 600,
+          fontSize: "0.75rem",
+        }}
+      />
+    </TableCell>
+    <TableCell>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "hsl(var(--foreground))",
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 500,
+        }}
+      >
+        {startup.founded}
+      </Typography>
+    </TableCell>
+    <TableCell>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "hsl(var(--muted-foreground))",
+          fontFamily: "Poppins, sans-serif",
+        }}
+      >
+        {startup.sector}
+      </Typography>
+    </TableCell>
+  </TableRow>
+);
 
 // 🧩 Main Portfolio Page
 export const Portfolio: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -279,14 +148,35 @@ export const Portfolio: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Combine and filter companies
+  const allCompanies = useMemo(() => {
+    if (!portfolio) return [];
+
+    const currentCompanies = portfolio.current_startups.map(startup => ({
+      ...startup,
+      status: "Current" as const
+    }));
+
+    const graduatedCompanies = portfolio.graduated_startups.map(startup => ({
+      ...startup,
+      status: "Graduated" as const
+    }));
+
+    return [...currentCompanies, ...graduatedCompanies].filter(company =>
+      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [portfolio, searchTerm]);
+
   if (loading) return (
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "hsl(var(--background))" }}>
       <CircularProgress />
     </Box>
   );
+
   if (!portfolio) return <p>Failed to load portfolio data.</p>;
 
-  const handleStartupClick = (startup: Startup) => {
+  const handleCompanyClick = (startup: Startup) => {
     navigate(`/portfolio/${startup.id}`);
   };
 
@@ -299,7 +189,7 @@ export const Portfolio: React.FC = () => {
         backgroundColor: "hsl(var(--background))",
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="xl">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -309,7 +199,7 @@ export const Portfolio: React.FC = () => {
             variant="h2"
             align="center"
             sx={{
-              mb: 8,
+              mb: 6,
               color: "hsl(var(--foreground))",
               fontFamily: "Poppins, sans-serif",
               fontWeight: 600,
@@ -320,17 +210,110 @@ export const Portfolio: React.FC = () => {
             </Box>
             Portfolio
           </Typography>
+
+          {/* Search Bar */}
+          <Box sx={{ mb: 4, maxWidth: 600, mx: "auto" }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search companies by name or sector..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: "hsl(var(--muted-foreground))" }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  backgroundColor: "hsl(var(--card))",
+                  borderRadius: 3,
+                  "& fieldset": {
+                    borderColor: "hsl(var(--border))",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "hsl(var(--ring))",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "hsl(var(--ring))",
+                  },
+                },
+                "& .MuiInputBase-input": {
+                  color: "hsl(var(--foreground))",
+                  fontFamily: "Poppins, sans-serif",
+                },
+              }}
+            />
+          </Box>
+
+          {/* Companies Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <TableContainer
+              component={Paper}
+              sx={{
+                backgroundColor: "hsl(var(--card))",
+                borderRadius: 3,
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                overflow: "hidden",
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "hsl(var(--muted))" }}>
+                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                      Logo
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                      Company Name
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                      Status
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                      Year
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                      Sector
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {allCompanies.map((company, index) => (
+                    <CompanyRow
+                      key={company.id}
+                      startup={company}
+                      status={company.status}
+                      onClick={handleCompanyClick}
+                      index={index}
+                    />
+                  ))}
+                  {allCompanies.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: "hsl(var(--muted-foreground))",
+                            fontFamily: "Poppins, sans-serif",
+                          }}
+                        >
+                          {searchTerm ? "No companies found matching your search." : "No companies available."}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </motion.div>
         </motion.div>
       </Container>
-
-      <CurrentStartupsSection
-        startups={portfolio.current_startups}
-        onStartupClick={handleStartupClick}
-      />
-      <GraduatedStartupsSection
-        startups={portfolio.graduated_startups}
-        onStartupClick={handleStartupClick}
-      />
     </Box>
   );
 };

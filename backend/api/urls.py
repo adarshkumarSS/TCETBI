@@ -12,7 +12,9 @@ from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
     submit_incubation, get_incubation_applications, update_application_status,
     admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password,
-    user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user
+    user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user,
+    get_user_profile, update_user_profile, get_user_company_request, create_or_update_company_request,
+    submit_company_request, submit_company_edit_request, delete_company_request, get_company_requests_admin, review_company_request
 )
 
 router = DefaultRouter()
@@ -77,5 +79,14 @@ urlpatterns = [
     path('users/<int:user_id>/', delete_user, name='delete_user'),
     path('users/pending/', get_pending_users, name='get_pending_users'),
     path('users/create/', create_user, name='create_user'),
+    path('user/profile/', get_user_profile, name='get_user_profile'),
+    path('user/profile/update/', update_user_profile, name='update_user_profile'),
+    path('user/company-request/', get_user_company_request, name='get_user_company_request'),
+    path('user/company-request/update/', create_or_update_company_request, name='create_or_update_company_request'),
+    path('user/company-request/submit/', submit_company_request, name='submit_company_request'),
+    path('user/company-request/submit-edit/', submit_company_edit_request, name='submit_company_edit_request'),
+    path('user/company-request/delete/', delete_company_request, name='delete_company_request'),
+    path('admin/company-requests/', get_company_requests_admin, name='get_company_requests_admin'),
+    path('admin/company-requests/<int:request_id>/review/', review_company_request, name='review_company_request'),
 
 ]

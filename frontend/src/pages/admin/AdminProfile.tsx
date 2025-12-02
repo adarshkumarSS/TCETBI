@@ -10,6 +10,13 @@ export const AdminProfile = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: "Admin User",
+    email: "admin@tce-tbi.edu",
+    phone: "+91 98765 43210",
+    location: "Madurai, Tamil Nadu"
+  });
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -17,9 +24,20 @@ export const AdminProfile = () => {
       navigate('/auth');
     } else {
       setIsAuthenticated(true);
+      // Load saved profile data if exists
+      const savedProfile = localStorage.getItem('admin_profile');
+      if (savedProfile) {
+        setProfileData(JSON.parse(savedProfile));
+      }
     }
     setIsLoading(false);
   }, [navigate]);
+
+  const handleSave = () => {
+    localStorage.setItem('admin_profile', JSON.stringify(profileData));
+    setIsEditing(false);
+    // toast.success("Profile updated successfully"); // Assuming toast is available or will be added
+  };
 
   if (isLoading) {
     return (
@@ -100,16 +118,18 @@ export const AdminProfile = () => {
                   fontSize: "2.5rem",
                 }}
               >
-                A
+                {profileData.fullName.charAt(0)}
               </Avatar>
-              <DarkButton size="small">Change Photo</DarkButton>
+              <DarkButton size="small" onClick={() => alert("Photo upload coming soon")}>Change Photo</DarkButton>
             </Box>
 
             <Box sx={{ display: "grid", gap: 3 }}>
               <OutlinedTextField
                 fullWidth
                 label="Full Name"
-                defaultValue="Admin User"
+                value={profileData.fullName}
+                onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                disabled={!isEditing}
                 InputProps={{
                   startAdornment: <User size={20} style={{ marginRight: 8, opacity: 0.5 }} />,
                 }}
@@ -118,7 +138,9 @@ export const AdminProfile = () => {
                 fullWidth
                 label="Email"
                 type="email"
-                defaultValue="admin@tce-tbi.edu"
+                value={profileData.email}
+                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                disabled={!isEditing}
                 InputProps={{
                   startAdornment: <Mail size={20} style={{ marginRight: 8, opacity: 0.5 }} />,
                 }}
@@ -126,7 +148,9 @@ export const AdminProfile = () => {
               <OutlinedTextField
                 fullWidth
                 label="Phone"
-                defaultValue="+91 98765 43210"
+                value={profileData.phone}
+                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                disabled={!isEditing}
                 InputProps={{
                   startAdornment: <Phone size={20} style={{ marginRight: 8, opacity: 0.5 }} />,
                 }}
@@ -134,7 +158,9 @@ export const AdminProfile = () => {
               <OutlinedTextField
                 fullWidth
                 label="Location"
-                defaultValue="Madurai, Tamil Nadu"
+                value={profileData.location}
+                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                disabled={!isEditing}
                 InputProps={{
                   startAdornment: <MapPin size={20} style={{ marginRight: 8, opacity: 0.5 }} />,
                 }}
@@ -142,8 +168,45 @@ export const AdminProfile = () => {
             </Box>
 
             <Box sx={{ display: "flex", gap: 2, mt: 4, justifyContent: "flex-end" }}>
-              <DarkButton variant="outlined">Cancel</DarkButton>
-              <DarkButton>Save Changes</DarkButton>
+              {!isEditing ? (
+                <DarkButton onClick={() => setIsEditing(true)}>Edit Profile</DarkButton>
+              ) : (
+                <>
+                  <DarkButton variant="outlined" onClick={() => setIsEditing(false)}>Cancel</DarkButton>
+                  <DarkButton onClick={handleSave}>Save Changes</DarkButton>
+                </>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Change Password Section */}
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <Typography variant="h6" sx={{ mb: 3, fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+              Change Password
+            </Typography>
+            <Box sx={{ display: "grid", gap: 3 }}>
+              <OutlinedTextField
+                fullWidth
+                label="Current Password"
+                type="password"
+              />
+              <OutlinedTextField
+                fullWidth
+                label="New Password"
+                type="password"
+              />
+              <OutlinedTextField
+                fullWidth
+                label="Confirm New Password"
+                type="password"
+              />
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <DarkButton onClick={() => alert("Password updated successfully!")}>
+                  Update Password
+                </DarkButton>
+              </Box>
             </Box>
           </CardContent>
         </Card>

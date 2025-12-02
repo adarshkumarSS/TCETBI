@@ -10,14 +10,18 @@ import {
   Typography,
   Slider,
   IconButton,
+  FormControlLabel,
+  Checkbox,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
-import { ZoomIn, ZoomOut, Crop as CropIcon, X } from "lucide-react";
+import { ZoomIn, ZoomOut, Crop as CropIcon, X, Square, RectangleHorizontal } from "lucide-react";
 
 interface ResizeModalProps {
   open: boolean;
   image: string;
   onClose: () => void;
-  onSave: (croppedImage: File) => void;
+  onSave: (croppedImage: File, removeBg: boolean) => void;
 }
 
 export const ResizeModal: React.FC<ResizeModalProps> = ({
@@ -28,6 +32,8 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
 }) => {
   const [zoom, setZoom] = useState(1);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [aspect, setAspect] = useState(4 / 3);
+  const [removeBg, setRemoveBg] = useState(false);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
@@ -66,7 +72,16 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
 
   const handleSave = async () => {
     const cropped = await createCroppedImage();
-    onSave(cropped);
+    onSave(cropped, removeBg);
+  };
+
+  const handleAspectChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newAspect: number | null
+  ) => {
+    if (newAspect !== null) {
+      setAspect(newAspect);
+    }
   };
 
   return (
@@ -121,7 +136,7 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
           image={image}
           crop={crop}
           zoom={zoom}
-          aspect={4 / 3}
+          aspect={aspect}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={onCropComplete}
@@ -138,39 +153,95 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
         />
       </DialogContent>
 
-      {/* --- Zoom Controls --- */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 2,
-          mt: 2,
-        }}
-      >
-        <IconButton
-          onClick={() => setZoom(Math.max(1, zoom - 0.1))}
-          sx={{ color: "hsl(var(--muted-foreground))" }}
-        >
-          <ZoomOut size={18} />
-        </IconButton>
-        <Slider
-          value={zoom}
-          min={1}
-          max={3}
-          step={0.1}
-          onChange={(_, v) => setZoom(v as number)}
+      {/* --- Controls --- */}
+      <Box sx={{ px: 3, pt: 2 }}>
+        {/* Aspect Ratio & Remove BG */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 2 }}>
+          <ToggleButtonGroup
+            value={aspect}
+            exclusive
+            onChange={handleAspectChange}
+            aria-label="aspect ratio"
+            size="small"
+            sx={{
+              "& .MuiToggleButton-root": {
+                color: "hsl(var(--muted-foreground))",
+                borderColor: "hsl(var(--border))",
+                "&.Mui-selected": {
+                  backgroundColor: "hsl(var(--primary) / 0.1)",
+                  color: "hsl(var(--primary))",
+                },
+              },
+            }}
+          >
+            <ToggleButton value={1}>
+              <Square size={16} style={{ marginRight: 8 }} />
+              Square (1:1)
+            </ToggleButton>
+            <ToggleButton value={4 / 3}>
+              <RectangleHorizontal size={16} style={{ marginRight: 8 }} />
+              Standard (4:3)
+            </ToggleButton>
+            <ToggleButton value={16 / 9}>
+              <RectangleHorizontal size={16} style={{ marginRight: 8 }} />
+              Wide (16:9)
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={removeBg}
+                onChange={(e) => setRemoveBg(e.target.checked)}
+                sx={{
+                  color: "hsl(var(--muted-foreground))",
+                  "&.Mui-checked": {
+                    color: "hsl(var(--primary))",
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography variant="body2" sx={{ fontFamily: "Poppins, sans-serif" }}>
+                Remove Background
+              </Typography>
+            }
+          />
+        </Box>
+
+        {/* Zoom Controls */}
+        <Box
           sx={{
-            width: "40%",
-            color: "hsl(0 84.2% 60.2%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2,
           }}
-        />
-        <IconButton
-          onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-          sx={{ color: "hsl(var(--muted-foreground))" }}
         >
-          <ZoomIn size={18} />
-        </IconButton>
+          <IconButton
+            onClick={() => setZoom(Math.max(1, zoom - 0.1))}
+            sx={{ color: "hsl(var(--muted-foreground))" }}
+          >
+            <ZoomOut size={18} />
+          </IconButton>
+          <Slider
+            value={zoom}
+            min={1}
+            max={3}
+            step={0.1}
+            onChange={(_, v) => setZoom(v as number)}
+            sx={{
+              width: "40%",
+              color: "hsl(0 84.2% 60.2%)",
+            }}
+          />
+          <IconButton
+            onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+            sx={{ color: "hsl(var(--muted-foreground))" }}
+          >
+            <ZoomIn size={18} />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* --- Footer Buttons --- */}
@@ -182,6 +253,7 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
           px: 3,
           pb: 2,
           borderTop: "1px solid hsl(var(--border))",
+          mt: 2
         }}
       >
         <Button

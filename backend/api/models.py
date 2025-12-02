@@ -337,3 +337,46 @@ class AppUser(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.status})"
+
+class UserCompanyRequest(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='company_requests')
+
+    name = models.CharField(max_length=255)
+    logo = models.CharField(max_length=500, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    sector = models.CharField(max_length=255)
+    founded = models.CharField(max_length=50)
+    website = models.CharField(max_length=500, blank=True, null=True)
+    location = models.CharField(max_length=255, default="Unknown")
+
+    linkedin = models.CharField(max_length=500, blank=True, null=True)
+    twitter = models.CharField(max_length=500, blank=True, null=True)
+    facebook = models.CharField(max_length=500, blank=True, null=True)
+
+    # Each company can have multiple products/services (title + desc)
+    products = models.JSONField(default=list)  # [{ "title": "X", "desc": "Y" }]
+
+    # CEO details
+    ceo_name = models.CharField(max_length=255, blank=True, null=True)
+    ceo_image = models.CharField(max_length=500, blank=True, null=True)
+    ceo_bio = models.TextField(blank=True, null=True)
+
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted for Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    admin_notes = models.TextField(blank=True, null=True)
+
+    # For edit requests on already approved companies
+    is_edit_request = models.BooleanField(default=False)
+    edit_changes_summary = models.TextField(blank=True, null=True)  # User describes what changed
+    original_startup = models.ForeignKey('Startup', on_delete=models.SET_NULL, null=True, blank=True, related_name='edit_requests')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.user.username} ({self.status})"

@@ -74,6 +74,15 @@ export const authService = {
     return newAccessToken;
   },
 
+  async refreshUserToken(): Promise<string> {
+    const refresh = localStorage.getItem('user_refresh');
+    if (!refresh) throw new Error('No refresh token');
+    const response = await axios.post<{access: string}>(`${BASE_URL}/auth/refresh/`, { refresh });
+    const newAccessToken = response.data.access;
+    localStorage.setItem('user_token', newAccessToken);
+    return newAccessToken;
+  },
+
   async adminLogout(refreshToken: string): Promise<void> {
     await axios.post(`${BASE_URL}/auth/admin-logout/`, { refresh: refreshToken }, {
       headers: getAuthHeaders()

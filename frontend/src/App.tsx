@@ -35,23 +35,29 @@ import { AdminProfile } from "./pages/admin/AdminProfile";
 import { StartupDetailPage } from "./pages/StartupDetailPage";
 import { NotificationsPage } from "./pages/admin/NotificationPage";
 import { UserManagement } from "./pages/admin/UserManagement";
+import { CompanyRequests } from "./pages/admin/CompanyRequests";
 import { UserDashboard } from "./pages/UserDashboard";
+import { MyCompany } from "./pages/MyCompany";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
 
 const queryClient = new QueryClient();
 
+import { UserNavigation } from "./components/UserNavigation";
+
 // --- Navigation Wrapper ---
 const AppContent = () => {
   const location = useLocation();
   const hideNav = ["/auth", "/apply-incubation"].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isUserRoute = location.pathname.startsWith("/user");
 
   return (
     <>
-      {!hideNav && !isAdminRoute && <Navigation />}
+      {!hideNav && !isAdminRoute && !isUserRoute && <Navigation />}
       {!hideNav && isAdminRoute && <AdminNavigation />}
+      {!hideNav && isUserRoute && <UserNavigation />}
     </>
   );
 };
@@ -159,6 +165,15 @@ const router = createBrowserRouter(
       ),
     },
     {
+      path: "/user/my-company",
+      element: (
+        <>
+          <AppContent />
+          <MyCompany />
+        </>
+      ),
+    },
+    {
       path: "/admin",
       element: (
         <>
@@ -245,6 +260,15 @@ const router = createBrowserRouter(
         <>
           <AppContent />
           <UserManagement />
+        </>
+      ),
+    },
+    {
+      path: "/admin/company-requests",
+      element: (
+        <>
+          <AppContent />
+          <CompanyRequests />
         </>
       ),
     },

@@ -38,7 +38,7 @@ const typeStyles = {
   blog: { color: "#eab308", icon: <FileText size={20} /> },
   program: { color: "#dc2626", icon: <AlertCircle size={20} /> },
   user_registration: { color: "#f59e0b", icon: <Bell size={20} /> },
-  general: { color: "#6b7280", icon: <Bell size={20} /> },
+  general: { color: "#8b5cf6", icon: <Bell size={20} /> },
 };
 
 export const NotificationsPage: React.FC = () => {

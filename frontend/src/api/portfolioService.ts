@@ -17,6 +17,10 @@ export interface Startup {
   sector: string;
   founded: string;
   website: string;
+  location?: string;
+  linkedin?: string;
+  twitter?: string;
+  facebook?: string;
   category: "current" | "graduated";
   ceos: CEO[];
 }

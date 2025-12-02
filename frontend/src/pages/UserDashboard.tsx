@@ -1,12 +1,24 @@
-import { Paper, Typography, Box, Grid, Button, Chip, Avatar } from "@mui/material";
-import { Business, CheckCircle, People, EventNote, Logout, AccountCircle } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router-dom";
+import { Paper, Typography, Box, Button, Avatar } from "@mui/material";
+import { Logout, AccountCircle } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import userService from "../api/userService";
+import { ProfileTab } from "./components/ProfileTab";
 
 export const UserDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Confirmation dialogs
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    action: "",
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     // Check if user is logged in (not admin)
@@ -26,18 +38,35 @@ export const UserDashboard = () => {
 
     setIsAuthenticated(true);
 
-    // Parse user data from localStorage (assuming it's stored after login)
-    const userData = localStorage.getItem('user_data');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    // Fetch user profile
+    const fetchUserData = async () => {
+      try {
+        const profileResponse = await userService.getUserProfile();
+        const userData = profileResponse.user;
+        setUser(userData);
+        localStorage.setItem('user_data', JSON.stringify(userData));
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        toast.error("Failed to load profile");
+        // Fallback to localStorage
+        const userData = localStorage.getItem('user_data');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+        }
+      }
+    };
+
+    fetchUserData();
   }, [navigate]);
 
   const handleLogout = () => {
+    // Direct logout for now, can add dialog later if needed
     localStorage.removeItem('user_token');
     localStorage.removeItem('user_refresh');
     localStorage.removeItem('user_data');
     navigate('/auth');
+    toast.success("Logged out successfully");
   };
 
   if (!isAuthenticated) {
@@ -63,6 +92,7 @@ export const UserDashboard = () => {
         backgroundColor: "hsl(var(--background))",
         pt: 12,
         px: 4,
+        pb: 8,
       }}
     >
       <Box
@@ -72,271 +102,134 @@ export const UserDashboard = () => {
         }}
       >
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h3"
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          mb: 6,
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2
+        }}>
+          <Box>
+            <Typography
+              variant="h3"
+              sx={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 700,
+                color: "hsl(var(--foreground))",
+                mb: 1,
+              }}
+            >
+              User Dashboard
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "hsl(var(--muted-foreground))",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
+              Manage your profile and company portfolio
+            </Typography>
+          </Box>
+          
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Logout />}
+            onClick={handleLogout}
             sx={{
               fontFamily: "Poppins, sans-serif",
-              fontWeight: 700,
-              color: "hsl(var(--primary))",
-              mb: 2,
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 600,
             }}
           >
-            Welcome to Your Dashboard
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: "Poppins, sans-serif",
-              color: "hsl(var(--muted-foreground))",
-              fontSize: "18px",
-            }}
-          >
-            Your incubation journey starts here. Track your progress and manage your applications.
-          </Typography>
+            Logout
+          </Button>
         </Box>
 
-        {/* User Info Card */}
+        {/* User Header Card */}
         <Paper
           sx={{
             backgroundColor: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
             borderRadius: "var(--radius)",
             p: 4,
-            mb: 6,
+            mb: 4,
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+          {/* Background Pattern */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: "300px",
+              height: "300px",
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%)",
+              transform: "translate(30%, -30%)",
+              zIndex: 0,
+            }}
+          />
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 4, position: "relative", zIndex: 1, flexDirection: { xs: "column", md: "row" }, textAlign: { xs: "center", md: "left" } }}>
             <Avatar
               sx={{
-                width: 80,
-                height: 80,
+                width: 120,
+                height: 120,
                 bgcolor: "hsl(var(--primary))",
-                fontSize: "2rem",
+                fontSize: "3rem",
+                border: "4px solid hsl(var(--background))",
+                boxShadow: "0 8px 32px hsl(var(--primary) / 0.2)",
               }}
             >
-              <AccountCircle sx={{ fontSize: "3rem" }} />
+              {user?.full_name?.charAt(0) || <AccountCircle sx={{ fontSize: "4rem" }} />}
             </Avatar>
+
             <Box sx={{ flex: 1 }}>
               <Typography
-                variant="h5"
+                variant="h4"
                 sx={{
                   fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: "hsl(var(--foreground))",
                   mb: 1,
                 }}
               >
                 {user?.full_name || user?.username || "User"}
               </Typography>
+
               <Typography
+                variant="h6"
                 sx={{
                   fontFamily: "Poppins, sans-serif",
                   color: "hsl(var(--muted-foreground))",
                   mb: 2,
+                  fontWeight: 400
                 }}
               >
                 {user?.email}
               </Typography>
-              <Chip
-                label="Approved User"
-                color="success"
-                size="small"
-                icon={<CheckCircle />}
-              />
+
+              <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" } }}>
+                <Box sx={{ px: 2, py: 0.5, bgcolor: "hsl(var(--primary) / 0.1)", borderRadius: "20px", color: "hsl(var(--primary))", fontSize: "0.875rem", fontWeight: 600 }}>
+                  Member
+                </Box>
+                <Box sx={{ px: 2, py: 0.5, bgcolor: "hsl(var(--muted))", borderRadius: "20px", color: "hsl(var(--muted-foreground))", fontSize: "0.875rem", fontWeight: 600 }}>
+                  {user?.phone || "No phone"}
+                </Box>
+              </Box>
             </Box>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<Logout />}
-              onClick={handleLogout}
-              sx={{
-                fontFamily: "Poppins, sans-serif",
-              }}
-            >
-              Logout
-            </Button>
           </Box>
         </Paper>
 
-        {/* Quick Actions */}
-        <Grid container spacing={4}>
-          <Grid size={{xs:12, md:6}}>
-            <Paper
-              sx={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)",
-                p: 4,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
-                  color: "hsl(var(--primary))",
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <Business />
-                Incubation Program
-              </Typography>
-              <Typography
-                sx={{
-                  fontFamily: "Poppins, sans-serif",
-                  color: "hsl(var(--muted-foreground))",
-                  mb: 3,
-                  flex: 1,
-                }}
-              >
-                Apply for the TCE-TBI incubation program. Submit your business application for review by our experts.
-              </Typography>
-              <Link to="/apply-incubation" style={{ textDecoration: 'none' }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 600,
-                  }}
-                >
-                  Apply for Incubation
-                </Button>
-              </Link>
-            </Paper>
-          </Grid>
-
-          <Grid size={{xs:12, md:6}}>
-            <Paper
-              sx={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)",
-                p: 4,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
-                  color: "hsl(var(--primary))",
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <People />
-                Network & Support
-              </Typography>
-              <Typography
-                sx={{
-                  fontFamily: "Poppins, sans-serif",
-                  color: "hsl(var(--muted-foreground))",
-                  mb: 3,
-                  flex: 1,
-                }}
-              >
-                Connect with fellow entrepreneurs, mentors, and industry experts. Access our comprehensive support network.
-              </Typography>
-              <Link to="/contact" style={{ textDecoration: 'none' }}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  fullWidth
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 600,
-                  }}
-                >
-                  Get Connected
-                </Button>
-              </Link>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* Status Overview */}
-        <Paper
-          sx={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
-            p: 4,
-            mt: 6,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-              color: "hsl(var(--primary))",
-              mb: 3,
-            }}
-          >
-            Your Status Overview
-          </Typography>
-
-          <Grid container spacing={3}>
-            <Grid size={{xs:12, sm:6, md:3}}>
-              <Box
-                sx={{
-                  textAlign: "center",
-                  p: 2,
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                  backgroundColor: "hsl(var(--muted))",
-                }}
-              >
-                <CheckCircle sx={{ fontSize: "2rem", color: "hsl(var(--success))", mb: 1 }} />
-                <Typography
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 600,
-                    color: "hsl(var(--foreground))",
-                  }}
-                >
-                  Account Verified
-                </Typography>
-              </Box>
-            </Grid>
-
-            <Grid size={{xs:12, sm:6, md:3}}>
-              <Box
-                sx={{
-                  textAlign: "center",
-                  p: 2,
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                  backgroundColor: "hsl(var(--muted))",
-                }}
-              >
-                <EventNote sx={{ fontSize: "2rem", color: "hsl(var(--primary))", mb: 1 }} />
-                <Typography
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 600,
-                    color: "hsl(var(--foreground))",
-                  }}
-                >
-                  Ready to Apply
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </Paper>
+        {/* Profile Section */}
+        <Box sx={{ animation: "fadeIn 0.5s ease-in-out" }}>
+          <ProfileTab user={user} />
+        </Box>
       </Box>
     </Box>
   );

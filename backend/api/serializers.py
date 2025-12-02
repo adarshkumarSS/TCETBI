@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest
 import os
 from django.contrib.auth.models import User as DjangoUser
 
@@ -139,6 +139,19 @@ class IncubationSerializer(serializers.ModelSerializer):
     class Meta:
         model = IncubationApplication
         fields = "__all__"
+
+class UserCompanyRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserCompanyRequest
+        fields = "__all__"
+        read_only_fields = ['user', 'admin_notes', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        # Set the user from the request context when creating
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['user'] = request.user
+        return super().create(validated_data)
 
 class AppUserSerializer(serializers.ModelSerializer):
     class Meta:

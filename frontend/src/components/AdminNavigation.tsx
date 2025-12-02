@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
-import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
-import { Link, useLocation } from "react-router-dom";
+import { AppBar, Box, IconButton, Toolbar, Typography, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from "@mui/material";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import { DarkButton } from "./ui/DarkButton";
 
 import { motion, useInView } from "framer-motion";
-import { Moon, Sun, Bell, LogOut, LogIn } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle } from "lucide-react";
 import { fetchNotifications } from "@/api/notificationservice";
 
 export const AnimatedItem = ({ children, index, onClick }: any) => {
@@ -66,6 +66,7 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backdropFilter: "blur(20px)",
   borderBottom: "1px solid hsl(var(--border))",
   boxShadow: "0 4px 24px rgba(0, 0, 0, 0.06)",
+  zIndex: theme.zIndex.drawer + 1,
 }));
 
 const LogoContainer = styled(Box)({
@@ -74,10 +75,15 @@ const LogoContainer = styled(Box)({
   gap: "12px",
 });
 
+import { LogoutModal } from "./LogoutModal";
+
 export const AdminNavigation: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === "/";
 
   useEffect(() => {
@@ -136,68 +142,141 @@ export const AdminNavigation: React.FC = () => {
     load();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const confirmLogout = () => {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_refresh');
     localStorage.removeItem('admin_user');
     setIsLoggedIn(false);
+    setLogoutModalOpen(false);
     window.location.href = '/';
   };
 
+  const menuItems = [
+    { text: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/admin" },
+    { text: "Update Content", icon: <FileEdit size={20} />, path: "/admin/update-content" },
+    { text: "Applications", icon: <ClipboardList size={20} />, path: "/admin/applications" },
+    { text: "User Management", icon: <UserCog size={20} />, path: "/admin/users" },
+    { text: "Company Requests", icon: <CheckCircle size={20} />, path: "/admin/company-requests" },
+    { text: "Edit Requests", icon: <FileEdit size={20} />, path: "/admin/company-requests?tab=edit" },
+    { text: "Current Incubators", icon: <Building2 size={20} />, path: "/admin/incubators" },
+    { text: "LinkedIn Posts", icon: <Linkedin size={20} />, path: "/admin/linkedin" },
+    { text: "Settings", icon: <Settings size={20} />, path: "/admin/settings" },
+    { text: "Admin Profile", icon: <UserCog size={20} />, path: "/admin/profile" },
+  ];
 
-
-
+  const DrawerList = (
+    <Box sx={{ width: 280, height: '100%', bgcolor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }} role="presentation" onClick={() => setDrawerOpen(false)}>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <img src="/asset/TCE_TBI.png" alt="Logo" style={{ width: 40, height: 40 }} />
+        <Typography variant="h6" sx={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+          Admin Panel
+        </Typography>
+      </Box>
+      <Divider sx={{ borderColor: 'hsl(var(--border))' }} />
+      <List sx={{ p: 2 }}>
+        {menuItems.map((item) => (
+          <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+            <ListItemButton
+              onClick={() => navigate(item.path)}
+              selected={location.pathname + location.search === item.path}
+              sx={{
+                borderRadius: '8px',
+                '&.Mui-selected': {
+                  bgcolor: 'hsl(var(--primary) / 0.1)',
+                  color: 'hsl(var(--primary))',
+                  '&:hover': {
+                    bgcolor: 'hsl(var(--primary) / 0.2)',
+                  },
+                  '& .MuiListItemIcon-root': {
+                    color: 'hsl(var(--primary))',
+                  },
+                },
+                '&:hover': {
+                  bgcolor: 'hsl(var(--muted))',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40, color: (item as any).color || 'hsl(var(--muted-foreground))' }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.text} 
+                primaryTypographyProps={{ 
+                  fontFamily: 'Poppins, sans-serif', 
+                  fontSize: '14px',
+                  fontWeight: location.pathname + location.search === item.path ? 600 : 400,
+                  color: (item as any).color || 'inherit'
+                }} 
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
-    <StyledAppBar
-  position="fixed"
-  color="transparent"
-  elevation={scrolled ? 2 : 0}
-  sx={{
-    backgroundColor: "hsl(var(--background) / 0.8) !important",
-  }}
->
-
+    <>
+      <StyledAppBar
+        position="fixed"
+        color="transparent"
+        elevation={scrolled ? 2 : 0}
+        sx={{
+          backgroundColor: "hsl(var(--background) / 0.8) !important",
+        }}
+      >
         <Toolbar
           sx={{
-            minHeight: "80px",
-            justifyContent: "space-between", // This will push items to the edges
+            justifyContent: "space-between",
+            py: 1
           }}
         >
-          <LogoContainer>
-            <img
-              src="/asset/TCE_TBI.png"
-              alt="Logo"
-              style={{ width: 72, height: 72, objectFit: "contain" }}
-            />
-            <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: "#d32f2f",
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  fontSize: { xs: "22px", md: "28px" },
-                }}
-              >
-                Thiagarajar
-              </Typography>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color:
-                    isHome && !scrolled ? "#fff" : isDarkMode ? "#fff" : "#222",
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 500,
-                  lineHeight: 1.1,
-                  fontSize: { xs: "14px", md: "18px" },
-                }}
-              >
-                Business Incubation
-              </Typography>
-            </Box>
-          </LogoContainer>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {isLoggedIn && (
+              <IconButton onClick={() => setDrawerOpen(true)} sx={{ color: "hsl(var(--foreground))" }}>
+                <Menu size={24} />
+              </IconButton>
+            )}
+            <Link to="/admin" style={{ textDecoration: "none" }}>
+              <LogoContainer>
+                <img
+                  src="/asset/TCE_TBI.png"
+                  alt="Logo"
+                  style={{ width: 72, height: 72, objectFit: "contain" }}
+                />
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      color: "#d32f2f",
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      fontSize: { xs: "22px", md: "28px" },
+                    }}
+                  >
+                    Thiagarajar
+                  </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      color: "hsl(var(--foreground))",
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: 500,
+                      lineHeight: 1.1,
+                      fontSize: { xs: "14px", md: "18px" },
+                    }}
+                  >
+                    Business Incubation
+                  </Typography>
+                </Box>
+              </LogoContainer>
+            </Link>
+          </Box>
 
           {/* Right-aligned buttons */}
           <Box
@@ -205,7 +284,7 @@ export const AdminNavigation: React.FC = () => {
               display: "flex",
               alignItems: "center",
               gap: 1,
-              marginLeft: "auto", // This ensures it stays on the right
+              marginLeft: "auto",
             }}
           >
             <IconButton
@@ -255,13 +334,14 @@ export const AdminNavigation: React.FC = () => {
 
             {isLoggedIn ? (
               <IconButton
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 sx={{
-                  color: "hsl(var(--foreground))",
+                  color: "hsl(var(--destructive))",
                   "&:hover": {
-                    backgroundColor: "hsl(var(--muted))",
+                    backgroundColor: "hsl(var(--destructive) / 0.1)",
                   },
                 }}
+                title="Logout"
               >
                 <LogOut size={20} />
               </IconButton>
@@ -282,5 +362,16 @@ export const AdminNavigation: React.FC = () => {
           </Box>
         </Toolbar>
       </StyledAppBar>
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        {DrawerList}
+      </Drawer>
+
+      <LogoutModal 
+        open={logoutModalOpen} 
+        onClose={() => setLogoutModalOpen(false)} 
+        onConfirm={confirmLogout} 
+      />
+    </>
   );
 };
