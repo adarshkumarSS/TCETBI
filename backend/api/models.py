@@ -380,3 +380,94 @@ class UserCompanyRequest(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.user.username} ({self.status})"
+
+class Mentor(models.Model):
+    name = models.CharField(max_length=255)
+    domain = models.CharField(max_length=255)
+    image = models.TextField() # Cloudinary URL
+    bio = models.TextField()
+    linkedin = models.URLField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    expertise = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __str__(self):
+        return self.name
+
+class FundingRequest(models.Model):
+    SCHEME_CHOICES = (
+        ('idea_hackathon', 'Idea Hackathon'),
+        ('nidhi_prayas', 'NIDHI PRAYAS'),
+        ('nidhi_eir', 'NIDHI EIR'),
+        ('sisfs', 'SISFS'),
+        ('other', 'Other'),
+    )
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='funding_requests', null=True, blank=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    startup_name = models.CharField(max_length=255)
+    scheme = models.CharField(max_length=50, choices=SCHEME_CHOICES)
+    description = models.TextField()
+    pitch_deck = models.TextField() # URL to PDF/Deck
+    amount_requested = models.CharField(max_length=100, blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.startup_name} - {self.scheme}"
+
+class MentoringRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('scheduled', 'Mentoring Scheduled'),
+    )
+
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='mentoring_requests', null=True, blank=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    startup_name = models.CharField(max_length=255)
+    domain = models.CharField(max_length=255)
+    mentor = models.ForeignKey(Mentor, on_delete=models.SET_NULL, null=True, blank=True, related_name='requests')
+    description = models.TextField() # Basic details / specific request
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.startup_name} - {self.domain}"
+
+class ValidationRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('in_progress', 'Validation In Progress'),
+    )
+
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='validation_requests', null=True, blank=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    startup_name = models.CharField(max_length=255)
+    idea_details = models.TextField()
+    testing_requirements = models.TextField()
+    target_market = models.CharField(max_length=255, blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.startup_name} - Validation"

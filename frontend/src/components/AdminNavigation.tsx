@@ -5,7 +5,7 @@ import { styled } from "@mui/material/styles";
 import { DarkButton } from "./ui/DarkButton";
 
 import { motion, useInView } from "framer-motion";
-import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand } from "lucide-react";
 import { fetchNotifications } from "@/api/notificationservice";
 
 export const AnimatedItem = ({ children, index, onClick }: any) => {
@@ -161,11 +161,12 @@ export const AdminNavigation: React.FC = () => {
     { text: "Applications", icon: <ClipboardList size={20} />, path: "/admin/applications" },
     { text: "User Management", icon: <UserCog size={20} />, path: "/admin/users" },
     { text: "Company Requests", icon: <CheckCircle size={20} />, path: "/admin/company-requests" },
+    { text: "Support Requests", icon: <HelpingHand size={20} />, path: "/admin/support-requests" },
     { text: "Edit Requests", icon: <FileEdit size={20} />, path: "/admin/company-requests?tab=edit" },
     { text: "Current Incubators", icon: <Building2 size={20} />, path: "/admin/incubators" },
-    { text: "LinkedIn Posts", icon: <Linkedin size={20} />, path: "/admin/linkedin" },
+
+    { text: "Mentors", icon: <UserCog size={20} />, path: "/admin/mentors" },
     { text: "Settings", icon: <Settings size={20} />, path: "/admin/settings" },
-    { text: "Admin Profile", icon: <UserCog size={20} />, path: "/admin/profile" },
   ];
 
   const DrawerList = (

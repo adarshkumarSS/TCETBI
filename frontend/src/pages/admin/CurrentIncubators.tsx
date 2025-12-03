@@ -40,6 +40,7 @@ export const CurrentIncubators = () => {
         backgroundColor: "hsl(var(--background))",
         pt: 16,
         px: 4,
+        pb: 8,
       }}
     >
       <Box

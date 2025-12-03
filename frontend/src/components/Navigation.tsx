@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { motion } from "framer-motion";
-import { AppBar, Toolbar, Typography, Box, IconButton } from "@mui/material";
-import { styled } from "@mui/material/styles";
+import { AppBar, Toolbar, Typography, Box, IconButton, Menu, MenuItem, MenuProps, Fade } from "@mui/material";
+import { styled, alpha } from "@mui/material/styles";
 import { Link, useLocation } from "react-router-dom";
-import { LightMode, DarkMode, Login } from "@mui/icons-material";
+import { LightMode, DarkMode, Login, KeyboardArrowDown } from "@mui/icons-material";
 import { DarkButton } from "./ui/DarkButton";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -25,12 +25,50 @@ const NavLink = styled(Link, {
   padding: "8px 16px",
   borderRadius: "var(--radius)",
   transition: "all 0.3s ease",
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
   "&:hover": {
     backgroundColor:
       $isdark || $forcewhite ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
     color: "#fff",
   },
 }));
+
+const NavButton = styled("button", {
+  shouldForwardProp: (prop) =>
+    typeof prop === "string" && !["$isdark", "$forcewhite"].includes(prop),
+})<{ $isdark?: boolean; $forcewhite?: boolean }>(({ $isdark, $forcewhite }) => ({
+  color: $forcewhite ? "#fff" : $isdark ? "#fff" : "#222",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "Poppins, sans-serif",
+  fontWeight: 500,
+  padding: "8px 16px",
+  borderRadius: "var(--radius)",
+  transition: "all 0.3s ease",
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  fontSize: "1rem",
+  "&:hover": {
+    backgroundColor:
+      $isdark || $forcewhite ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+    color: "#fff",
+  },
+}));
+
+const Transition = forwardRef((props: any, ref: any) => (
+  <motion.div
+    ref={ref}
+    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+    transition={{ duration: 0.2, ease: "easeOut" }}
+    {...props}
+  />
+));
 
 const LogoContainer = styled(Box)(({ theme }) => ({
   display: "flex",
@@ -41,6 +79,8 @@ const LogoContainer = styled(Box)(({ theme }) => ({
 export const Navigation: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -70,13 +110,30 @@ export const Navigation: React.FC = () => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, menu: string) => {
+    setAnchorEl(event.currentTarget);
+    setActiveMenu(menu);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setActiveMenu(null);
+  };
+
   const navItems = [
     { label: "Portfolio", path: "/portfolio" },
     { label: "People", path: "/people" },
     { label: "Facilities", path: "/facilities" },
     { label: "Program", path: "/program" },
-    { label: "Media", path: "/media" },
-    { label: "Blogs", path: "/blogs" },
+    { 
+      label: "Media", 
+      path: "/media",
+      children: [
+        { label: "Gallery", path: "/media" },
+        { label: "Blogs", path: "/blogs" }
+      ]
+    },
+    { label: "Support", path: "/support" },
     { label: "Contact", path: "/contact" },
   ];
 
@@ -143,22 +200,78 @@ export const Navigation: React.FC = () => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                $isdark={isDarkMode}
-                $forcewhite={isHome && !scrolled}
-                style={{
-                  backgroundColor:
-                    location.pathname === item.path
-                      ? isDarkMode || (isHome && !scrolled)
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(0,0,0,0.08)"
-                      : "transparent",
-                }}
-              >
-                {item.label}
-              </NavLink>
+              item.children ? (
+                <Box key={item.label}>
+                  <NavButton
+                    onClick={(e) => handleMenuOpen(e, item.label)}
+                    $isdark={isDarkMode}
+                    $forcewhite={isHome && !scrolled}
+                  >
+                    {item.label} <KeyboardArrowDown fontSize="small" />
+                  </NavButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl) && activeMenu === item.label}
+                    onClose={handleMenuClose}
+                    TransitionComponent={Fade}
+                    PaperProps={{
+                      sx: {
+                        mt: 1.5,
+                        borderRadius: "16px",
+                        minWidth: 180,
+                        backgroundColor: "hsl(var(--card))",
+                        color: "hsl(var(--foreground))",
+                        border: "1px solid hsl(var(--border))",
+                        boxShadow: "0 10px 40px -10px rgba(0,0,0,0.2)",
+                        overflow: "hidden",
+                        '& .MuiList-root': {
+                          padding: '8px',
+                        }
+                      }
+                    }}
+                  >
+                    {item.children.map((child) => (
+                      <MenuItem 
+                        key={child.path} 
+                        onClick={handleMenuClose}
+                        component={Link}
+                        to={child.path}
+                        sx={{ 
+                          fontFamily: "Poppins, sans-serif",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          borderRadius: "8px",
+                          mb: 0.5,
+                          '&:last-child': { mb: 0 },
+                          '&:hover': {
+                            backgroundColor: "hsl(var(--primary) / 0.1)",
+                            color: "hsl(var(--primary))",
+                          }
+                        }}
+                      >
+                        {child.label}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
+              ) : (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  $isdark={isDarkMode}
+                  $forcewhite={isHome && !scrolled}
+                  style={{
+                    backgroundColor:
+                      location.pathname === item.path
+                        ? isDarkMode || (isHome && !scrolled)
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.08)"
+                        : "transparent",
+                  }}
+                >
+                  {item.label}
+                </NavLink>
+              )
             ))}
           </Box>
 

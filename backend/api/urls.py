@@ -18,6 +18,13 @@ from .views import (
 )
 
 router = DefaultRouter()
+
+# Register ViewSets
+from .views import MentorViewSet, FundingRequestViewSet, MentoringRequestViewSet, ValidationRequestViewSet
+router.register(r'mentors', MentorViewSet)
+router.register(r'support/funding', FundingRequestViewSet)
+router.register(r'support/mentoring', MentoringRequestViewSet)
+router.register(r'support/validation', ValidationRequestViewSet)
  
 urlpatterns = [
     path('', include(router.urls)),
@@ -90,3 +97,5 @@ urlpatterns = [
     path('admin/company-requests/<int:request_id>/review/', review_company_request, name='review_company_request'),
 
 ]
+
+

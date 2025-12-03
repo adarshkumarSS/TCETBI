@@ -194,3 +194,53 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm')
         user = AppUser.objects.create_user(**validated_data)
         return user
+
+from .models import Mentor, FundingRequest, MentoringRequest, ValidationRequest
+
+class MentorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mentor
+        fields = '__all__'
+
+class FundingRequestSerializer(serializers.ModelSerializer):
+    user_details = AppUserSerializer(source='user', read_only=True)
+    
+    class Meta:
+        model = FundingRequest
+        fields = '__all__'
+        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)
+
+class MentoringRequestSerializer(serializers.ModelSerializer):
+    user_details = AppUserSerializer(source='user', read_only=True)
+    mentor_details = MentorSerializer(source='mentor', read_only=True)
+
+    class Meta:
+        model = MentoringRequest
+        fields = '__all__'
+        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)
+
+class ValidationRequestSerializer(serializers.ModelSerializer):
+    user_details = AppUserSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = ValidationRequest
+        fields = '__all__'
+        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)

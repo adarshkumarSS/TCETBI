@@ -19,7 +19,7 @@ from .serializers import IncubationSerializer
 import cloudinary.uploader
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
-from ..utils.cloudinary_utils import delete_cloudinary_image
+from utils.cloudinary_utils import delete_cloudinary_image, delete_cloudinary_file
 
 @api_view(["POST"])
 def submit_contact_message(request):
@@ -390,7 +390,8 @@ def create_admin_user():
             print(f"✅ Admin user created: {user.username} (AppUser)")
         else:
             user = AppUser.objects.get(username=admin_email)
-            user.set_password(admin_password)
+            # Do NOT reset password here, otherwise changing it via UI won't work
+            # user.set_password(admin_password) 
             user.is_staff = True
             user.is_superuser = True
             user.status = 'approved'
@@ -478,15 +479,8 @@ def admin_profile(request):
     if not user.is_staff:
         return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
 
-    return Response({
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'is_staff': user.is_staff,
-            'is_superuser': user.is_superuser,
-        }
-    })
+    serializer = AppUserSerializer(user)
+    return Response({'user': serializer.data})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1125,3 +1119,104 @@ def review_company_request(request, request_id):
             'message': 'Company request rejected',
             'company_request': UserCompanyRequestSerializer(company_request).data
         })
+
+# Support Services ViewSets
+from rest_framework import viewsets
+from rest_framework.permissions import IsAdminUser
+from .models import Mentor, FundingRequest, MentoringRequest, ValidationRequest
+from .serializers import MentorSerializer, FundingRequestSerializer, MentoringRequestSerializer, ValidationRequestSerializer
+
+class MentorViewSet(viewsets.ModelViewSet):
+    queryset = Mentor.objects.all()
+    serializer_class = MentorSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        print(f"DEBUG: get_permissions called for {self.action}")
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsAdminUser()]
+        return [AllowAny()]
+
+    def get_authenticators(self):
+        print(f"DEBUG: get_authenticators called for {self.request.method}")
+        if self.request.method == 'GET':
+            return []
+        return super().get_authenticators()
+
+class FundingRequestViewSet(viewsets.ModelViewSet):
+    queryset = FundingRequest.objects.all()
+    serializer_class = FundingRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_authenticators(self):
+        if self.request.method == 'POST':
+            return []
+        return super().get_authenticators()
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return FundingRequest.objects.all().order_by('-created_at')
+        return FundingRequest.objects.filter(user=user).order_by('-created_at')
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        new_pitch_deck = serializer.validated_data.get('pitch_deck')
+        if new_pitch_deck and instance.pitch_deck and new_pitch_deck != instance.pitch_deck:
+            delete_cloudinary_file(instance.pitch_deck, resource_type='raw')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.pitch_deck:
+            delete_cloudinary_file(instance.pitch_deck, resource_type='raw')
+        instance.delete()
+
+class MentoringRequestViewSet(viewsets.ModelViewSet):
+    queryset = MentoringRequest.objects.all()
+    serializer_class = MentoringRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_authenticators(self):
+        if self.request.method == 'POST':
+            return []
+        return super().get_authenticators()
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return MentoringRequest.objects.all().order_by('-created_at')
+        return MentoringRequest.objects.filter(user=user).order_by('-created_at')
+
+class ValidationRequestViewSet(viewsets.ModelViewSet):
+    queryset = ValidationRequest.objects.all()
+    serializer_class = ValidationRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_authenticators(self):
+        if self.request.method == 'POST':
+            return []
+        return super().get_authenticators()
+    queryset = ValidationRequest.objects.all()
+    serializer_class = ValidationRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return ValidationRequest.objects.all().order_by('-created_at')
+        return ValidationRequest.objects.filter(user=user).order_by('-created_at')

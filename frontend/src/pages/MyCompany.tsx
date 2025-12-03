@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import userService from "../api/userService";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary";
+import { ResizeModal } from "../components/ResizeModal";
 
 export const MyCompany = () => {
   const navigate = useNavigate();
@@ -46,6 +47,13 @@ export const MyCompany = () => {
   // File objects for deferred upload
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [ceoImageFile, setCeoImageFile] = useState<File | null>(null);
+
+  // Resize Modal State
+  const [resizeModal, setResizeModal] = useState({
+    open: false,
+    image: "",
+    target: "" as "logo" | "ceo",
+  });
 
   // Confirmation dialogs
   const [confirmDialog, setConfirmDialog] = useState({
@@ -134,25 +142,37 @@ export const MyCompany = () => {
     }
   };
 
-  // Image upload handlers
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection and open resize modal
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, target: "logo" | "ceo") => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Create local preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setLogoFile(file);
-    setEditedCompanyData({ ...editedCompanyData, logo: previewUrl });
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setResizeModal({
+          open: true,
+          image: reader.result as string,
+          target,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input so same file can be selected again
+    event.target.value = "";
   };
 
-  const handleCeoImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Handle saving cropped image from modal
+  const handleResizeSave = (croppedFile: File) => {
+    const previewUrl = URL.createObjectURL(croppedFile);
 
-    // Create local preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setCeoImageFile(file);
-    setEditedCompanyData({ ...editedCompanyData, ceo_image: previewUrl });
+    if (resizeModal.target === "logo") {
+      setLogoFile(croppedFile);
+      setEditedCompanyData((prev) => ({ ...prev, logo: previewUrl }));
+    } else {
+      setCeoImageFile(croppedFile);
+      setEditedCompanyData((prev) => ({ ...prev, ceo_image: previewUrl }));
+    }
+
+    setResizeModal({ open: false, image: "", target: "logo" });
   };
 
   // Generate change summary
@@ -792,29 +812,26 @@ export const MyCompany = () => {
                 />
               </Box>
 
+              {/* Logo Upload Section */}
               <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                <TextField
-                  fullWidth
-                  label="Company Logo URL"
-                  value={editedCompanyData.logo}
-                  onChange={(e) => setEditedCompanyData({ ...editedCompanyData, logo: e.target.value })}
-                  disabled={isUploadingLogo}
-                  sx={{ fontFamily: "Poppins, sans-serif" }}
-                  helperText="Upload an image or provide a URL"
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<CloudUpload />}
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    minWidth: "120px",
-                    whiteSpace: "nowrap"
-                  }}
+                <Avatar
+                  src={editedCompanyData.logo}
+                  variant="rounded"
+                  sx={{ width: 64, height: 64, border: "1px solid hsl(var(--border))" }}
                 >
-                  {isUploadingLogo ? "Uploading..." : "Upload"}
-                </Button>
+                  <Business />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Company Logo</Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloudUpload />}
+                    onClick={() => logoInputRef.current?.click()}
+                    sx={{ fontFamily: "Poppins, sans-serif" }}
+                  >
+                    Upload Logo
+                  </Button>
+                </Box>
               </Box>
 
               <Box sx={{ display: "flex", gap: 3, flexDirection: { xs: "column", md: "row" } }}>
@@ -889,29 +906,25 @@ export const MyCompany = () => {
                 sx={{ fontFamily: "Poppins, sans-serif" }}
               />
 
+              {/* CEO Image Upload Section */}
               <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                <TextField
-                  fullWidth
-                  label="CEO Image URL"
-                  value={editedCompanyData.ceo_image}
-                  onChange={(e) => setEditedCompanyData({ ...editedCompanyData, ceo_image: e.target.value })}
-                  disabled={isUploadingCeoImage}
-                  sx={{ fontFamily: "Poppins, sans-serif" }}
-                  helperText="Upload an image or provide a URL"
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<CloudUpload />}
-                  onClick={() => ceoImageInputRef.current?.click()}
-                  disabled={isUploadingCeoImage}
-                  sx={{
-                    fontFamily: "Poppins, sans-serif",
-                    minWidth: "120px",
-                    whiteSpace: "nowrap"
-                  }}
+                <Avatar
+                  src={editedCompanyData.ceo_image}
+                  sx={{ width: 64, height: 64, border: "1px solid hsl(var(--border))" }}
                 >
-                  {isUploadingCeoImage ? "Uploading..." : "Upload"}
-                </Button>
+                  <Person />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>CEO Image</Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloudUpload />}
+                    onClick={() => ceoImageInputRef.current?.click()}
+                    sx={{ fontFamily: "Poppins, sans-serif" }}
+                  >
+                    Upload Photo
+                  </Button>
+                </Box>
               </Box>
 
               <TextField
@@ -1190,16 +1203,24 @@ export const MyCompany = () => {
         <input
           type="file"
           ref={logoInputRef}
-          onChange={handleLogoUpload}
+          onChange={(e) => handleFileSelect(e, "logo")}
           accept="image/*"
           style={{ display: 'none' }}
         />
         <input
           type="file"
           ref={ceoImageInputRef}
-          onChange={handleCeoImageUpload}
+          onChange={(e) => handleFileSelect(e, "ceo")}
           accept="image/*"
           style={{ display: 'none' }}
+        />
+
+        {/* Resize Modal */}
+        <ResizeModal
+          open={resizeModal.open}
+          image={resizeModal.image}
+          onClose={() => setResizeModal({ ...resizeModal, open: false })}
+          onSave={handleResizeSave}
         />
       </Box>
     </Box>

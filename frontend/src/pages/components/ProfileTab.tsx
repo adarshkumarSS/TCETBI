@@ -118,68 +118,7 @@ export const ProfileTab = ({ user }: ProfileTabProps) => {
               helperText="Email cannot be changed - contact admin for updates"
             />
 
-            {/* Account Stats */}
-            <Box sx={{ mt: 2, p: 3, backgroundColor: "hsl(var(--muted) / 0.3)", borderRadius: "12px" }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 600,
-                  color: "hsl(var(--foreground))",
-                  mb: 2,
-                }}
-              >
-                Account Overview
-              </Typography>
 
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
-                <Box sx={{ textAlign: "center", p: 2, backgroundColor: "hsl(var(--background))", borderRadius: "8px" }}>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 700,
-                      color: "hsl(var(--primary))",
-                      mb: 1,
-                    }}
-                  >
-                    0
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "Poppins, sans-serif",
-                      color: "hsl(var(--muted-foreground))",
-                    }}
-                  >
-                    Company Requests
-                  </Typography>
-                </Box>
-
-                <Box sx={{ textAlign: "center", p: 2, backgroundColor: "hsl(var(--background))", borderRadius: "8px" }}>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 700,
-                      color: "hsl(var(--warning))",
-                      mb: 1,
-                    }}
-                  >
-                    -
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "Poppins, sans-serif",
-                      color: "hsl(var(--muted-foreground))",
-                    }}
-                  >
-                    Portfolio Status
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
           </Box>
 
           {/* Action Buttons */}

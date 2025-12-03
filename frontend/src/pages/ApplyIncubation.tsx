@@ -26,6 +26,7 @@ import {
 import { styled } from "@mui/material/styles";
 import { CloudUpload, ArrowBack } from "@mui/icons-material";
 import { Link,useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ConfirmSubmitModal } from "../components/ConfirmSubmitModal";
 import { SubmitLoader } from "./SubmitLoader";
 import { submitIncubationApplication } from "../api/incubationService";
@@ -231,12 +232,17 @@ export const ApplyIncubation = () => {
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
-    if (file && file.size > 2 * 1024 * 1024) {
-      alert("Resume must be less than 2MB");
-      return;
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast.error("Only PDF files are allowed");
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Resume must be less than 2MB");
+        return;
+      }
+      setResumeFile(file);
     }
-
-    setResumeFile(file);
   };
 
   // Robust input handler for reference fields to catch paste/autofill
@@ -456,7 +462,7 @@ export const ApplyIncubation = () => {
 
                     <Grid size={{ xs: 12, md: 4 }}>
                       <input
-                        accept=".pdf,.doc,.docx"
+                        accept=".pdf"
                         style={{ display: "none" }}
                         id="resume-upload"
                         type="file"
@@ -465,10 +471,34 @@ export const ApplyIncubation = () => {
                       <label htmlFor="resume-upload">
                         <UploadBox>
                           <CloudUpload />
-                          Upload Entrepreneur Resume
+                          {resumeFile ? resumeFile.name : "Upload Entrepreneur Resume (PDF)"}
                         </UploadBox>
                       </label>
                     </Grid>
+                    {resumeFile && (
+                      <Grid size={{ xs: 12 }}>
+                        <Box sx={{ mt: 2, p: 2, border: '1px solid hsl(var(--border))', borderRadius: '8px', backgroundColor: 'hsl(var(--muted)/0.3)' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontFamily: 'Poppins, sans-serif' }}>Resume Preview</Typography>
+                            <Button 
+                              size="small" 
+                              color="error" 
+                              onClick={() => setResumeFile(null)}
+                              sx={{ textTransform: 'none' }}
+                            >
+                              Remove
+                            </Button>
+                          </Box>
+                          <iframe 
+                            src={URL.createObjectURL(resumeFile)} 
+                            width="100%" 
+                            height="500px" 
+                            style={{ border: 'none', borderRadius: '4px', backgroundColor: 'white' }}
+                            title="Resume Preview"
+                          />
+                        </Box>
+                      </Grid>
+                    )}
                   </Grid>
 
                   {/* Personal Information */}

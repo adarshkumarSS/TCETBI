@@ -9,6 +9,7 @@ import { ProfileTab } from "./components/ProfileTab";
 export const UserDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const [companyLogo, setCompanyLogo] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Confirmation dialogs
@@ -38,13 +39,24 @@ export const UserDashboard = () => {
 
     setIsAuthenticated(true);
 
-    // Fetch user profile
-    const fetchUserData = async () => {
+    // Fetch user profile and company data
+    const fetchData = async () => {
       try {
         const profileResponse = await userService.getUserProfile();
         const userData = profileResponse.user;
         setUser(userData);
         localStorage.setItem('user_data', JSON.stringify(userData));
+
+        // Fetch company logo
+        try {
+          const companyResponse = await userService.getCompanyRequest();
+          if (companyResponse.company_request?.logo) {
+            setCompanyLogo(companyResponse.company_request.logo);
+          }
+        } catch (err) {
+          console.log("No company data found or failed to fetch");
+        }
+
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         toast.error("Failed to load profile");
@@ -57,7 +69,7 @@ export const UserDashboard = () => {
       }
     };
 
-    fetchUserData();
+    fetchData();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -177,6 +189,7 @@ export const UserDashboard = () => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 4, position: "relative", zIndex: 1, flexDirection: { xs: "column", md: "row" }, textAlign: { xs: "center", md: "left" } }}>
             <Avatar
+              src={companyLogo}
               sx={{
                 width: 120,
                 height: 120,
@@ -186,7 +199,7 @@ export const UserDashboard = () => {
                 boxShadow: "0 8px 32px hsl(var(--primary) / 0.2)",
               }}
             >
-              {user?.full_name?.charAt(0) || <AccountCircle sx={{ fontSize: "4rem" }} />}
+              {!companyLogo && (user?.full_name?.charAt(0) || <AccountCircle sx={{ fontSize: "4rem" }} />)}
             </Avatar>
 
             <Box sx={{ flex: 1 }}>

@@ -11,6 +11,9 @@ interface User {
   id: number;
   username: string;
   email: string;
+  full_name: string;
+  phone: string;
+  status: string;
   is_staff: boolean;
   is_superuser: boolean;
 }
@@ -94,6 +97,13 @@ export const authService = {
       headers: getAuthHeaders()
     });
     return response.data.user;
+  },
+
+  async updateAdminProfile(data: Partial<User>): Promise<{message: string, user: User}> {
+    const response = await axios.put<{message: string, user: User}>(`${BASE_URL}/user/profile/update/`, data, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
   },
 
   async changePassword(data: PasswordChangeData): Promise<{message: string}> {

@@ -29,15 +29,17 @@ import { UpdateContent } from "./pages/admin/UpdateContent";
 import { Applications } from "./pages/admin/Applications";
 import { Settings } from "./pages/admin/Settings";
 import { RejectedApplications } from "./pages/admin/RejectedApplications";
-import { LinkedinPosts } from "./pages/admin/LinkedinPosts";
+
 import { CurrentIncubators } from "./pages/admin/CurrentIncubators";
-import { AdminProfile } from "./pages/admin/AdminProfile";
 import { StartupDetailPage } from "./pages/StartupDetailPage";
 import { NotificationsPage } from "./pages/admin/NotificationPage";
 import { UserManagement } from "./pages/admin/UserManagement";
 import { CompanyRequests } from "./pages/admin/CompanyRequests";
 import { UserDashboard } from "./pages/UserDashboard";
+import { Support } from "./pages/Support";
 import { MyCompany } from "./pages/MyCompany";
+import { SupportRequests } from "./pages/admin/SupportRequests";
+import { AdminMentors } from "./pages/admin/AdminMentors";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
@@ -148,6 +150,15 @@ const router = createBrowserRouter(
       ),
     },
     {
+      path: "/support",
+      element: (
+        <>
+          <AppContent />
+          <Support />
+        </>
+      ),
+    },
+    {
       path: "/auth",
       element: <Auth />,
     },
@@ -218,30 +229,13 @@ const router = createBrowserRouter(
         </>
       ),
     },
-    {
-      path: "/admin/linkedin",
-      element: (
-        <>
-          <AppContent />
-          <LinkedinPosts />
-        </>
-      ),
-    },
+
     {
       path: "/admin/incubators",
       element: (
         <>
           <AppContent />
           <CurrentIncubators />
-        </>
-      ),
-    },
-    {
-      path: "/admin/profile",
-      element: (
-        <>
-          <AppContent />
-          <AdminProfile />
         </>
       ),
     },
@@ -263,12 +257,32 @@ const router = createBrowserRouter(
         </>
       ),
     },
+
+
     {
       path: "/admin/company-requests",
       element: (
         <>
           <AppContent />
           <CompanyRequests />
+        </>
+      ),
+    },
+    {
+      path: "/admin/support-requests",
+      element: (
+        <>
+          <AppContent />
+          <SupportRequests />
+        </>
+      ),
+    },
+    {
+      path: "/admin/mentors",
+      element: (
+        <>
+          <AppContent />
+          <AdminMentors />
         </>
       ),
     },
@@ -340,6 +354,9 @@ const App = () => {
     },
     palette: {
       mode: themeMode,
+      primary: {
+        main: "#dc143c",
+      },
     },
   });
 

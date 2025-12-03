@@ -3,7 +3,7 @@ import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import { DarkButton } from "./ui/DarkButton";
-import { Moon, Sun, LogOut, User, LayoutDashboard, Building2 } from "lucide-react";
+import { Moon, Sun, LogOut, User, LayoutDashboard, Building2, HelpingHand } from "lucide-react";
 
 import { LogoutModal } from "./LogoutModal";
 
@@ -94,6 +94,7 @@ export const UserNavigation: React.FC = () => {
   const navItems = [
     { label: "Dashboard", path: "/user/dashboard", icon: <LayoutDashboard size={18} /> },
     { label: "My Company", path: "/user/my-company", icon: <Building2 size={18} /> },
+    { label: "Support", path: "/support", icon: <HelpingHand size={18} /> },
     // { label: "Profile", path: "/user/profile", icon: <User size={18} /> }, // Profile is inside dashboard now
   ];
 

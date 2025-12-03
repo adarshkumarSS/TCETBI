@@ -5,7 +5,8 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export const uploadToCloudinary = async (
   file: File,
-  folder: string = "TCETBI/Startups"
+  folder: string = "TCETBI/Startups",
+  resourceType: "image" | "raw" | "auto" = "image"
 ): Promise<string> => {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error("❌ Cloudinary environment variables not configured.");
@@ -18,7 +19,7 @@ export const uploadToCloudinary = async (
 
   try {
     const response = await axios.post(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -35,6 +36,6 @@ export const uploadToCloudinary = async (
     return response.data.secure_url;
   } catch (error: any) {
     console.error("❌ Cloudinary upload failed:", error.response?.data || error.message);
-    throw new Error("Image upload failed. Please try again.");
+    throw new Error("Upload failed. Please try again.");
   }
 };
