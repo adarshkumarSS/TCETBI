@@ -1,0 +1,16 @@
+Terminal 1 (Start Server):
+
+bash
+cd backend
+python manage.py runserver
+Terminal 2 (Run Tests):
+
+bash
+cd backend
+python test_api_manual.py
+2. Frontend Tests
+Run this in any terminal:
+
+bash
+cd frontend
+npm run test:run
