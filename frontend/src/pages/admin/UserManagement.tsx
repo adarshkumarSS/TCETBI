@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Paper, TextField, Snackbar, Alert } from "@mui/material";
-import Grid from "@mui/material/Grid";
+import Grid from "@mui/material/GridLegacy";
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Ban, Trash2, UserPlus, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../api/userService";
@@ -193,7 +193,7 @@ export const UserManagement = () => {
     >
       <Box
         sx={{
-          maxWidth: "1200px",
+          maxWidth: "100%",
           mx: "auto",
         }}
       >
@@ -236,7 +236,7 @@ export const UserManagement = () => {
         </Box>
 
         <Grid container spacing={4}>
-          <Grid size={{xs:12, lg:8}}>
+          <Grid item xs={12} lg={8}>
             <Paper
               sx={{
                 backgroundColor: "hsl(var(--card))",
@@ -257,7 +257,7 @@ export const UserManagement = () => {
                 All Users
               </Typography>
 
-              <TableContainer sx={{ maxHeight: 'none', overflow: 'visible' }}>
+              <TableContainer sx={{ maxHeight: 'none', overflowX: 'auto' }}>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -325,7 +325,7 @@ export const UserManagement = () => {
             </Paper>
           </Grid>
 
-          <Grid size={{xs:12, lg:4}}>
+          <Grid item xs={12} lg={4}>
             <Paper
               sx={{
                 backgroundColor: "hsl(var(--card))",

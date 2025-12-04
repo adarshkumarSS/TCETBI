@@ -339,7 +339,7 @@ class AppUser(AbstractUser):
         return f"{self.username} ({self.status})"
 
 class UserCompanyRequest(models.Model):
-    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='company_requests')
+    user = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='company_requests')
 
     name = models.CharField(max_length=255)
     logo = models.CharField(max_length=500, blank=True, null=True)
@@ -407,7 +407,7 @@ class FundingRequest(models.Model):
         ('rejected', 'Rejected'),
     )
 
-    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='funding_requests', null=True, blank=True)
+    user = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='funding_requests', null=True, blank=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -432,7 +432,7 @@ class MentoringRequest(models.Model):
         ('scheduled', 'Mentoring Scheduled'),
     )
 
-    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='mentoring_requests', null=True, blank=True)
+    user = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='mentoring_requests', null=True, blank=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -456,7 +456,7 @@ class ValidationRequest(models.Model):
         ('in_progress', 'Validation In Progress'),
     )
 
-    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='validation_requests', null=True, blank=True)
+    user = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='validation_requests', null=True, blank=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
