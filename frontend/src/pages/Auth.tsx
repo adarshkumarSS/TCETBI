@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Container, Typography, TextField, Button, IconButton, InputAdornment, Divider, useTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Visibility, VisibilityOff, Google, LinkedIn, ArrowBack } from '@mui/icons-material';
 import { Loader2 } from 'lucide-react';
-import { Link, useNavigate  } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import authService from '../api/authService';
 
@@ -14,7 +14,7 @@ const StyledBox = styled(Box)(({ theme }) => ({
   justifyContent: 'center',
   background: 'hsl(var(--background))',
   padding: theme.spacing(2),
-  marginTop: '0', 
+  marginTop: '0',
 }));
 
 const AuthCard = styled(motion.div)({
@@ -25,7 +25,7 @@ const AuthCard = styled(motion.div)({
   width: '100%',
   boxShadow: '0 20px 60px rgba(220, 20, 60, 0.15)',
   border: '1px solid hsl(var(--border))',
-  margin: '0 auto', 
+  margin: '0 auto',
 });
 
 const StyledTextField = styled(TextField)({
@@ -314,11 +314,11 @@ export const Auth = () => {
 
   return (
     <StyledBox>
-      <Container 
-        maxWidth="sm" 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
+      <Container
+        maxWidth="sm"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'flex-start',
           minHeight: '100vh',
@@ -326,9 +326,14 @@ export const Auth = () => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2, width: '100%' }}>
-          <BackButton 
-            component={Link}
-            to="/"
+          <BackButton
+            onClick={() => {
+              if (!isLogin) {
+                setIsLogin(true);
+              } else {
+                navigate('/');
+              }
+            }}
           >
             <ArrowBack />
           </BackButton>
@@ -670,7 +675,10 @@ export const Auth = () => {
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={() => setShowSuccessModal(false)}
+              onClick={() => {
+                setShowSuccessModal(false);
+                setIsLogin(true);
+              }}
               sx={{
                 fontFamily: 'Poppins, sans-serif',
                 color: 'hsl(var(--primary))',

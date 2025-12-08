@@ -90,7 +90,7 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
                       variant="h4"
                       sx={{
                         mb: 2,
-                        color: 'white',
+                        color: 'hsl(var(--foreground))',
                         fontFamily: 'Poppins, sans-serif',
                         fontWeight: 600,
                       }}
@@ -101,7 +101,7 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
                       variant="h6"
                       sx={{
                         mb: 2,
-                        color: 'white',
+                        color: 'hsl(var(--foreground))',
                         fontFamily: 'Poppins, sans-serif',
                         fontWeight: 500,
                       }}
@@ -112,7 +112,7 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
                       variant="body1"
                       sx={{
                         mb: 3,
-                        color: 'white',
+                        color: 'hsl(var(--muted-foreground))',
                         fontFamily: 'Poppins, sans-serif',
                         lineHeight: 1.6,
                       }}
@@ -123,12 +123,12 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
                       sx={{
                         px: 3,
                         py: 2,
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'white',
+                        backgroundColor: 'hsl(var(--secondary))',
+                        color: 'hsl(var(--secondary-foreground))',
                         borderRadius: 'var(--radius)',
                         display: 'inline-block',
                         alignSelf: 'flex-start',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        border: '1px solid hsl(var(--border))',
                       }}
                     >
                       <Typography
@@ -136,7 +136,7 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
                         sx={{
                           fontFamily: 'Poppins, sans-serif',
                           fontWeight: 600,
-                          color: 'white',
+                          color: 'inherit',
                         }}
                       >
                         Impact: {story.impact}

@@ -61,7 +61,7 @@ export const MyCompany = () => {
     title: "",
     message: "",
     action: "",
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export const MyCompany = () => {
 
       if (response.company_request) {
         setCompany(response.company_request);
-        
+
         // Initialize edited data if approved OR if it's a draft/rejected request we might want to edit
         const req = response.company_request;
         setEditedCompanyData({
@@ -254,7 +254,7 @@ export const MyCompany = () => {
       onConfirm: async () => {
         try {
           setIsLoading(true); // Show loading state
-          
+
           let finalLogoUrl = editedCompanyData.logo;
           let finalCeoImageUrl = editedCompanyData.ceo_image;
 
@@ -289,13 +289,13 @@ export const MyCompany = () => {
             ceo_image: finalCeoImageUrl,
             edit_changes_summary: fullSummary
           });
-          
+
           setIsRequestingEdit(false);
           setUserRemarks("");
           setLogoFile(null);
           setCeoImageFile(null);
           toast.success("Edit request submitted for review!");
-          
+
           // Refresh data
           fetchCompanyData();
         } catch (error: any) {
@@ -311,7 +311,7 @@ export const MyCompany = () => {
   const handleSaveDraft = async (submitAfterSave = false) => {
     try {
       setIsLoading(true);
-      
+
       let finalLogoUrl = editedCompanyData.logo;
       let finalCeoImageUrl = editedCompanyData.ceo_image;
 
@@ -320,7 +320,7 @@ export const MyCompany = () => {
         try {
           finalLogoUrl = await uploadToCloudinary(logoFile, "TCETBI/CompanyLogos");
           // Update state so we don't re-upload if they save again without changing
-          setLogoFile(null); 
+          setLogoFile(null);
           setEditedCompanyData(prev => ({ ...prev, logo: finalLogoUrl }));
         } catch (error) {
           console.error("Logo upload failed:", error);
@@ -394,7 +394,7 @@ export const MyCompany = () => {
     );
   }
 
-  if (!company || (company.status !== 'approved' && !isEditingDraft)) {
+  if (!isEditingDraft && (!company || company.status !== 'approved')) {
     // Show landing/status page if not approved and not currently editing
     return (
       <Box
@@ -428,12 +428,12 @@ export const MyCompany = () => {
               mb: 2
             }}
           >
-            {!company ? "Create Company Portfolio" : 
-             company.status === 'draft' ? "Draft Saved" :
-             company.status === 'rejected' ? "Request Rejected" :
-             "Application Under Review"}
+            {!company ? "Create Company Portfolio" :
+              company.status === 'draft' ? "Draft Saved" :
+                company.status === 'rejected' ? "Request Rejected" :
+                  "Application Under Review"}
           </Typography>
-          
+
           <Typography
             variant="body1"
             sx={{
@@ -442,8 +442,8 @@ export const MyCompany = () => {
               mb: 4
             }}
           >
-            {!company 
-              ? "You haven't created a company portfolio request yet. Create one to be featured on our portfolio page." 
+            {!company
+              ? "You haven't created a company portfolio request yet. Create one to be featured on our portfolio page."
               : company.status === 'pending' || company.status === 'submitted'
                 ? "Your company portfolio is currently under review by the admin. You will be notified once it is approved."
                 : company.status === 'rejected'
@@ -551,19 +551,19 @@ export const MyCompany = () => {
         {company && company.status === 'approved' && (
           <Box sx={{ mb: 6 }}>
             {/* Hero Section */}
-            <Box 
-              sx={{ 
-                position: "relative", 
-                height: "200px", 
+            <Box
+              sx={{
+                position: "relative",
+                height: "200px",
                 background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.6) 100%)",
                 borderRadius: "var(--radius) var(--radius) 0 0",
                 mb: 8
               }}
             >
-              <Box 
-                sx={{ 
-                  position: "absolute", 
-                  bottom: -40, 
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: -40,
                   left: 40,
                   display: "flex",
                   alignItems: "end",
@@ -595,24 +595,24 @@ export const MyCompany = () => {
                   >
                     {company.name}
                   </Typography>
-                  <Chip 
-                    label={company.sector || "Sector N/A"} 
-                    size="small" 
-                    sx={{ 
-                      mt: 1, 
-                      backgroundColor: "hsl(var(--background))", 
-                      fontWeight: 600 
-                    }} 
+                  <Chip
+                    label={company.sector || "Sector N/A"}
+                    size="small"
+                    sx={{
+                      mt: 1,
+                      backgroundColor: "hsl(var(--background))",
+                      fontWeight: 600
+                    }}
                   />
                 </Box>
               </Box>
             </Box>
 
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 4 }}>
-              
+
               {/* Left Column: Main Content */}
               <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                
+
                 {/* Description */}
                 <Card sx={{ border: "1px solid hsl(var(--border))", boxShadow: "none" }}>
                   <CardContent sx={{ p: 3 }}>
@@ -631,15 +631,15 @@ export const MyCompany = () => {
                     <Typography variant="h6" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
                       <Image sx={{ fontSize: 20 }} /> Products & Services
                     </Typography>
-                    
+
                     {company.products && company.products.length > 0 ? (
                       <Box sx={{ display: "grid", gap: 3 }}>
                         {company.products.map((product: any, index: number) => (
-                          <Box 
-                            key={index} 
-                            sx={{ 
-                              p: 2, 
-                              borderRadius: 2, 
+                          <Box
+                            key={index}
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
                               backgroundColor: "hsl(var(--muted) / 0.5)",
                               border: "1px solid hsl(var(--border))"
                             }}
@@ -665,7 +665,7 @@ export const MyCompany = () => {
 
               {/* Right Column: Sidebar Info */}
               <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                
+
                 {/* Company Details */}
                 <Card sx={{ border: "1px solid hsl(var(--border))", boxShadow: "none" }}>
                   <CardContent sx={{ p: 3 }}>
@@ -722,10 +722,10 @@ export const MyCompany = () => {
                     </Typography>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       {company.website && (
-                        <Button 
-                          variant="outlined" 
-                          startIcon={<Language />} 
-                          href={company.website} 
+                        <Button
+                          variant="outlined"
+                          startIcon={<Language />}
+                          href={company.website}
                           target="_blank"
                           fullWidth
                           sx={{ justifyContent: "flex-start", textTransform: "none" }}
@@ -734,10 +734,10 @@ export const MyCompany = () => {
                         </Button>
                       )}
                       {company.linkedin && (
-                        <Button 
-                          variant="outlined" 
-                          startIcon={<Box component="span" className="fab fa-linkedin" />} 
-                          href={company.linkedin} 
+                        <Button
+                          variant="outlined"
+                          startIcon={<Box component="span" className="fab fa-linkedin" />}
+                          href={company.linkedin}
                           target="_blank"
                           fullWidth
                           sx={{ justifyContent: "flex-start", textTransform: "none" }}
@@ -783,7 +783,7 @@ export const MyCompany = () => {
                 mb: 3,
               }}
             >
-              {isEditingDraft 
+              {isEditingDraft
                 ? "Fill in your company details below. You can save as draft or submit for approval."
                 : "Edit your company information below. Changes will be automatically detected and submitted for admin approval."
               }
@@ -1085,7 +1085,7 @@ export const MyCompany = () => {
                 >
                   Cancel
                 </Button>
-                
+
                 {isEditingDraft && (
                   <Button
                     variant="outlined"
@@ -1117,7 +1117,7 @@ export const MyCompany = () => {
         )}
 
         {/* Action Buttons */}
-        {!isRequestingEdit && (
+        {!isRequestingEdit && !isEditingDraft && company && company.status === 'approved' && (
           <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
             <Button
               variant="contained"

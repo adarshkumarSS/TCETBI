@@ -228,70 +228,70 @@ const KnowUsBetterSection: React.FC<{ data: HomeData["vision_mission"] }> = ({ d
 };
 
 const AchievementsSection = ({ data }: { data: HomeData["achievements"] }) => (
-    <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
-      <Container maxWidth="lg">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
+  <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
+    <Container maxWidth="lg">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        <Typography
+          variant="h3"
+          align="center"
+          sx={{
+            mb: 6,
+            color: "hsl(var(--foreground))",
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 600,
+          }}
         >
-          <Typography
-            variant="h3"
-            align="center"
-            sx={{
-              mb: 6,
-              color: "hsl(var(--foreground))",
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-            }}
-          >
-            Our Achievements
-          </Typography>
+          Our Achievements
+        </Typography>
 
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "1fr 1fr",
-                md: "1fr 1fr 1fr 1fr",
-              },
-              gap: 4,
-            }}
-          >
-            {data.map((achievement, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <CardContainer className="text-center glow-hover">
-                  <Loader
-                    targetNumber={achievement.number}
-                    suffix={achievement.suffix}
-                    duration={1000 + index * 200}
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mt: 2,
-                      color: "hsl(var(--foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {achievement.label}
-                  </Typography>
-                </CardContainer>
-              </motion.div>
-            ))}
-          </Box>
-        </motion.div>
-      </Container>
-    </Box>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "1fr 1fr",
+              md: "1fr 1fr 1fr 1fr",
+            },
+            gap: 4,
+          }}
+        >
+          {data.map((achievement, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <CardContainer className="text-center glow-hover">
+                <Loader
+                  targetNumber={achievement.number}
+                  suffix={achievement.suffix}
+                  duration={1000 + index * 200}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    mt: 2,
+                    color: "hsl(var(--foreground))",
+                    fontFamily: "Poppins, sans-serif",
+                    fontWeight: 500,
+                  }}
+                >
+                  {achievement.label}
+                </Typography>
+              </CardContainer>
+            </motion.div>
+          ))}
+        </Box>
+      </motion.div>
+    </Container>
+  </Box>
 );
 
 interface Logo {
@@ -350,140 +350,140 @@ const PartnersSection = ({
   govtLogos: HomeData["govt_logos"];
   stateLogos: HomeData["state_logos"];
 }) => (
+  <Box
+    sx={{
+      position: "relative",
+      py: 8,
+      overflow: "hidden",
+      backgroundColor: "hsl(var(--background))",
+    }}
+  >
+    {/* ✨ Glow background */}
     <Box
       sx={{
-        position: "relative",
-        py: 8,
-        overflow: "hidden",
-        backgroundColor: "hsl(var(--background))",
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        width: "70%",
+        height: "120%",
+        transform: "translate(-50%, -50%)",
+        background:
+          "radial-gradient(circle at center, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0) 70%)",
+        filter: "blur(80px)",
+        zIndex: 0,
       }}
-    >
-      {/* ✨ Glow background */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          width: "70%",
-          height: "120%",
-          transform: "translate(-50%, -50%)",
-          background:
-            "radial-gradient(circle at center, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0) 70%)",
-          filter: "blur(80px)",
-          zIndex: 0,
-        }}
-      />
+    />
 
-      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
+    <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
+      <Typography
+        variant="h3"
+        align="center"
+        sx={{
+          mb: 6,
+          color: "hsl(var(--foreground))",
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 600,
+        }}
+      >
+        Our Partners
+      </Typography>
+
+      {/* Government of India */}
+      <Box sx={{ mb: 6 }}>
+        <Typography
+          variant="h5"
+          align="center"
+          sx={{
+            mb: 3,
+            color: "hsl(var(--primary))",
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 500,
+          }}
+        >
+          Government of India
+        </Typography>
+        <LogoLoop
+          logos={govtLogos.map((l) => ({
+            node: <GlowingLogo src={l.src} alt={l.name} />,
+            title: l.name,
+            href: "#",
+          }))}
+          speed={20}
+          direction="right"
+          logoHeight={140}
+          gap={60}
+          pauseOnHover
+          scaleOnHover
+          fadeOut
+          fadeOutColor="hsl(var(--background))"
+          ariaLabel="Government of India Partners"
+        />
+      </Box>
+
+      {/* Government of Tamil Nadu */}
+      <Box>
+        <Typography
+          variant="h5"
+          align="center"
+          sx={{
+            mb: 3,
+            color: "hsl(var(--primary))",
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 500,
+          }}
+        >
+          Government of Tamil Nadu
+        </Typography>
+        <LogoLoop
+          logos={stateLogos.map((l) => ({
+            node: <GlowingLogo src={l.src} alt={l.name} />,
+            title: l.name,
+            href: "#",
+          }))}
+          speed={20}
+          direction="left"
+          logoHeight={140}
+          gap={90}
+          pauseOnHover
+          scaleOnHover
+          fadeOut
+          fadeOutColor="hsl(var(--background))"
+          ariaLabel="Government of Tamil Nadu Partners"
+        />
+      </Box>
+    </Container>
+  </Box>
+);
+
+export default PartnersSection;
+
+const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories"] }) => (
+  <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
+    <Container maxWidth="lg">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
         <Typography
           variant="h3"
           align="center"
           sx={{
-            mb: 6,
+            mb: 8,
             color: "hsl(var(--foreground))",
             fontFamily: "Poppins, sans-serif",
             fontWeight: 600,
           }}
         >
-          Our Partners
+          Success Stories
         </Typography>
 
-        {/* Government of India */}
-        <Box sx={{ mb: 6 }}>
-          <Typography
-            variant="h5"
-            align="center"
-            sx={{
-              mb: 3,
-              color: "hsl(var(--primary))",
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 500,
-            }}
-          >
-            Government of India
-          </Typography>
-          <LogoLoop
-            logos={govtLogos.map((l) => ({
-              node: <GlowingLogo src={l.src} alt={l.name} />,
-              title: l.name,
-              href: "#",
-            }))}
-            speed={20}
-            direction="right"
-            logoHeight={140}
-            gap={60}
-            pauseOnHover
-            scaleOnHover
-            fadeOut
-            fadeOutColor="hsl(var(--background))"
-            ariaLabel="Government of India Partners"
-          />
-        </Box>
-
-        {/* Government of Tamil Nadu */}
-        <Box>
-          <Typography
-            variant="h5"
-            align="center"
-            sx={{
-              mb: 3,
-              color: "hsl(var(--primary))",
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 500,
-            }}
-          >
-            Government of Tamil Nadu
-          </Typography>
-          <LogoLoop
-            logos={stateLogos.map((l) => ({
-              node: <GlowingLogo src={l.src} alt={l.name} />,
-              title: l.name,
-              href: "#",
-            }))}
-            speed={20}
-            direction="left"
-            logoHeight={140}
-            gap={90}
-            pauseOnHover
-            scaleOnHover
-            fadeOut
-            fadeOutColor="hsl(var(--background))"
-            ariaLabel="Government of Tamil Nadu Partners"
-          />
-        </Box>
-      </Container>
-    </Box>
-  );
-
-export default PartnersSection;
-
-const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories"] }) => (
-    <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
-      <Container maxWidth="lg">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <Typography
-            variant="h3"
-            align="center"
-            sx={{
-              mb: 8,
-              color: "hsl(var(--accent-foreground))",
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-            }}
-          >
-            Success Stories
-          </Typography>
-
-          <SuccessStoryCarousel stories={stories} />
-        </motion.div>
-      </Container>
-    </Box>
-  );
+        <SuccessStoryCarousel stories={stories} />
+      </motion.div>
+    </Container>
+  </Box>
+);
 
 export const Home: React.FC = () => {
   const [data, setData] = useState<HomeData | null>(null);
