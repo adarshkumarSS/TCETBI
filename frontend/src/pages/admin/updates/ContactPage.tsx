@@ -10,36 +10,21 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { Upload } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
 import { MessageModal } from "@/components/ui/MessageModal";
-import { ResizeModal } from "@/components/ResizeModal";
-import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import {
   fetchTBIContactData,
   updateTBIContactData,
-  TBICEO,
   TBIContactInfo,
 } from "@/api/contactService";
 
-// ---- Local types ----
-interface CEOWithMeta extends TBICEO {}
 interface ContactWithMeta extends TBIContactInfo {}
 
-type ResizeTarget = "ceo" | null;
-
 export const ContactPage: React.FC = () => {
-  const [ceo, setCeo] = useState<CEOWithMeta | null>(null);
   const [contact, setContact] = useState<ContactWithMeta | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [resizeModal, setResizeModal] = useState<{
-    open: boolean;
-    target: ResizeTarget;
-    image: string;
-  }>({ open: false, target: null, image: "" });
 
   const [messageOpen, setMessageOpen] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -102,17 +87,6 @@ export const ContactPage: React.FC = () => {
   useEffect(() => {
     fetchTBIContactData()
       .then((res) => {
-        setCeo(
-          res.ceo || {
-            name: "",
-            position: "",
-            image: "",
-            bio: "",
-            experience: "",
-            email: "",
-            linkedin: "",
-          }
-        );
         setContact(
           res.contact || {
             address:
@@ -141,44 +115,14 @@ export const ContactPage: React.FC = () => {
 
   // ------- CEO Image Upload + Crop -------
 
-  const handleCEOImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setResizeModal({
-        open: true,
-        target: "ceo",
-        image: reader.result as string,
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleCropped = async (croppedFile: File) => {
-    if (!resizeModal.target) return;
-
-    const url = URL.createObjectURL(croppedFile);
-
-    if (resizeModal.target === "ceo") {
-      setCeo((prev) => (prev ? { ...prev, image: url } : prev));
-    }
-
-    setResizeModal({ open: false, target: null, image: "" });
-  };
 
   // ------- Validation -------
 
-  const validate = (ceo: CEOWithMeta | null, contact: ContactWithMeta | null) => {
-    if (!ceo || !contact) return false;
+  const validate = (contact: ContactWithMeta | null) => {
+    if (!contact) return false;
 
     return (
-      ceo.name.trim() &&
-      ceo.position.trim() &&
-      ceo.bio.trim() &&
-      ceo.experience.trim() &&
-      (ceo.email || "").toString().trim() &&
 
       contact.address.trim() &&
       contact.phone.trim() &&
@@ -196,39 +140,13 @@ export const ContactPage: React.FC = () => {
   // ------- Save (upload CEO image if needed + PUT to backend) -------
 
   const handleSave = async () => {
-    if (!validate(ceo, contact)) {
+    if (!validate(contact)) {
       setValidationModal(true);
       return;
     }
 
     try {
       setSaving(true);
-
-      const uploadIfNeeded = async (url: string) => {
-        if (!url || url.trim() === "") return "";
-        if (url.startsWith("http")) return url;
-
-        try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          const file = new File([blob], "ceo.jpg", { type: blob.type });
-          const uploaded = await uploadToCloudinary(file, "TCETBI/TBICEO");
-          URL.revokeObjectURL(url);
-          return uploaded;
-        } catch (err) {
-          console.warn("⚠️ Skipping invalid blob URL:", url, err);
-          return "";
-        }
-      };
-
-      let payloadCEO: TBICEO | null = null;
-
-      if (ceo) {
-        payloadCEO = {
-          ...ceo,
-          image: ceo.image ? await uploadIfNeeded(ceo.image) : "",
-        };
-      }
 
       const cleanMapEmbed = (contact?.map_embed_url || "")
         .replace(/[\u200B-\u200D\uFEFF]/g, "")
@@ -243,7 +161,6 @@ export const ContactPage: React.FC = () => {
         : null;
 
       const res = await updateTBIContactData({
-        ceo: payloadCEO,
         contact: payloadContact,
       });
 
@@ -280,187 +197,11 @@ export const ContactPage: React.FC = () => {
           mb: 3,
         }}
       >
-        TBI Contact & CEO
+        TBI Contact Information
       </Typography>
 
       {/* CEO CARD */}
-      {ceo && (
-        <Box
-          sx={{
-            p: 3,
-            mb: 3,
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
-            maxWidth: 800,
-            mx: "auto",
-            backgroundColor: "hsl(var(--card))",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              mb: 2,
-              fontFamily: "Poppins",
-              fontWeight: 600,
-              color: "hsl(var(--foreground))",
-            }}
-          >
-            CEO Details
-          </Typography>
 
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
-              gap: 3,
-            }}
-          >
-            <Box>
-              <TextField
-                fullWidth
-                label="Name"
-                value={ceo.name}
-                onChange={(e) =>
-                  setCeo((prev) => (prev ? { ...prev, name: e.target.value } : prev))
-                }
-                sx={{ ...textFieldStyles, ...compactFieldSpacing }}
-              />
-
-              <TextField
-                fullWidth
-                label="Position"
-                value={ceo.position}
-                onChange={(e) =>
-                  setCeo((prev) =>
-                    prev ? { ...prev, position: e.target.value } : prev
-                  )
-                }
-                sx={{ ...textFieldStyles, ...compactFieldSpacing }}
-              />
-
-              <TextField
-                fullWidth
-                label="Experience"
-                value={ceo.experience}
-                onChange={(e) =>
-                  setCeo((prev) =>
-                    prev ? { ...prev, experience: e.target.value } : prev
-                  )
-                }
-                sx={{ ...textFieldStyles, ...compactFieldSpacing }}
-              />
-
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                  gap: 2,
-                  mb: 1.5,
-                }}
-              >
-                <TextField
-                  fullWidth
-                  label="Email"
-                  value={ceo.email || ""}
-                  onChange={(e) =>
-                    setCeo((prev) =>
-                      prev ? { ...prev, email: e.target.value.trim() } : prev
-                    )
-                  }
-                  sx={textFieldStyles}
-                />
-                <TextField
-                  fullWidth
-                  label="LinkedIn URL"
-                  value={ceo.linkedin || ""}
-                  onChange={(e) =>
-                    setCeo((prev) =>
-                      prev ? { ...prev, linkedin: e.target.value.trim() } : prev
-                    )
-                  }
-                  sx={textFieldStyles}
-                />
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                alignItems: "center",
-              }}
-            >
-              {ceo.image && (
-                <Box
-                  sx={{
-                    width: "100%",
-                    maxWidth: 260,
-                    borderRadius: "var(--radius)",
-                    overflow: "hidden",
-                    mb: 1,
-                  }}
-                >
-                  <img
-                    src={ceo.image}
-                    alt={ceo.name}
-                    style={{
-                      width: "100%",
-                      height: 260,
-                      objectFit: "cover",
-                    }}
-                  />
-                </Box>
-              )}
-
-              <input
-                accept="image/*"
-                id="ceo-img"
-                type="file"
-                style={{ display: "none" }}
-                onChange={handleCEOImageUpload}
-              />
-              <label htmlFor="ceo-img" style={{ width: "100%" }}>
-                <Button
-                  component="span"
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<Upload size={16} />}
-                  sx={uploadButtonStyles}
-                >
-                  {ceo.image ? "Change CEO Image" : "Upload CEO Image"}
-                </Button>
-              </label>
-            </Box>
-          </Box>
-
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            maxRows={8}
-            label="Bio"
-            value={ceo.bio}
-            onChange={(e) =>
-              setCeo((prev) => (prev ? { ...prev, bio: e.target.value } : prev))
-            }
-            sx={{
-              ...textFieldStyles,
-              mt: 2,
-              "& .MuiOutlinedInput-root": {
-                padding: "0 !important",
-                alignItems: "stretch !important",
-              },
-              "& textarea": {
-                padding: "12px 14px !important",
-                lineHeight: "1.5 !important",
-                resize: "vertical",
-              },
-            }}
-          />
-        </Box>
-      )}
 
       {/* CONTACT CARD */}
       {contact && (
@@ -751,15 +492,7 @@ export const ContactPage: React.FC = () => {
         </DarkButton>
       </Box>
 
-      {/* Resize Modal (CEO image) */}
-      <ResizeModal
-        open={resizeModal.open}
-        image={resizeModal.image}
-        onClose={() =>
-          setResizeModal({ open: false, target: null, image: "" })
-        }
-        onSave={handleCropped}
-      />
+
 
       {/* Validation Modal */}
       <Dialog open={validationModal} onClose={() => setValidationModal(false)}>
@@ -768,8 +501,8 @@ export const ContactPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            Please fill all required fields for CEO and Contact sections before
-            saving. Website & LinkedIn are optional.
+            Please fill all required fields in the Contact section before
+            saving. Website is optional.
           </Typography>
         </DialogContent>
         <DialogActions>

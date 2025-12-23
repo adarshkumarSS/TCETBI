@@ -16,20 +16,22 @@ import { HomePage } from "./updates/HomePage";
 import { PortfolioPage } from "./updates/PortfolioPage";
 import { PeoplePage } from "./updates/PeoplePage";
 import { FacilitiesPage } from "./updates/FacilitiesPage";
-import { ProgramPage } from "./updates/ProgramPage";
+import { EventsManagement } from "./updates/EventsManagement";
 import { MediaPage } from "./updates/MediaPage";
 import { BlogPage } from "./updates/BlogPage";
 import { ContactPage } from "./updates/ContactPage";
+import { PartnershipsManagement } from "./updates/PartnershipsManagement";
 
 const pages = [
   "Home",
   "Portfolio",
   "People",
   "Facilities",
-  "Program",
+  "Events",
   "Media",
   "Blogs",
   "Contact",
+  "Partnerships",
 ];
 
 export const UpdateContent = () => {
@@ -103,14 +105,16 @@ export const UpdateContent = () => {
         return <PeoplePage />;
       case "Facilities":
         return <FacilitiesPage />;
-      case "Program":
-        return <ProgramPage />;
+      case "Events":
+        return <EventsManagement />;
       case "Media":
         return <MediaPage />;
       case "Blogs":
         return <BlogPage />;
       case "Contact":
         return <ContactPage />;
+      case "Partnerships":
+        return <PartnershipsManagement />;
       default:
         return <HomePage setIsDirty={setIsDirty} />;
     }

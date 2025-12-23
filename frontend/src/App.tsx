@@ -18,10 +18,12 @@ import { Home } from "./pages/Home";
 import { Portfolio } from "./pages/Portfolio";
 import { People } from "./pages/People";
 import { Facilities } from "./pages/Facilities";
-import { Program } from "./pages/Program";
+import { Events } from "./pages/Events";
+import { CreateEvent } from "./pages/admin/CreateEvent";
 import { Media } from "./pages/Media";
 import { Blogs } from "./pages/Blogs";
 import { Contact } from "./pages/Contact";
+import { Partnerships } from "./pages/Partnerships";
 import { Auth } from "./pages/Auth";
 import { ApplyIncubation } from "./pages/ApplyIncubation";
 import { AdminDashboard } from "./pages/AdminDashboard";
@@ -40,6 +42,9 @@ import { Support } from "./pages/Support";
 import { MyCompany } from "./pages/MyCompany";
 import { SupportRequests } from "./pages/admin/SupportRequests";
 import { AdminMentors } from "./pages/admin/AdminMentors";
+import { FundingSupport } from "./pages/support/FundingSupport";
+import { MentoringSupport } from "./pages/support/MentoringSupport";
+import { IdeaValidation } from "./pages/support/IdeaValidation";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
@@ -94,6 +99,15 @@ const router = createBrowserRouter(
         </>
       ),
     },
+    {
+      path: "/partnerships",
+      element: (
+        <>
+          <AppContent />
+          <Partnerships />
+        </>
+      ),
+    },
 
     {
       path: "/people",
@@ -114,11 +128,20 @@ const router = createBrowserRouter(
       ),
     },
     {
-      path: "/program",
+      path: "/events",
       element: (
         <>
           <AppContent />
-          <Program />
+          <Events />
+        </>
+      ),
+    },
+    {
+      path: "/admin/create-event",
+      element: (
+        <>
+          <AppContent />
+          <CreateEvent />
         </>
       ),
     },
@@ -155,6 +178,33 @@ const router = createBrowserRouter(
         <>
           <AppContent />
           <Support />
+        </>
+      ),
+    },
+    {
+      path: "/support/funding",
+      element: (
+        <>
+          <AppContent />
+          <FundingSupport />
+        </>
+      ),
+    },
+    {
+      path: "/support/mentoring",
+      element: (
+        <>
+          <AppContent />
+          <MentoringSupport />
+        </>
+      ),
+    },
+    {
+      path: "/support/validation",
+      element: (
+        <>
+          <AppContent />
+          <IdeaValidation />
         </>
       ),
     },

@@ -10,18 +10,14 @@ from utils.cloudinary_utils import delete_cloudinary_image
 @api_view(["GET"])
 def get_tbi_contact_data(request):
     """
-    Returns CEO info + all contact / quick-contact / map info
-    in one payload, similar style to blogs/programs.
+    Returns all contact / quick-contact / map info
+    in one payload, similar style to blogs/events.
     """
-    ceo = TBICEO.objects.first()
     contact = TBIContactInfo.objects.first()
-
-    ceo_data = TBICEOSerializer(ceo).data if ceo else None
     contact_data = TBIContactInfoSerializer(contact).data if contact else None
 
     return Response(
         {
-            "ceo": ceo_data,
             "contact": contact_data,
         }
     )
@@ -31,47 +27,14 @@ def get_tbi_contact_data(request):
 @transaction.atomic
 def update_tbi_contact_data(request):
     """
-    Upserts (update or create) TBICEO + TBIContactInfo.
+    Upserts (update or create) TBIContactInfo.
     Expect payload:
     {
-      "ceo": { ...ceo fields... },
       "contact": { ...contact fields... }
     }
     """
     payload = request.data or {}
-
-    ceo_payload = payload.get("ceo")
     contact_payload = payload.get("contact")
-
-    # ---------- CEO UPDATE / CREATE ----------
-    if ceo_payload is not None:
-        ceo = TBICEO.objects.first()
-        new_img = ceo_payload.get("image")
-
-        if ceo:
-            # Image changed? delete old one from Cloudinary
-            if ceo.image and new_img and ceo.image != new_img:
-                delete_cloudinary_image(ceo.image)
-
-            ceo.name = ceo_payload.get("name", ceo.name)
-            ceo.position = ceo_payload.get("position", ceo.position)
-            ceo.bio = ceo_payload.get("bio", ceo.bio)
-            ceo.experience = ceo_payload.get("experience", ceo.experience)
-            ceo.email = ceo_payload.get("email", ceo.email)
-            ceo.linkedin = ceo_payload.get("linkedin", ceo.linkedin)
-            if new_img:
-                ceo.image = new_img
-            ceo.save()
-        else:
-            TBICEO.objects.create(
-                name=ceo_payload.get("name", ""),
-                position=ceo_payload.get("position", ""),
-                bio=ceo_payload.get("bio", ""),
-                experience=ceo_payload.get("experience", ""),
-                email=ceo_payload.get("email") or None,
-                linkedin=ceo_payload.get("linkedin") or None,
-                image=ceo_payload.get("image", "") or "",
-            )
 
     # ---------- CONTACT UPDATE / CREATE ----------
     if contact_payload is not None:

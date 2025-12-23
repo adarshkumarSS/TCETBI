@@ -1,7 +1,12 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Program, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Event, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest, Partnership
 import os
 from django.contrib.auth.models import User as DjangoUser
+
+class PartnershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Partnership
+        fields = '__all__'
 
 class VisionMissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -75,12 +80,12 @@ class FacilityVideoSerializer(serializers.ModelSerializer):
         model = FacilityVideo
         fields = "__all__"
 
-class ProgramSerializer(serializers.ModelSerializer):
+class EventSerializer(serializers.ModelSerializer):
     startDate = serializers.DateField(format="%Y-%m-%d")
     endDate = serializers.DateField(format="%Y-%m-%d")
 
     class Meta:
-        model = Program
+        model = Event
         fields = "__all__"
 
 class MediaItemSerializer(serializers.ModelSerializer):

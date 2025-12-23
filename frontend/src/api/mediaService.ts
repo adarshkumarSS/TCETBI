@@ -8,7 +8,7 @@ export interface MediaItem {
   title: string;
   description: string;
   album: string;         // album slug
-  category: "events" | "facilities" | "startups" | "programs";
+  category: "events" | "facilities" | "startups" | "events_alt";
 }
 
 export interface MediaResponse {

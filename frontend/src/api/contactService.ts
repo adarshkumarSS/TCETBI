@@ -32,7 +32,6 @@ export interface TBIContactInfo {
 }
 
 export interface TBIContactResponse {
-  ceo: TBICEO | null;
   contact: TBIContactInfo | null;
 }
 
@@ -44,7 +43,6 @@ export const fetchTBIContactData = async (): Promise<TBIContactResponse> => {
 };
 
 export const updateTBIContactData = async (data: {
-  ceo: TBICEO | null;
   contact: TBIContactInfo | null;
 }): Promise<{ message: string }> => {
   const res = await axios.put(`${BASE_URL}/update-tbi-contact-data/`, data);

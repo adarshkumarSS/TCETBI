@@ -17,7 +17,7 @@ interface MediaItem {
   id: number;
   src: string;
   alt: string;
-  category: "events" | "facilities" | "startups" | "programs";
+  category: "events" | "facilities" | "startups" | "events_alt";
   title: string;
   description: string;
   album?: string;
@@ -28,7 +28,7 @@ interface Album {
   title: string;
   coverImage: string;
   items: MediaItem[];
-  category: "events" | "facilities" | "startups" | "programs";
+  category: "events" | "facilities" | "startups" | "events_alt";
 }
 
 const MediaGallery = () => {
@@ -90,7 +90,7 @@ const MediaGallery = () => {
     { key: "all", label: "All Galleries", count: albums.length },
     {
       key: "events",
-      label: "Events",
+      label: "Activities",
       count: albums.filter((album) => album.category === "events").length,
     },
     {
@@ -104,9 +104,9 @@ const MediaGallery = () => {
       count: albums.filter((album) => album.category === "startups").length,
     },
     {
-      key: "programs",
-      label: "Programs",
-      count: albums.filter((album) => album.category === "programs").length,
+      key: "events_alt",
+      label: "Events",
+      count: albums.filter((album) => album.category === "events_alt").length,
     },
   ];
 

@@ -135,7 +135,7 @@ class FacilityVideo(models.Model):
     def __str__(self):
         return self.title
 
-class Program(models.Model):
+class Event(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     image = models.TextField()  # Cloudinary URL
@@ -160,7 +160,7 @@ class MediaItem(models.Model):
         ('events', 'Events'),
         ('facilities', 'Facilities'),
         ('startups', 'Startups'),
-        ('programs', 'Programs'),
+        ('events_alt', 'Events Alt'),
     )
 
     title = models.CharField(max_length=255, blank=True, null=True)
@@ -217,6 +217,15 @@ class TBIContactInfo(models.Model):
     def __str__(self):
         return "TBI Contact Information"
 
+class Partnership(models.Model):
+    name = models.CharField(max_length=255)
+    logo = models.TextField()  # Cloudinary URL
+    description = models.TextField()
+    website = models.URLField(max_length=500, blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
 class ContactMessage(models.Model):
     name = models.CharField(max_length=150)
     email = models.EmailField()
@@ -236,7 +245,7 @@ class Notification(models.Model):
         ("application", "Incubation Application"),
         ("user_registration", "User Registration"),
         ("blog", "Blog Update"),
-        ("program", "Program Update"),
+        ("event", "Event Update"),
         ("general", "General"),
     )
 

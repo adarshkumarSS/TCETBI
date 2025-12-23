@@ -93,15 +93,15 @@ def seed_media():
         # ---------- Accelerator Program ----------
         {
             "src": "asset/media/4.png",
-            "album": "accelerator-program",
-            "category": "programs",
+            "album": "accelerator-event",
+            "category": "events_alt",
             "title": "",
             "description": "Orientation session at Accelerator."
         },
         {
             "src": "asset/media/5.png",
-            "album": "accelerator-program",
-            "category": "programs",
+            "album": "accelerator-event",
+            "category": "events_alt",
             "title": "",
             "description": "Mentor feedback session."
         },
@@ -110,14 +110,14 @@ def seed_media():
         {
             "src": "asset/media/3.png",
             "album": "mentorship-sessions",
-            "category": "programs",
+            "category": "events_alt",
             "title": "",
             "description": "One-on-one mentoring."
         },
         {
             "src": "asset/media/4.png",
             "album": "mentorship-sessions",
-            "category": "programs",
+            "category": "events_alt",
             "title": "",
             "description": "Group workshop."
         },

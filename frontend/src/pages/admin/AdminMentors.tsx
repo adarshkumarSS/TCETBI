@@ -165,14 +165,16 @@ export const AdminMentors = () => {
               onChange={(e) => setCurrentMentor({ ...currentMentor, name: e.target.value })}
             />
             <TextField
-              label="Domain"
+              label="Domain (e.g. AI, Fintech, SaaS)"
               fullWidth
+              helperText="Separate multiple domains with commas"
               value={currentMentor.domain}
               onChange={(e) => setCurrentMentor({ ...currentMentor, domain: e.target.value })}
             />
             <TextField
-              label="Expertise"
+              label="Expertise / Specialization"
               fullWidth
+              helperText="Separate multiple skills with commas"
               value={currentMentor.expertise}
               onChange={(e) => setCurrentMentor({ ...currentMentor, expertise: e.target.value })}
             />
@@ -196,15 +198,23 @@ export const AdminMentors = () => {
               value={currentMentor.linkedin}
               onChange={(e) => setCurrentMentor({ ...currentMentor, linkedin: e.target.value })}
             />
-            <Box>
-              <Typography variant="caption">Profile Image</Typography>
+              <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                Profile Image (Enter filename if in /asset/people/ or upload new)
+              </Typography>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                 style={{ display: 'block', marginTop: '8px' }}
               />
-            </Box>
+              <TextField
+                margin="dense"
+                label="Image Path/URL"
+                fullWidth
+                size="small"
+                value={currentMentor.image}
+                onChange={(e) => setCurrentMentor({ ...currentMentor, image: e.target.value })}
+              />
           </Box>
         </DialogContent>
         <DialogActions>

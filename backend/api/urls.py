@@ -4,10 +4,11 @@ from .wrappers.home_view import get_home_data, update_home_data, delete_success_
 from .wrappers.portfolio_view import get_portfolio_data,update_portfolio_data,delete_startup
 from .wrappers.people_view import get_people_data, update_people_data, delete_board_member
 from .wrappers.facility_view import get_facilities_data, update_facilities_data, delete_facility_item
-from .wrappers.program_view import get_programs_data, update_programs_data, delete_program_item
+from .wrappers.event_view import get_events_data, update_events_data, delete_event_item
 from .wrappers.media_view import get_media_data, update_album, delete_album
 from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
 from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_data
+from .wrappers.partnership_view import get_partnerships_data, update_partnerships_data, delete_partnership_item
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
     submit_incubation, get_incubation_applications, update_application_status,
@@ -45,9 +46,9 @@ urlpatterns = [
     path("update-facilities-data/", update_facilities_data, name="update_facilities_data"),
     path("delete-facility-item/<int:id>/", delete_facility_item, name="delete_facility_item"),
 
-    path("programs-data/", get_programs_data, name="programs_data"),
-    path("update-programs-data/", update_programs_data, name="update_programs_data"),
-    path("delete-program-item/<int:id>/", delete_program_item, name="delete_program_item"),
+    path("events-data/", get_events_data, name="events_data"),
+    path("update-events-data/", update_events_data, name="update_events_data"),
+    path("delete-event-item/<int:id>/", delete_event_item, name="delete_event_item"),
     
     path("media-data/", get_media_data, name="media_data"),
     path("update-album/<str:album_name>/", update_album, name="update_album"),
@@ -60,6 +61,10 @@ urlpatterns = [
     path("tbi-contact-data/", get_tbi_contact_data, name="tbi_contact_data"),
     path("update-tbi-contact-data/", update_tbi_contact_data, name="update_tbi_contact_data"),
     
+    path("partnerships-data/", get_partnerships_data, name="partnerships_data"),
+    path("update-partnerships-data/", update_partnerships_data, name="update_partnerships_data"),
+    path("delete-partnership-item/<int:id>/", delete_partnership_item, name="delete_partnership_item"),
+
     path("contact-message/", submit_contact_message, name="submit_contact_message"),
     
     path("notifications/", get_notifications, name="get_notifications"),
@@ -97,5 +102,3 @@ urlpatterns = [
     path('admin/company-requests/<int:request_id>/review/', review_company_request, name='review_company_request'),
 
 ]
-
-

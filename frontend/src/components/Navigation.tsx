@@ -122,9 +122,10 @@ export const Navigation: React.FC = () => {
 
   const navItems = [
     { label: "Portfolio", path: "/portfolio" },
+    { label: "Partnership", path: "/partnerships" },
     { label: "People", path: "/people" },
     { label: "Facilities", path: "/facilities" },
-    { label: "Program", path: "/program" },
+    { label: "Events", path: "/events" },
     { 
       label: "Media", 
       path: "/media",
@@ -133,7 +134,15 @@ export const Navigation: React.FC = () => {
         { label: "Blogs", path: "/blogs" }
       ]
     },
-    { label: "Support", path: "/support" },
+    { 
+      label: "Support", 
+      path: "/support",
+      children: [
+        { label: "Funding Support", path: "/support/funding" },
+        { label: "Mentoring Support", path: "/support/mentoring" },
+        { label: "Idea/Product Validation", path: "/support/validation" }
+      ]
+    },
     { label: "Contact", path: "/contact" },
   ];
 

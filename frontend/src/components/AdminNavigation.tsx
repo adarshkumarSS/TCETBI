@@ -5,7 +5,7 @@ import { styled } from "@mui/material/styles";
 import { DarkButton } from "./ui/DarkButton";
 
 import { motion, useInView } from "framer-motion";
-import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand, Plus } from "lucide-react";
 import { fetchNotifications } from "@/api/notificationservice";
 
 export const AnimatedItem = ({ children, index, onClick }: any) => {
@@ -158,6 +158,7 @@ export const AdminNavigation: React.FC = () => {
   const menuItems = [
     { text: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/admin" },
     { text: "Update Content", icon: <FileEdit size={20} />, path: "/admin/update-content" },
+    { text: "Create Event", icon: <Plus size={20} />, path: "/admin/create-event" },
     { text: "Applications", icon: <ClipboardList size={20} />, path: "/admin/applications" },
     { text: "User Management", icon: <UserCog size={20} />, path: "/admin/users" },
     { text: "Company Requests", icon: <CheckCircle size={20} />, path: "/admin/company-requests" },

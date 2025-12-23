@@ -24,7 +24,7 @@ const mockPosts: LinkedinPosts[] = [
   {
     id: "1",
     title: "Exciting New Startups Join TCE-TBI",
-    content: "We're thrilled to welcome three innovative startups to our incubation program...",
+    content: "We're thrilled to welcome three innovative startups to our incubation event...",
     postedDate: "2025-09-28",
     likes: 145,
     comments: 23,

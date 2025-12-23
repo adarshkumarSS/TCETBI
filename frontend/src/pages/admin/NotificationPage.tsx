@@ -36,7 +36,7 @@ const typeStyles = {
   contact: { color: "#16a34a", icon: <Mail size={20} /> },
   application: { color: "#2563eb", icon: <FolderOpen size={20} /> },
   blog: { color: "#eab308", icon: <FileText size={20} /> },
-  program: { color: "#dc2626", icon: <AlertCircle size={20} /> },
+  event: { color: "#dc2626", icon: <AlertCircle size={20} /> },
   user_registration: { color: "#f59e0b", icon: <Bell size={20} /> },
   general: { color: "#8b5cf6", icon: <Bell size={20} /> },
 };

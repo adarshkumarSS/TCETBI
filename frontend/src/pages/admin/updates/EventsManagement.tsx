@@ -18,17 +18,17 @@ import { MessageModal } from "@/components/ui/MessageModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ResizeModal } from "@/components/ResizeModal";
 import {
-  fetchPrograms,
-  updateProgramsData,
-  deleteProgram,
-  Program,
-} from "@/api/programService";
+  fetchEvents,
+  updateEventsData,
+  deleteEvent,
+  Event,
+} from "@/api/eventService";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 
 // ------- Types with local meta -------
 type Status = "live" | "upcoming" | "ended";
 
-interface ProgramWithMeta extends Program {
+interface EventWithMeta extends Event {
   userStatusOverride?: boolean; // true = don’t auto-change from dates
   userDurationOverride?: boolean; // true = don’t auto-change from dates
   markedForDeletion?: boolean; // true = delete on Save
@@ -73,8 +73,8 @@ const computeDurationLabel = (start?: string, end?: string): string => {
   return parts.join(" ") || "0 days";
 };
 
-export const ProgramPage: React.FC = () => {
-  const [programs, setPrograms] = useState<ProgramWithMeta[]>([]);
+export const EventsManagement: React.FC = () => {
+  const [events, setEvents] = useState<EventWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -161,26 +161,36 @@ export const ProgramPage: React.FC = () => {
   // ------- Fetch on mount -------
 
   useEffect(() => {
-    fetchPrograms()
-      .then((res) =>
-        setPrograms(
-          res.map((p) => ({
+    fetchEvents()
+      .then((res) => {
+        const sorted = [...res].sort((a, b) => {
+          const statusOrder: Record<string, number> = {
+            live: 0,
+            upcoming: 1,
+            ended: 2,
+          };
+          return (
+            (statusOrder[a.status.toLowerCase()] ?? 3) -
+            (statusOrder[b.status.toLowerCase()] ?? 3)
+          );
+        });
+        setEvents(
+          sorted.map((p) => ({
             ...p,
-            // Backend values can be auto-calculated unless user overrides
             userStatusOverride: false,
             userDurationOverride: false,
           }))
-        )
-      )
-      .catch(() => console.error("Failed to load programs"))
+        );
+      })
+      .catch(() => console.error("Failed to load events"))
       .finally(() => setLoading(false));
   }, []);
 
-  // ------- Add Program -------
+  // ------- Add Event -------
 
-  const addProgram = () => {
+  const addEvent = () => {
     setSelectedFilter("all"); // always show new card
-    setPrograms((prev) => [
+    setEvents((prev) => [
       ...prev,
       {
         id: -1,
@@ -201,10 +211,10 @@ export const ProgramPage: React.FC = () => {
 
   const handleChange = (
     index: number,
-    field: keyof ProgramWithMeta,
+    field: keyof EventWithMeta,
     value: any
   ) => {
-    setPrograms((prev) => {
+    setEvents((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [field]: value };
       return copy;
@@ -236,7 +246,7 @@ export const ProgramPage: React.FC = () => {
 
     const url = URL.createObjectURL(croppedFile);
 
-    setPrograms((prev) => {
+    setEvents((prev) => {
       const copy = [...prev];
       copy[resizeModal.index!].image = url;
       return copy;
@@ -256,7 +266,7 @@ export const ProgramPage: React.FC = () => {
       return;
     }
 
-    setPrograms((prev) =>
+    setEvents((prev) =>
       prev.map((p) =>
         p.id === deleteModal.id ? { ...p, markedForDeletion: true } : p
       )
@@ -266,7 +276,7 @@ export const ProgramPage: React.FC = () => {
 
   // ------- Validation -------
 
-  const validate = (p: ProgramWithMeta) =>
+  const validate = (p: EventWithMeta) =>
     p.title.trim() &&
     p.description.trim() &&
     p.status &&
@@ -277,8 +287,8 @@ export const ProgramPage: React.FC = () => {
   // ------- Save all (update + upload + delete) -------
 
   const handleSave = async () => {
-    const toKeep = programs.filter((p) => !p.markedForDeletion);
-    const toDelete = programs.filter((p) => p.markedForDeletion);
+    const toKeep = events.filter((p) => !p.markedForDeletion);
+    const toDelete = events.filter((p) => p.markedForDeletion);
 
     if (toKeep.some((p) => !validate(p))) {
       setValidationModal(true);
@@ -293,14 +303,14 @@ export const ProgramPage: React.FC = () => {
           const response = await fetch(url);
           const blob = await response.blob();
           const file = new File([blob], "image.jpg", { type: blob.type });
-          const uploaded = await uploadToCloudinary(file, "TCETBI/Programs");
+          const uploaded = await uploadToCloudinary(file, "TCETBI/Events");
           URL.revokeObjectURL(url);
           return uploaded;
         }
         return url;
       };
 
-      const payloadPrograms: Program[] = await Promise.all(
+      const payloadEvents: Event[] = await Promise.all(
         toKeep.map(async (p) => ({
           id: p.id && p.id !== -1 ? p.id : undefined,
           title: p.title,
@@ -313,18 +323,18 @@ export const ProgramPage: React.FC = () => {
         }))
       );
 
-      const res = await updateProgramsData(payloadPrograms);
+      const res = await updateEventsData(payloadEvents);
 
       // Delete marked ones on backend
       for (const item of toDelete) {
         if (item.id && item.id !== -1) {
-          await deleteProgram(item.id);
+          await deleteEvent(item.id);
         }
       }
 
       // Refresh list from backend
-      const refreshed = await fetchPrograms();
-      setPrograms(
+      const refreshed = await fetchEvents();
+      setEvents(
         refreshed.map((p) => ({
           ...p,
           userStatusOverride: false,
@@ -336,7 +346,7 @@ export const ProgramPage: React.FC = () => {
       setMessageType("success");
     } catch (err) {
       console.error(err);
-      setMessageText("❌ Failed to update programs!");
+      setMessageText("❌ Failed to update events!");
       setMessageType("error");
     } finally {
       setSaving(false);
@@ -346,16 +356,16 @@ export const ProgramPage: React.FC = () => {
 
   // ------- Visible list (search + filter, but still keep original index) -------
 
-  const visiblePrograms = programs
-    .map((program, index) => ({ program, index }))
-    .filter(({ program }) => !program.markedForDeletion)
-    .filter(({ program }) => {
+  const visibleEvents = events
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => !event.markedForDeletion)
+    .filter(({ event }) => {
       const matchStatus =
-        selectedFilter === "all" || program.status === selectedFilter;
+        selectedFilter === "all" || event.status === selectedFilter;
       const q = searchQuery.toLowerCase();
       const matchSearch =
-        program.title.toLowerCase().includes(q) ||
-        program.description.toLowerCase().includes(q);
+        event.title.toLowerCase().includes(q) ||
+        event.description.toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
 
@@ -380,13 +390,13 @@ export const ProgramPage: React.FC = () => {
           mb: 3,
         }}
       >
-        Programs
+        Events Management
       </Typography>
 
       {/* Search */}
       <TextField
         fullWidth
-        placeholder="Search programs..."
+        placeholder="Search events..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         sx={{ ...textFieldStyles, mb: 3 }}
@@ -427,9 +437,9 @@ export const ProgramPage: React.FC = () => {
       </Box>
 
       {/* Cards */}
-      {visiblePrograms.map(({ program, index }) => (
+      {visibleEvents.map(({ event, index }) => (
         <Box
-          key={program.id ?? index}
+          key={event.id ?? index}
           sx={{
             p: 3,
             mb: 3,
@@ -444,7 +454,7 @@ export const ProgramPage: React.FC = () => {
         >
           {/* Delete icon */}
           <IconButton
-            onClick={() => openDeleteModal(program.id)}
+            onClick={() => openDeleteModal(event.id)}
             sx={{
               position: "absolute",
               top: 8,
@@ -459,7 +469,7 @@ export const ProgramPage: React.FC = () => {
           <TextField
             fullWidth
             label="Title"
-            value={program.title}
+            value={event.title}
             onChange={(e) => handleChange(index, "title", e.target.value)}
             sx={{ ...textFieldStyles, ...compactFieldSpacing }}
           />
@@ -471,7 +481,7 @@ export const ProgramPage: React.FC = () => {
             minRows={3}
             maxRows={10}
             label="Description"
-            value={program.description}
+            value={event.description}
             onPaste={(e) => {
               e.preventDefault();
               const text = e.clipboardData.getData("text/plain");
@@ -516,7 +526,7 @@ export const ProgramPage: React.FC = () => {
             <TextField
               fullWidth
               label="Duration"
-              value={program.duration}
+              value={event.duration}
               onChange={(e) => {
                 handleChange(index, "duration", e.target.value);
                 handleChange(index, "userDurationOverride", true);
@@ -529,7 +539,7 @@ export const ProgramPage: React.FC = () => {
               select
               fullWidth
               label="Status"
-              value={program.status || "upcoming"}
+              value={event.status || "upcoming"}
               onChange={(e) => {
                 const newStatus = e.target.value as Status;
                 handleChange(index, "status", newStatus);
@@ -560,25 +570,25 @@ export const ProgramPage: React.FC = () => {
                 shrink: true,
                 style: { color: "hsl(var(--muted-foreground))" },
               }}
-              value={program.startDate}
+              value={event.startDate}
               onChange={(e) => {
                 const value = e.target.value;
                 handleChange(index, "startDate", value);
 
                 // auto duration if not overridden
-                if (!programs[index].userDurationOverride) {
+                if (!events[index].userDurationOverride) {
                   const autoDuration = computeDurationLabel(
                     value,
-                    programs[index].endDate
+                    events[index].endDate
                   );
                   handleChange(index, "duration", autoDuration);
                 }
 
                 // auto status if not overridden
-                if (!programs[index].userStatusOverride) {
+                if (!events[index].userStatusOverride) {
                   const autoStatus = computeStatusFromDates(
                     value,
-                    programs[index].endDate
+                    events[index].endDate
                   );
                   handleChange(index, "status", autoStatus);
                 }
@@ -601,22 +611,22 @@ export const ProgramPage: React.FC = () => {
                 shrink: true,
                 style: { color: "hsl(var(--muted-foreground))" },
               }}
-              value={program.endDate}
+              value={event.endDate}
               onChange={(e) => {
                 const value = e.target.value;
                 handleChange(index, "endDate", value);
 
-                if (!programs[index].userDurationOverride) {
+                if (!events[index].userDurationOverride) {
                   const autoDuration = computeDurationLabel(
-                    programs[index].startDate,
+                    events[index].startDate,
                     value
                   );
                   handleChange(index, "duration", autoDuration);
                 }
 
-                if (!programs[index].userStatusOverride) {
+                if (!events[index].userStatusOverride) {
                   const autoStatus = computeStatusFromDates(
-                    programs[index].startDate,
+                    events[index].startDate,
                     value
                   );
                   handleChange(index, "status", autoStatus);
@@ -634,7 +644,7 @@ export const ProgramPage: React.FC = () => {
           </Box>
 
           {/* Image Preview */}
-          {program.image && (
+          {event.image && (
             <Box
               sx={{
                 mb: 1.5,
@@ -644,7 +654,7 @@ export const ProgramPage: React.FC = () => {
               }}
             >
               <img
-                src={program.image}
+                src={event.image}
                 alt="preview"
                 style={{
                   width: "100%",
@@ -672,15 +682,15 @@ export const ProgramPage: React.FC = () => {
               startIcon={<Upload size={16} />}
               sx={uploadButtonStyles}
             >
-              Upload Program Image
+              Upload Event Image
             </Button>
           </label>
         </Box>
       ))}
 
-      {/* Add program */}
-      <Button startIcon={<Plus />} onClick={addProgram} sx={uploadButtonStyles}>
-        Add Program
+      {/* Add event */}
+      <Button startIcon={<Plus />} onClick={addEvent} sx={uploadButtonStyles}>
+        Add Event
       </Button>
 
       {/* Save changes */}
@@ -715,8 +725,8 @@ export const ProgramPage: React.FC = () => {
       {/* Delete Modal */}
       <ConfirmModal
         open={deleteModal.open}
-        title="Delete Program"
-        message="Are you sure you want to delete this program?"
+        title="Delete Event"
+        message="Are you sure you want to delete this event?"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteModal({ open: false, id: null })}
       />

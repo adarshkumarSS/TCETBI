@@ -18,11 +18,12 @@ from utils.seed_data import seed
 from utils.seed_portfolio import seed_portfolio
 from utils.seed_people import seed_people
 from utils.seed_facility import seed_facilities
-from utils.seed_programs import seed_programs
+from utils.seed_events import seed_events
 from utils.seed_media import seed_media
 
 from utils.seed_blog import seed_blogs
 from utils.seed_support import seed_support
+from utils.seed_mentors import seed_mentors
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -99,9 +100,10 @@ if __name__ == "__main__":
         seed_portfolio() 
         seed_people() 
         seed_facilities() 
-        seed_programs()
+        seed_events()
         seed_media() 
  
         seed_blogs()
         seed_support()
+        seed_mentors()
         print("\n🚀 Database and Cloudinary refreshed successfully!")

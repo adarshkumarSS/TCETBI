@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import {
   fetchTBIContactData,
-  TBICEO,
   TBIContactInfo,
 } from "@/api/contactService";
 
@@ -67,6 +66,7 @@ const ContactForm = () => {
         <Typography
           variant="h5"
           sx={{
+            fontSize: { xs: "1.25rem", md: "1.5rem" },
             mb: 4,
             color: "hsl(var(--foreground))",
             fontFamily: "Poppins, sans-serif",
@@ -187,6 +187,7 @@ const ContactInfo = ({ contact }: { contact: TBIContactInfo | null }) => {
         <Typography
           variant="h5"
           sx={{
+            fontSize: { xs: "1.25rem", md: "1.5rem" },
             mb: 4,
             color: "hsl(var(--foreground))",
             fontFamily: "Poppins, sans-serif",
@@ -235,203 +236,7 @@ const ContactInfo = ({ contact }: { contact: TBIContactInfo | null }) => {
   );
 };
 
-const CEOInfo = ({ ceo }: { ceo: TBICEO | null }) => {
-  if (!ceo) return null;
 
-  return (
-    <Box
-      sx={{
-        py: 8,
-        backgroundColor: "hsl(var(--muted))",
-      }}
-    >
-      <Container maxWidth="lg">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <Typography
-            variant="h3"
-            align="center"
-            sx={{
-              mb: 8,
-              color: "hsl(var(--foreground))",
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-            }}
-          >
-            Leadership Contact
-          </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 6,
-              alignItems: "center",
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              {ceo.image ? (
-                <motion.img
-                  src={ceo.image}
-                  alt={ceo.name}
-                  style={{
-                    width: 300,
-                    height: 360,
-                    objectFit: "cover",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "var(--shadow-elegant)",
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.3 }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    width: 300,
-                    height: 360,
-                    borderRadius: "var(--radius)",
-                    background:
-                      "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--destructive)))",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: 32,
-                    fontWeight: 600,
-                    fontFamily: "Poppins, sans-serif",
-                    boxShadow: "var(--shadow-elegant)",
-                  }}
-                >
-                  {ceo.name.charAt(0)}
-                </Box>
-              )}
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-              style={{ flex: 1 }}
-            >
-              <CardContainer>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    mb: 2,
-                    color: "hsl(var(--foreground))",
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 600,
-                  }}
-                >
-                  {ceo.name}
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    mb: 1,
-                    color: "hsl(var(--primary))",
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 500,
-                  }}
-                >
-                  {ceo.position}
-                </Typography>
-
-                {ceo.experience && (
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      mb: 2,
-                      color: "hsl(var(--muted-foreground))",
-                      fontFamily: "Poppins, sans-serif",
-                    }}
-                  >
-                    Experience: {ceo.experience}
-                  </Typography>
-                )}
-
-                <Typography
-                  variant="body1"
-                  sx={{
-                    mb: 4,
-                    color: "hsl(var(--foreground))",
-                    fontFamily: "Poppins, sans-serif",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {ceo.bio}
-                </Typography>
-
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {ceo.email && (
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "hsl(var(--muted-foreground))",
-                          fontFamily: "Poppins, sans-serif",
-                          mb: 0.5,
-                        }}
-                      >
-                        Email
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          color: "hsl(var(--primary))",
-                          fontFamily: "Poppins, sans-serif",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {ceo.email}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {ceo.linkedin && (
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "hsl(var(--muted-foreground))",
-                          fontFamily: "Poppins, sans-serif",
-                          mb: 0.5,
-                        }}
-                      >
-                        LinkedIn
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          color: "hsl(var(--primary))",
-                          fontFamily: "Poppins, sans-serif",
-                          fontWeight: 600,
-                          wordBreak: "break-all",
-                        }}
-                      >
-                        {ceo.linkedin}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </CardContainer>
-            </motion.div>
-          </Box>
-        </motion.div>
-      </Container>
-    </Box>
-  );
-};
 
 const MapSection = ({ contact }: { contact: TBIContactInfo | null }) => {
   const mapSrc =
@@ -453,9 +258,12 @@ const MapSection = ({ contact }: { contact: TBIContactInfo | null }) => {
   return (
     <Box
       sx={{
-        py: 8,
+        pt: { xs: 16, md: 20 },
+        pb: 12,
+        mt: { xs: 8, md: 12 },
         backgroundColor: (theme) =>
-          theme.palette.mode === "dark" ? "#000000" : "hsl(var(--background))",
+          theme.palette.mode === "dark" ? "#050505" : "hsl(var(--muted)/0.3)",
+        borderTop: "1px solid hsl(var(--border))",
       }}
     >
       <Container maxWidth="lg">
@@ -469,6 +277,7 @@ const MapSection = ({ contact }: { contact: TBIContactInfo | null }) => {
             variant="h3"
             align="center"
             sx={{
+              fontSize: { xs: "2rem", md: "3rem" },
               mb: 8,
               color: (theme) =>
                 theme.palette.mode === "dark"
@@ -496,7 +305,7 @@ const MapSection = ({ contact }: { contact: TBIContactInfo | null }) => {
               <Box
                 sx={{
                   width: "100%",
-                  height: 400,
+                  height: { xs: 300, sm: 400 },
                   borderRadius: "var(--radius)",
                   overflow: "hidden",
                   position: "relative",
@@ -666,7 +475,6 @@ const MapSection = ({ contact }: { contact: TBIContactInfo | null }) => {
 };
 
 export const Contact: React.FC = () => {
-  const [ceo, setCeo] = useState<TBICEO | null>(null);
   const [contact, setContact] = useState<TBIContactInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -674,7 +482,6 @@ export const Contact: React.FC = () => {
     (async () => {
       try {
         const data = await fetchTBIContactData();
-        setCeo(data.ceo);
         setContact(data.contact);
       } catch (err) {
         console.error("Failed to load contact data", err);
@@ -704,7 +511,7 @@ export const Contact: React.FC = () => {
   return (
     <Box
       sx={{
-        pt: 16,
+        pt: { xs: 20, md: 24 },
         minHeight: "100vh",
         backgroundColor: "hsl(var(--background))",
       }}
@@ -719,7 +526,8 @@ export const Contact: React.FC = () => {
             variant="h2"
             align="center"
             sx={{
-              mb: 8,
+              fontSize: { xs: "2.5rem", md: "3.75rem" },
+              mb: { xs: 4, md: 8 },
               color: "hsl(var(--foreground))",
               fontFamily: "Poppins, sans-serif",
               fontWeight: 600,
@@ -750,7 +558,6 @@ export const Contact: React.FC = () => {
         </Box>
       </Container>
 
-      <CEOInfo ceo={ceo} />
       <MapSection contact={contact} />
     </Box>
   );

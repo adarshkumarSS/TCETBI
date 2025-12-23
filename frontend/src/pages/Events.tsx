@@ -3,16 +3,16 @@ import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
 import { CardContainer } from '../components/ui/CardContainer';
 import { OutlinedTextField } from '../components/ui/OutlinedTextField';
 import { useState, useEffect } from 'react';
-import { fetchPrograms, Program as ProgramType } from "../api/programService";
+import { fetchEvents, Event as EventType } from "../api/eventService";
 
-interface Program extends ProgramType {}
+interface Event extends EventType {}
 
-const ProgramCard = ({ program }: { program: Program }) => {
+const EventCard = ({ event }: { event: Event }) => {
   const getStatusBadgeColor = (status: string) => {
     const s = status.toLowerCase();
 
-    if (s === "live") return "#00b436ff";      // violet
-    if (s === "upcoming") return "#af24ffff";  // yellow
+    if (s === "live") return "#00b436ff";      // green
+    if (s === "upcoming") return "#af24ffff";  // purple
     if (s === "ended") return "#EF4444";     // red
 
     return "#6B7280"; // default grey fallback
@@ -45,8 +45,8 @@ const ProgramCard = ({ program }: { program: Program }) => {
           />
 
           <motion.img
-            src={program.image}
-            alt={program.title}
+            src={event.image}
+            alt={event.title}
             style={{
               width: "100%",
               height: 200,
@@ -62,7 +62,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
               position: "absolute",
               top: 14,
               right: 14,
-              backgroundColor: getStatusBadgeColor(program.status),
+              backgroundColor: getStatusBadgeColor(event.status),
               color: "white",
               padding: "6px 16px",
               borderRadius: "999px",
@@ -74,7 +74,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
               boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
             }}
           >
-            {program.status}
+            {event.status}
           </Box>
         </Box>
 
@@ -87,7 +87,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
             fontWeight: 600,
           }}
         >
-          {program.title}
+          {event.title}
         </Typography>
 
         <Typography
@@ -100,7 +100,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
             lineHeight: 1.5,
           }}
         >
-          {program.description}
+          {event.description}
         </Typography>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
@@ -123,7 +123,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
                 fontWeight: 600,
               }}
             >
-              {program.duration}
+              {event.duration}
             </Typography>
           </Box>
 
@@ -150,7 +150,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
                 fontWeight: 500,
               }}
             >
-              {program.startDate}
+              {event.startDate}
             </Typography>
           </Box>
 
@@ -173,7 +173,7 @@ const ProgramCard = ({ program }: { program: Program }) => {
                 fontWeight: 500,
               }}
             >
-              {program.endDate}
+              {event.endDate}
             </Typography>
           </Box>
         </Box>
@@ -182,21 +182,26 @@ const ProgramCard = ({ program }: { program: Program }) => {
   );
 };
 
-export const Program: React.FC = () => {
+export const Events: React.FC = () => {
   const [selectedCategory, setSelectedCategory] =
     useState<"all" | "live" | "ended" | "upcoming">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchPrograms();
-        setPrograms(data);
+        const data = await fetchEvents();
+        // Sort events: live first, then upcoming, then ended
+        const sortedData = [...data].sort((a, b) => {
+          const statusOrder: Record<string, number> = { live: 0, upcoming: 1, ended: 2 };
+          return (statusOrder[a.status.toLowerCase()] ?? 3) - (statusOrder[b.status.toLowerCase()] ?? 3);
+        });
+        setEvents(sortedData);
       } catch (err) {
-        console.error("Program fetch failed:", err);
+        console.error("Event fetch failed:", err);
       } finally {
         setLoading(false);
       }
@@ -204,21 +209,21 @@ export const Program: React.FC = () => {
     load();
   }, []);
 
-  const filteredPrograms = programs.filter((program) => {
+  const filteredEvents = events.filter((event) => {
     const matchCategory =
-      selectedCategory === "all" || program.status  === selectedCategory;
+      selectedCategory === "all" || event.status  === selectedCategory;
 
     const matchSearch =
-      program.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      program.description.toLowerCase().includes(searchQuery.toLowerCase());
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchCategory && matchSearch;
   });
 
   const getCategoryCount = (cat: "all" | "live" | "ended" | "upcoming") =>
     cat === "all"
-      ? programs.length
-      : programs.filter((p) => p.status === cat).length;
+      ? events.length
+      : events.filter((p) => p.status === cat).length;
 
   return (
     <Box
@@ -244,12 +249,12 @@ export const Program: React.FC = () => {
             <Box component="span" sx={{ color: "hsl(var(--destructive))" }}>
               Our{" "}
             </Box>
-            Programs
+            Events
           </Typography>
 
           <Box sx={{ mb: 6, display: "flex", justifyContent: "center" }}>
             <OutlinedTextField
-              placeholder="Search programs..."
+              placeholder="Search events..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ maxWidth: 400, width: "100%" }}
@@ -286,7 +291,7 @@ export const Program: React.FC = () => {
 
           {loading ? (
             <Typography align="center">Loading...</Typography>
-          ) : filteredPrograms.length > 0 ? (
+          ) : filteredEvents.length > 0 ? (
             <Box
               sx={{
                 display: "grid",
@@ -294,21 +299,21 @@ export const Program: React.FC = () => {
                 gap: 4,
               }}
             >
-              {filteredPrograms.map((program, index) => (
+              {filteredEvents.map((event, index) => (
                 <motion.div
-                  key={program.id}
+                  key={event.id}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <ProgramCard program={program} />
+                  <EventCard event={event} />
                 </motion.div>
               ))}
             </Box>
           ) : (
             <Typography align="center" sx={{ py: 8 }}>
-              No programs found matching your criteria.
+              No events found matching your criteria.
             </Typography>
           )}
         </motion.div>

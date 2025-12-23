@@ -110,7 +110,7 @@ def run_tests():
     test_endpoint("Get Portfolio Data", "GET", "/portfolio-data/", expected_status=[200])
     test_endpoint("Get People Data", "GET", "/people-data/", expected_status=[200])
     test_endpoint("Get Facilities Data", "GET", "/facilities-data/", expected_status=[200])
-    test_endpoint("Get Programs Data", "GET", "/programs-data/", expected_status=[200])
+    test_endpoint("Get Events Data", "GET", "/events-data/", expected_status=[200])
     test_endpoint("Get Media Data", "GET", "/media-data/", expected_status=[200])
     test_endpoint("Get Blogs Data", "GET", "/blogs-data/", expected_status=[200])
     test_endpoint("Get TBI Contact Data", "GET", "/tbi-contact-data/", expected_status=[200])

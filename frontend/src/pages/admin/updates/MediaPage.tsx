@@ -658,10 +658,10 @@ export const MediaPage: React.FC = () => {
               style: { color: "hsl(var(--muted-foreground))" },
             }}
           >
-            <MenuItem value="events">Events</MenuItem>
+            <MenuItem value="events">Activities</MenuItem>
             <MenuItem value="facilities">Facilities</MenuItem>
             <MenuItem value="startups">Startups</MenuItem>
-            <MenuItem value="programs">Programs</MenuItem>
+            <MenuItem value="events_alt">Events</MenuItem>
           </TextField>
 
           {/* File Selector */}
