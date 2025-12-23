@@ -48,12 +48,6 @@ def seed_partnerships():
 
     partners = [
         {
-            "name": "Zoho Corporation",
-            "description": "Strategic partnership for providing cloud-based software suites to incubatees and startups. Zoho offers a comprehensive suite of business applications to help startups scale efficiently.",
-            "logo_path": "asset/PartnerLogos/startup_india.png", 
-            "website": "https://www.zoho.com"
-        },
-        {
             "name": "Ministry of MSME",
             "description": "Collaboration for implementing various government schemes and providing financial support to budding entrepreneurs. This partnership facilitates access to MSME registration and benefits.",
             "logo_path": "asset/PartnerLogos/ministry_msme.png",
@@ -64,6 +58,18 @@ def seed_partnerships():
             "description": "Official partner for the Startup India initiative, helping in recognition and tax exemptions for startups. We work closely to streamline the startup ecosystem in the region.",
             "logo_path": "asset/PartnerLogos/startup_india.png",
             "website": "https://www.startupindia.gov.in"
+        },
+        {
+            "name": "NSTEDB",
+            "description": "National Science & Technology Entrepreneurship Development Board (NSTEDB), established in 1982 by the Government of India, is an institutional mechanism to help promote knowledge-driven and technology-intensive enterprises.",
+            "logo_path": "asset/PartnerLogos/nstedb.png",
+            "website": "https://nstedb.com"
+        },
+        {
+            "name": "TIDCO",
+            "description": "Tamil Nadu Industrial Development Corporation Limited (TIDCO) is a premier industrial development agency of the Government of Tamil Nadu, established in 1965.",
+            "logo_path": "asset/PartnerLogos/tidco.png",
+            "website": "https://tidco.com"
         }
     ]
 

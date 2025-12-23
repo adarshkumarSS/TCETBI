@@ -68,6 +68,7 @@ export const CreateEvent: React.FC = () => {
     status: "upcoming",
     startDate: "",
     endDate: "",
+    link: "",
   });
 
   const [resizeModal, setResizeModal] = useState<{
@@ -275,6 +276,16 @@ export const CreateEvent: React.FC = () => {
                 <MenuItem value="ended">Ended</MenuItem>
               </TextField>
             </Box>
+
+            <TextField
+              fullWidth
+              label="Event Link (Optional)"
+              value={eventData.link}
+              onChange={(e) => setEventData(prev => ({ ...prev, link: e.target.value }))}
+              placeholder="https://example.com/event-details"
+              sx={textFieldStyles}
+              helperText="Link for users to register or see more details"
+            />
 
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1, color: "hsl(var(--muted-foreground))" }}>

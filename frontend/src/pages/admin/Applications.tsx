@@ -436,9 +436,21 @@ export const Applications = () => {
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             Resume PDF
                           </Typography>
-                          <Typography variant="caption" sx={{ color: "hsl(var(--muted-foreground))" }}>
-                            <a href={selectedApp.resume_pdf} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>
-                              View PDF (Size: less than 2MB)
+                          <Typography variant="caption" sx={{ color: "hsl(var(--muted-foreground))", display: "flex", gap: 1.5 }}>
+                            <a 
+                              href={selectedApp.resume_pdf} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ color: "#2563eb", textDecoration: "underline", fontWeight: 600 }}
+                            >
+                              View PDF
+                            </a>
+                            <span>|</span>
+                            <a 
+                              href={selectedApp.resume_pdf.replace('/upload/', '/upload/fl_attachment/')} 
+                              style={{ color: "hsl(var(--muted-foreground))", textDecoration: "underline" }}
+                            >
+                              Download
                             </a>
                           </Typography>
                         </Box>

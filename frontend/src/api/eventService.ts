@@ -11,6 +11,7 @@ export interface Event {
     status: "live" | "upcoming" | "ended";
     startDate: string;
     endDate: string;
+    link?: string;
 }
 
 export interface EventResponse {

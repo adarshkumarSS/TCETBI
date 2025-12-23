@@ -54,9 +54,9 @@ def seed_people():
         "bio": "Visionary leader with 25+ years of experience in academia and entrepreneurship. "
                 "He has mentored over 200 startups and built Thiagarajar’s thriving innovation ecosystem.",
         "experience": "25+ years",
-        "image": upload_to_cloudinary(os.path.join(base_dir, "asset/startup_owners/1.png")),
+        "image": upload_to_cloudinary(os.path.join(base_dir, "asset/people/Founder.png")),
     }
-
+ 
     # 🌟 CEO
     ceo_data = {
         "name": "Mr. Vinoth Rajendran",
@@ -66,7 +66,7 @@ def seed_people():
         "experience": "15+ years",
         "email": "adarshkumar@student.tce.edu",
         "linkedin": "https://www.linkedin.com/in/vinoth-rajendran-123456789/",
-        "image": upload_to_cloudinary(os.path.join(base_dir, "asset/startup_owners/2.png")),
+        "image": upload_to_cloudinary(os.path.join(base_dir, "asset/people/vinoth_rajendran.png")),
     }
 
     Founder.objects.create(**founder_data)

@@ -629,7 +629,24 @@ export const ApplyIncubation = () => {
                           setFormData({ ...formData, email: e.target.value })
                         }
                         required
+                        helperText="This email will be your primary login ID if approved."
                       />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <Box sx={{ 
+                        mt: 1, 
+                        p: 2, 
+                        bgcolor: 'rgba(220, 20, 60, 0.05)', 
+                        border: '1px solid rgba(220, 20, 60, 0.2)', 
+                        borderRadius: 'var(--radius)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5
+                      }}>
+                        <Typography sx={{ fontSize: '14px', color: 'hsl(var(--foreground))', fontFamily: 'Poppins, sans-serif' }}>
+                          <span style={{ fontWeight: 600, color: 'hsl(var(--primary))' }}>Note:</span> Upon approval, an account will be automatically created using this email address. Temporary login credentials will be sent to this mail ID.
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <StyledTextField
@@ -1355,6 +1372,10 @@ export const ApplyIncubation = () => {
             Your application for <strong>{formData.businessName}</strong> has been received and is being reviewed.
             <br />
             A confirmation notification has been sent and an email dispatched to the CEO.
+            <br /><br />
+            <Box sx={{ p: 2, bgcolor: 'hsl(var(--primary)/0.05)', borderRadius: '8px', border: '1px solid hsl(var(--primary)/0.1)' }}>
+              A status email will be sent to <strong>{formData.email}</strong> regarding the confirmation and availability shortly.
+            </Box>
           </Typography>
           <Typography
             sx={{

@@ -16,6 +16,7 @@ interface User {
   status: string;
   is_staff: boolean;
   is_superuser: boolean;
+  profile_image?: string;
 }
 
 interface UserAuth {
@@ -23,6 +24,8 @@ interface UserAuth {
   username: string;
   email: string;
   full_name: string;
+  must_change_password: boolean;
+  profile_image?: string;
 }
 
 interface AuthResponse {
@@ -71,7 +74,7 @@ export const authService = {
   async refreshToken(): Promise<string> {
     const refresh = localStorage.getItem('admin_refresh');
     if (!refresh) throw new Error('No refresh token');
-    const response = await axios.post<{access: string}>(`${BASE_URL}/auth/refresh/`, { refresh });
+    const response = await axios.post<{ access: string }>(`${BASE_URL}/auth/refresh/`, { refresh });
     const newAccessToken = response.data.access;
     localStorage.setItem('admin_token', newAccessToken);
     return newAccessToken;
@@ -80,7 +83,7 @@ export const authService = {
   async refreshUserToken(): Promise<string> {
     const refresh = localStorage.getItem('user_refresh');
     if (!refresh) throw new Error('No refresh token');
-    const response = await axios.post<{access: string}>(`${BASE_URL}/auth/refresh/`, { refresh });
+    const response = await axios.post<{ access: string }>(`${BASE_URL}/auth/refresh/`, { refresh });
     const newAccessToken = response.data.access;
     localStorage.setItem('user_token', newAccessToken);
     return newAccessToken;
@@ -93,32 +96,32 @@ export const authService = {
   },
 
   async getAdminProfile(): Promise<User> {
-    const response = await axios.get<{user: User}>(`${BASE_URL}/auth/admin-profile/`, {
+    const response = await axios.get<{ user: User }>(`${BASE_URL}/auth/admin-profile/`, {
       headers: getAuthHeaders()
     });
     return response.data.user;
   },
 
-  async updateAdminProfile(data: Partial<User>): Promise<{message: string, user: User}> {
-    const response = await axios.put<{message: string, user: User}>(`${BASE_URL}/user/profile/update/`, data, {
+  async updateAdminProfile(data: Partial<User>): Promise<{ message: string, user: User }> {
+    const response = await axios.put<{ message: string, user: User }>(`${BASE_URL}/user/profile/update/`, data, {
       headers: getAuthHeaders()
     });
     return response.data;
   },
 
-  async changePassword(data: PasswordChangeData): Promise<{message: string}> {
+  async changePassword(data: PasswordChangeData): Promise<{ message: string }> {
     const response = await axios.post(`${BASE_URL}/auth/change-password/`, data, {
       headers: getAuthHeaders()
     });
     return response.data;
   },
 
-  async userRegister(data: UserRegistrationData): Promise<{message: string, user: User}> {
+  async userRegister(data: UserRegistrationData): Promise<{ message: string, user: User }> {
     const response = await axios.post(`${BASE_URL}/auth/user-register/`, data);
     return response.data;
   },
 
-  async userLogin(data: {username: string, password: string}): Promise<UserAuthResponse> {
+  async userLogin(data: { username: string, password: string }): Promise<UserAuthResponse> {
     const response = await axios.post<UserAuthResponse>(`${BASE_URL}/auth/user-login/`, data);
     return response.data;
   },
@@ -130,6 +133,13 @@ export const authService = {
         headers: getUserAuthHeaders()
       });
     }
+  },
+
+  async changeUserPassword(data: PasswordChangeData): Promise<{ message: string }> {
+    const response = await axios.post(`${BASE_URL}/auth/change-user-password/`, data, {
+      headers: getUserAuthHeaders()
+    });
+    return response.data;
   },
 
   // User auth headers getter for other services

@@ -12,7 +12,7 @@ from .wrappers.partnership_view import get_partnerships_data, update_partnership
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
     submit_incubation, get_incubation_applications, update_application_status,
-    admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password,
+    admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password, change_user_password,
     user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user,
     get_user_profile, update_user_profile, get_user_company_request, create_or_update_company_request,
     submit_company_request, submit_company_edit_request, delete_company_request, get_company_requests_admin, review_company_request
@@ -86,6 +86,7 @@ urlpatterns = [
     path('auth/user-register/', user_register, name='user_register'),
     path('auth/user-login/', user_login, name='user_login'),
     path('auth/user-logout/', user_logout, name='user_logout'),
+    path('auth/change-user-password/', change_user_password, name='change_user_password'),
     path('users/', get_users, name='get_users'),
     path('users/<int:user_id>/status/', update_user_status, name='update_user_status'),
     path('users/<int:user_id>/', delete_user, name='delete_user'),

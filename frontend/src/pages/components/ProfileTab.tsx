@@ -58,7 +58,21 @@ export const ProfileTab = ({ user }: ProfileTabProps) => {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
-            <AccountCircle sx={{ color: "hsl(var(--primary))", fontSize: "2rem" }} />
+            {user?.profile_image ? (
+              <Box 
+                component="img" 
+                src={user.profile_image} 
+                sx={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: "50%", 
+                  objectFit: "cover",
+                  border: "2px solid hsl(var(--primary))"
+                }} 
+              />
+            ) : (
+              <AccountCircle sx={{ color: "hsl(var(--primary))", fontSize: "2rem" }} />
+            )}
             <Typography
               variant="h5"
               sx={{

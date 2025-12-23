@@ -37,6 +37,16 @@ export const UserDashboard = () => {
       return;
     }
 
+    // Check for mandatory password change
+    const userStr = localStorage.getItem('user_user');
+    if (userStr) {
+      const userObj = JSON.parse(userStr);
+      if (userObj.must_change_password) {
+        navigate('/auth');
+        return;
+      }
+    }
+
     setIsAuthenticated(true);
 
     // Fetch user profile and company data
@@ -189,7 +199,7 @@ export const UserDashboard = () => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 4, position: "relative", zIndex: 1, flexDirection: { xs: "column", md: "row" }, textAlign: { xs: "center", md: "left" } }}>
             <Avatar
-              src={companyLogo}
+              src={user?.profile_image || companyLogo}
               sx={{
                 width: 120,
                 height: 120,
@@ -199,7 +209,7 @@ export const UserDashboard = () => {
                 boxShadow: "0 8px 32px hsl(var(--primary) / 0.2)",
               }}
             >
-              {!companyLogo && (user?.full_name?.charAt(0) || <AccountCircle sx={{ fontSize: "4rem" }} />)}
+              {!user?.profile_image && !companyLogo && (user?.full_name?.charAt(0) || <AccountCircle sx={{ fontSize: "4rem" }} />)}
             </Avatar>
 
             <Box sx={{ flex: 1 }}>

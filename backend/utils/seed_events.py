@@ -51,6 +51,7 @@ def seed_events():
             "startDate": "2024-01-01",
             "endDate": "2024-06-01",
             "status": "live",
+            "link": "https://tcetbi.edu.in/accelerator"
         },
         {
             "title": "Innovation Bootcamp",
@@ -60,6 +61,7 @@ def seed_events():
             "startDate": "2024-04-01",
             "endDate": "2024-04-15",
             "status": "upcoming",
+            "link": "https://tcetbi.edu.in/bootcamp"
         },
         {
             "title": "Tech Entrepreneur Masterclass",
@@ -69,6 +71,7 @@ def seed_events():
             "startDate": "2023-09-01",
             "endDate": "2023-11-30",
             "status": "ended",
+            "link": "https://tcetbi.edu.in/masterclass"
         },
         {
             "title": "Women in Entrepreneurship",
@@ -78,6 +81,7 @@ def seed_events():
             "startDate": "2024-02-01",
             "endDate": "2024-05-30",
             "status": "live",
+            "link": "https://tcetbi.edu.in/women-ent"
         },
         {
             "title": "Social Impact Incubator",
@@ -87,6 +91,7 @@ def seed_events():
             "startDate": "2024-05-01",
             "endDate": "2024-09-30",
             "status": "upcoming",
+            "link": "https://tcetbi.edu.in/social-impact"
         },
         {
             "title": "AgriTech Innovation Lab",
@@ -96,6 +101,7 @@ def seed_events():
             "startDate": "2023-07-01",
             "endDate": "2023-12-30",
             "status": "ended",
+            "link": "https://tcetbi.edu.in/agritech"
         },
         {
             "title": "FinTech Accelerator",
@@ -105,6 +111,7 @@ def seed_events():
             "startDate": "2024-06-01",
             "endDate": "2024-09-25",
             "status": "upcoming",
+            "link": "https://tcetbi.edu.in/fintech"
         },
         {
             "title": "Healthcare Innovation Event",
@@ -114,6 +121,7 @@ def seed_events():
             "startDate": "2023-03-01",
             "endDate": "2023-07-25",
             "status": "ended",
+            "link": "https://tcetbi.edu.in/healthcare"
         },
         {
             "title": "CleanTech Venture Studio",
@@ -123,6 +131,7 @@ def seed_events():
             "startDate": "2024-01-01",
             "endDate": "2024-06-01",
             "status": "live",
+            "link": "https://tcetbi.edu.in/cleantech"
         },
     ]
 
@@ -137,6 +146,7 @@ def seed_events():
             endDate=parse_date(event["endDate"]),
             status=event["status"],
             image=image_url,
+            link=event.get("link", "")
         )
 
     print("✅ Events seeded successfully!")

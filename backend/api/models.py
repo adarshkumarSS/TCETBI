@@ -150,6 +150,7 @@ class Event(models.Model):
 
     startDate = models.DateField()
     endDate = models.DateField()
+    link = models.URLField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return self.title
@@ -326,6 +327,8 @@ class AppUser(AbstractUser):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     phone = models.CharField(max_length=20, blank=True, null=True)
     full_name = models.CharField(max_length=255, blank=True, null=True)
+    profile_image = models.TextField(blank=True, null=True) # Cloudinary URL
+    must_change_password = models.BooleanField(default=False)
 
     groups = models.ManyToManyField(
         'auth.Group',

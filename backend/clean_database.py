@@ -24,6 +24,8 @@ from utils.seed_media import seed_media
 from utils.seed_blog import seed_blogs
 from utils.seed_support import seed_support
 from utils.seed_mentors import seed_mentors
+from utils.seed_partnerships import seed_partnerships
+from utils.seed_users import seed_users
 # ✅ Load Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
@@ -106,4 +108,6 @@ if __name__ == "__main__":
         seed_blogs()
         seed_support()
         seed_mentors()
+        seed_partnerships()
+        seed_users()
         print("\n🚀 Database and Cloudinary refreshed successfully!")

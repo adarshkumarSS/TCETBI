@@ -305,8 +305,19 @@ def seed_portfolio():
             category=s["category"],
         )
 
-        for ceo_data in s["ceos"]:
+        for i, ceo_data in enumerate(s["ceos"]):
+            # Use available images (1-10.png) by cycling if data image is missing or just as a fallback
+            image_filename = f"{(i % 10) + 1}.png" # Default fallback
+            
+            # If the image path in data looks like startup_owners/XX.png, we can try that first
+            # but we know only 1-10 exist.
             ceo_path = os.path.join(base_dir, ceo_data["image"])
+            if not os.path.exists(ceo_path):
+                # Map 11-22 back to 1-10
+                img_num = int(ceo_data["image"].split('/')[-1].split('.')[0])
+                fallback_num = ((img_num - 1) % 10) + 1
+                ceo_path = os.path.join(base_dir, f"asset/startup_owners/{fallback_num}.png")
+
             ceo_url = upload_to_cloudinary(ceo_path, folder="TCETBI/Startups/CEOs")
             CEO.objects.create(
                 startup=startup,

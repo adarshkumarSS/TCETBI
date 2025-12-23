@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Container, Typography, TextField, Button, IconButton, InputAdornment, Divider, useTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Visibility, VisibilityOff, Google, LinkedIn, ArrowBack } from '@mui/icons-material';
 import { Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
+import { toast } from 'sonner';
 import authService from '../api/authService';
 
 const StyledBox = styled(Box)(({ theme }) => ({
@@ -159,6 +160,18 @@ const BackButton = styled(IconButton)<{ component?: typeof Link; to?: string }>(
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.must_change_password) {
+        setShowResetModal(true);
+      }
+    }
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -185,6 +198,13 @@ export const Auth = () => {
   } | null>(null);
   const [showAccountStatusModal, setShowAccountStatusModal] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetFormData, setResetFormData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+  const [isResetting, setIsResetting] = useState(false);
 
   const validatePassword = (password: string) => {
     const minLength = 8;
@@ -226,8 +246,6 @@ export const Auth = () => {
     }
   };
 
-  const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -256,8 +274,14 @@ export const Auth = () => {
           localStorage.setItem('user_token', userResponse.access);
           localStorage.setItem('user_refresh', userResponse.refresh);
           localStorage.setItem('user_user', JSON.stringify(userResponse.user));
-          // Redirect to user dashboard
-          navigate('/user/dashboard');
+          
+          if (userResponse.user.must_change_password) {
+            setResetFormData({ ...resetFormData, current_password: formData.password });
+            setShowResetModal(true);
+          } else {
+            // Redirect to user dashboard
+            navigate('/user/dashboard');
+          }
         } catch (userError: any) {
           // Check if it's a status-related error (pending/blocked)
           const errorData = userError.response?.data;
@@ -309,6 +333,39 @@ export const Auth = () => {
         setLoginError(errorMessage);
         setShowErrorModal(true);
       }
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetFormData.new_password !== resetFormData.confirm_password) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await authService.changeUserPassword({
+        current_password: resetFormData.current_password,
+        new_password: resetFormData.new_password,
+        confirm_password: resetFormData.confirm_password,
+      });
+      // Update local user data
+      const userData = JSON.parse(localStorage.getItem('user_user') || '{}');
+      userData.must_change_password = false;
+      localStorage.setItem('user_user', JSON.stringify(userData));
+      
+      setSuccessMessage("Password changed successfully. You can now access your dashboard.");
+      setShowSuccessModal(true);
+      setShowResetModal(false);
+      
+      // Navigate to dashboard
+      navigate('/user/dashboard');
+    } catch (error: any) {
+      console.error('Password reset failed:', error);
+      toast.error(error.response?.data?.error || "Failed to change password");
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -780,6 +837,72 @@ export const Auth = () => {
               Close
             </Button>
           </DialogActions>
+        </Dialog>
+
+        {/* Mandatory Password Reset Modal */}
+        <Dialog
+          open={showResetModal}
+          onClose={() => {}} // Non-dismissible
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle
+            sx={{
+              color: 'hsl(var(--primary))',
+              fontFamily: 'Poppins, sans-serif',
+              fontWeight: 600,
+              textAlign: 'center',
+              pt: 4
+            }}
+          >
+            🔒 Security Update Required
+          </DialogTitle>
+          <form onSubmit={handleResetPassword}>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'Poppins, sans-serif',
+                    color: 'hsl(var(--muted-foreground))',
+                    fontSize: '14px',
+                    textAlign: 'center',
+                    mb: 1
+                  }}
+                >
+                  Since this is your first login with the temporary credentials, you must set a new password to continue.
+                </Typography>
+
+                <StyledTextField
+                  fullWidth
+                  label="New Password"
+                  type="password"
+                  variant="outlined"
+                  value={resetFormData.new_password}
+                  onChange={(e) => setResetFormData({ ...resetFormData, new_password: e.target.value })}
+                  required
+                />
+
+                <StyledTextField
+                  fullWidth
+                  label="Confirm New Password"
+                  type="password"
+                  variant="outlined"
+                  value={resetFormData.confirm_password}
+                  onChange={(e) => setResetFormData({ ...resetFormData, confirm_password: e.target.value })}
+                  required
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 0 }}>
+              <PrimaryButton
+                type="submit"
+                fullWidth
+                disabled={isResetting}
+              >
+                {isResetting ? 'Updating...' : 'Set New Password'}
+              </PrimaryButton>
+            </DialogActions>
+          </form>
         </Dialog>
       </Container>
     </StyledBox>

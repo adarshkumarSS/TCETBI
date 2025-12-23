@@ -202,12 +202,18 @@ def send_incubation_email_to_ceo(application):
         Submitted at: {application.created_at.strftime('%Y-%m-%d %H:%M:%S')}
         """
 
+        recipient_list = [ceo.email]
+        admin_email = os.getenv('ADMIN_EMAIL', 'admin@tcetbi.edu')
+        if admin_email and admin_email not in recipient_list:
+            recipient_list.append(admin_email)
+            print(f"Adding admin {admin_email} to notification recipient list")
+
         # Send unified HTML + plain text email
         msg = EmailMultiAlternatives(
             subject=subject,
             body=plain_text_content,
             from_email=os.getenv('DEFAULT_FROM_EMAIL'),
-            to=[ceo.email],
+            to=recipient_list,
         )
         msg.attach_alternative(application_data, "text/html")
         msg.send()
@@ -251,7 +257,8 @@ def submit_incubation(request):
         profile_url = upload.get("secure_url")
 
     if resume:
-        upload = cloudinary.uploader.upload(resume, resource_type="raw")
+        # Use resource_type="auto" to let Cloudinary detect PDF and serve it correctly
+        upload = cloudinary.uploader.upload(resume, resource_type="auto")
         resume_url = upload.get("secure_url")
 
     data = request.data.copy()
@@ -322,7 +329,7 @@ def submit_incubation(request):
         notification = Notification.objects.create(
             type="application",
             title=f"New Application: {app.businessName}",
-            message=f"Application #{app.id} from {app.fullName} ({app.email}). Email sent to CEO.",
+            message=f"Application #{app.id} from {app.fullName} ({app.email}). Notifications sent to CEO and Admin.",
             meta={
                 "application_id": app.id,
                 "fullName": app.fullName,
@@ -357,11 +364,101 @@ def get_incubation_applications(request):
 def update_application_status(request, id):
     try:
         app = IncubationApplication.objects.get(id=id)
-        status = request.data.get("status")
-        if status in ["pending", "approved", "rejected"]:
-            app.status = status
+        new_status = request.data.get("status")
+        if new_status in ["pending", "approved", "rejected"]:
+            old_status = app.status
+            app.status = new_status
             app.save()
-            return Response({"message": f"Application {status}"})
+
+            if new_status == "approved" and old_status != "approved":
+                import secrets
+                # 1. Create User if not exists
+                user = AppUser.objects.filter(email=app.email).first()
+                temp_password = None
+                
+                if not user:
+                    temp_password = secrets.token_urlsafe(10)
+                    user = AppUser.objects.create_user(
+                        username=app.email, # Use email as username
+                        email=app.email,
+                        password=temp_password,
+                        full_name=app.fullName,
+                        phone=app.resMobile,
+                        status='approved',
+                        must_change_password=True
+                    )
+                    print(f"✅ Created new user {user.email} from application #{app.id}")
+                else:
+                    # If user exists, ensure they are approved
+                    if user.status != 'approved':
+                        user.status = 'approved'
+                        user.save()
+                    print(f"ℹ️ User {user.email} already exists for application #{app.id}")
+
+                # 2. Create Company Request Draft if not exists for this user
+                if not UserCompanyRequest.objects.filter(user=user, name=app.businessName).exists():
+                    UserCompanyRequest.objects.create(
+                        user=user,
+                        name=app.businessName,
+                        description=app.businessDescription,
+                        sector=app.businessType,
+                        location=f"{app.city}, {app.state}",
+                        ceo_name=app.fullName,
+                        status='draft'
+                    )
+                    print(f"✅ Created company request draft for {app.businessName}")
+
+                # 3. Send Email with credentials if new user was created
+                if temp_password:
+                    try:
+                        subject = "Welcome to TCETBI - Your Incubation Application is Approved!"
+                        context = {
+                            'full_name': app.fullName,
+                            'business_name': app.businessName,
+                            'email': app.email,
+                            'password': temp_password,
+                            'login_url': f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/auth"
+                        }
+                        
+                        html_content = f"""
+                        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                            <h2 style="color: #1976d2;">Congratulations!</h2>
+                            <p>Dear {app.fullName},</p>
+                            <p>We are pleased to inform you that your application for incubation for <strong>{app.businessName}</strong> at TCETBI has been <strong>approved</strong>!</p>
+                            
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
+                                <h3 style="margin-top: 0; color: #1976d2;">Your Account Credentials</h3>
+                                <p>An account has been created for you to manage your incubation journey.</p>
+                                <p><strong>Login Email:</strong> {app.email}</p>
+                                <p><strong>Temporary Password:</strong> <span style="font-family: monospace; background: #eee; padding: 2px 5px;">{temp_password}</span></p>
+                                <p style="color: #d32f2f; font-size: 14px;"><em>* Note: You will be required to change this password on your first login.</em></p>
+                            </div>
+                            
+                            <p>You can now log in to the TCETBI portal to complete your startup profile and access our resources.</p>
+                            
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="{context['login_url']}" style="background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login to Portal</a>
+                            </div>
+                            
+                            <p style="margin-top: 30px;">Best regards,<br>The TCETBI Team</p>
+                        </div>
+                        """
+                        
+                        plain_text = f"Congratulations {app.fullName}! Your incubation application for {app.businessName} has been approved. Your login email is {app.email} and your temporary password is {temp_password}. Please change your password on first login at {context['login_url']}"
+                        
+                        msg = EmailMultiAlternatives(
+                            subject=subject,
+                            body=plain_text,
+                            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
+                            to=[app.email],
+                        )
+                        msg.attach_alternative(html_content, "text/html")
+                        msg.send()
+                        print(f"✉️ Approval email sent to {app.email}")
+                    except Exception as e:
+                        print(f"❌ Failed to send approval email: {e}")
+
+            return Response({"message": f"Application {new_status}"})
         else:
             return Response({"error": "Invalid status"}, status=400)
     except IncubationApplication.DoesNotExist:
@@ -521,6 +618,35 @@ def change_admin_password(request):
     except:
         pass
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_user_password(request):
+    user = request.user
+    
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    confirm_password = request.data.get('confirm_password')
+
+    if not all([current_password, new_password, confirm_password]):
+        return Response({'error': 'All password fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not user.check_password(current_password):
+        return Response({'error': 'Current password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_password != confirm_password:
+        return Response({'error': 'New passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate new password
+    from django.contrib.auth.password_validation import validate_password
+    try:
+        validate_password(new_password, user)
+    except ValidationError as e:
+        return Response({'error': e.messages}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_password)
+    user.must_change_password = False # Reset the flag
+    user.save()
+
     return Response({'message': 'Password changed successfully'})
 
 # User Views
@@ -617,6 +743,7 @@ def user_login(request):
             'username': user.username,
             'email': user.email,
             'full_name': user.full_name if hasattr(user, 'full_name') else getattr(user, 'first_name', ''),
+            'must_change_password': user.must_change_password,
         }
     })
 

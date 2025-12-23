@@ -201,6 +201,7 @@ export const EventsManagement: React.FC = () => {
         status: "upcoming",
         startDate: "",
         endDate: "",
+        link: "",
         userStatusOverride: false,
         userDurationOverride: false,
       },
@@ -320,6 +321,7 @@ export const EventsManagement: React.FC = () => {
           startDate: p.startDate,
           endDate: p.endDate,
           image: await uploadIfNeeded(p.image),
+          link: p.link,
         }))
       );
 
@@ -552,6 +554,16 @@ export const EventsManagement: React.FC = () => {
               <MenuItem value="ended">Ended</MenuItem>
             </TextField>
           </Box>
+
+          {/* Link */}
+          <TextField
+            fullWidth
+            label="Event Link (Optional)"
+            value={event.link || ""}
+            onChange={(e) => handleChange(index, "link", e.target.value)}
+            sx={{ ...textFieldStyles, ...compactFieldSpacing }}
+            placeholder="https://example.com/event-details"
+          />
 
           {/* Dates */}
           <Box

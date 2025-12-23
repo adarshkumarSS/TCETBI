@@ -28,7 +28,19 @@ const EventCard = ({ event }: { event: Event }) => {
       whileHover={{ y: -8 }}
       className="h-full"
     >
-      <CardContainer className="h-full flex flex-col">
+      <Box 
+        component={event.link ? 'a' : 'div'}
+        href={event.link}
+        target={event.link ? '_blank' : undefined}
+        rel={event.link ? 'noopener noreferrer' : undefined}
+        sx={{ 
+          display: 'block', 
+          height: '100%', 
+          textDecoration: 'none',
+          cursor: event.link ? 'pointer' : 'default'
+        }}
+      >
+        <CardContainer className="h-full flex flex-col">
         <Box sx={{ position: 'relative', marginBottom: 3 }}>
           <Box
             sx={{
@@ -177,7 +189,8 @@ const EventCard = ({ event }: { event: Event }) => {
             </Typography>
           </Box>
         </Box>
-      </CardContainer>
+        </CardContainer>
+      </Box>
     </motion.div>
   );
 };

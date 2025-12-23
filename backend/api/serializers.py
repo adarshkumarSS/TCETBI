@@ -161,7 +161,7 @@ class UserCompanyRequestSerializer(serializers.ModelSerializer):
 class AppUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppUser
-        fields = ['id', 'username', 'email', 'full_name', 'phone', 'status', 'date_joined', 'last_login', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'full_name', 'phone', 'status', 'date_joined', 'last_login', 'is_staff', 'is_superuser', 'must_change_password', 'profile_image']
         extra_kwargs = {
             'password': {'write_only': True}
         }
