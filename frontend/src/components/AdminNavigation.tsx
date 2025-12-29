@@ -5,7 +5,7 @@ import { styled } from "@mui/material/styles";
 import { DarkButton } from "./ui/DarkButton";
 
 import { motion, useInView } from "framer-motion";
-import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand, Plus } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand, Plus, FormInput, ListChecks } from "lucide-react";
 import { fetchNotifications } from "@/api/notificationservice";
 
 export const AnimatedItem = ({ children, index, onClick }: any) => {
@@ -167,6 +167,8 @@ export const AdminNavigation: React.FC = () => {
     { text: "Current Incubators", icon: <Building2 size={20} />, path: "/admin/incubators" },
 
     { text: "Mentors", icon: <UserCog size={20} />, path: "/admin/mentors" },
+    { text: "Form Builder", icon: <FormInput size={20} />, path: "/admin/forms" },
+    { text: "Form Submissions", icon: <ListChecks size={20} />, path: "/admin/submissions" },
     { text: "Settings", icon: <Settings size={20} />, path: "/admin/settings" },
   ];
 

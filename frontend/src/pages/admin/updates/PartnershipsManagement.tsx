@@ -10,10 +10,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Fab,
 } from "@mui/material";
-import { Upload, Plus, Trash2 } from "lucide-react";
+import { Upload, Plus, Trash2, Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ResizeModal } from "@/components/ResizeModal";
 import {
@@ -44,12 +46,6 @@ export const PartnershipsManagement: React.FC = () => {
     open: boolean;
     id: number | null;
   }>({ open: false, id: null });
-
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
 
   const [validationModal, setValidationModal] = useState(false);
 
@@ -207,15 +203,12 @@ export const PartnershipsManagement: React.FC = () => {
       const refreshed = await fetchPartnerships();
       setPartnerships(refreshed);
 
-      setMessageText(res.message || "Partnerships updated successfully!");
-      setMessageType("success");
+      toast.success("✅ Partnerships updated successfully!");
     } catch (err) {
       console.error(err);
-      setMessageText("❌ Failed to update partnerships!");
-      setMessageType("error");
+      toast.error("❌ Failed to update partnerships!");
     } finally {
       setSaving(false);
-      setMessageOpen(true);
     }
   };
 
@@ -239,41 +232,68 @@ export const PartnershipsManagement: React.FC = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, px: 2 }}>
-      <Typography
-        variant="h5"
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
-          fontFamily: "Poppins",
-          fontWeight: 600,
-          color: "hsl(var(--foreground))",
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
           mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        Partnerships Management
-      </Typography>
-
-      <TextField
-        fullWidth
-        placeholder="Search partnerships..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        sx={{ ...textFieldStyles, mb: 3 }}
-      />
-
-      {visiblePartnerships.map(({ p, index }) => (
-        <Box
-          key={p.id ?? index}
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Partnerships Management
+        </Typography>
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={saving} 
+          startIcon={<Save size={18} />}
           sx={{
-            p: 3,
-            mb: 3,
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
-            position: "relative",
-            maxWidth: 800,
-            mx: "auto",
-            backgroundColor: "hsl(var(--card))",
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": { boxShadow: 5 },
           }}
         >
+          {saving ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
+
+      <Box sx={{ px: 2 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search partnerships..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ ...textFieldStyles, mb: 2 }}
+        />
+
+        {visiblePartnerships.map(({ p, index }) => (
+          <Box
+            key={p.id ?? index}
+            sx={{
+              p: 2,
+              mb: 2,
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "12px",
+              position: "relative",
+              maxWidth: 800,
+              mx: "auto",
+              backgroundColor: "hsl(var(--card))",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            }}
+          >
           <IconButton
             onClick={() => openDeleteModal(p.id)}
             sx={{
@@ -286,31 +306,34 @@ export const PartnershipsManagement: React.FC = () => {
             <Trash2 size={20} />
           </IconButton>
 
-          <TextField
-            fullWidth
-            label="Company Name"
-            value={p.name}
-            onChange={(e) => handleChange(index, "name", e.target.value)}
-            sx={{ ...textFieldStyles, mb: 2 }}
-          />
+            <TextField
+              fullWidth
+              size="small"
+              label="Company Name"
+              value={p.name}
+              onChange={(e) => handleChange(index, "name", e.target.value)}
+              sx={{ ...textFieldStyles, mb: 1.5 }}
+            />
 
-          <TextField
-            fullWidth
-            label="Website URL"
-            value={p.website || ""}
-            onChange={(e) => handleChange(index, "website", e.target.value)}
-            sx={{ ...textFieldStyles, mb: 2 }}
-          />
+            <TextField
+              fullWidth
+              size="small"
+              label="Website URL"
+              value={p.website || ""}
+              onChange={(e) => handleChange(index, "website", e.target.value)}
+              sx={{ ...textFieldStyles, mb: 1.5 }}
+            />
 
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            label="Description"
-            value={p.description}
-            onChange={(e) => handleChange(index, "description", e.target.value)}
-            sx={{ ...textFieldStyles, mb: 2 }}
-          />
+            <TextField
+              fullWidth
+              size="small"
+              multiline
+              minRows={2}
+              label="Description"
+              value={p.description}
+              onChange={(e) => handleChange(index, "description", e.target.value)}
+              sx={{ ...textFieldStyles, mb: 1.5 }}
+            />
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 3, mt: 1 }}>
             {p.logo && (
@@ -353,32 +376,26 @@ export const PartnershipsManagement: React.FC = () => {
                   {p.logo ? "Change Logo" : "Upload Logo"}
                 </Button>
               </label>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      ))}
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mb: 8 }}>
-        <Button
-          startIcon={<Plus />}
-          onClick={addPartnership}
-          sx={uploadButtonStyles}
-        >
-          Add Partnership
-        </Button>
-
-        <DarkButton
-          onClick={handleSave}
-          disabled={saving}
-          sx={{
-            px: 4,
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-          }}
-        >
-          {saving ? "Saving..." : "Save All Changes"}
-        </DarkButton>
+        ))}
       </Box>
+
+      {/* Floating Add Button */}
+      <Fab
+        color="primary"
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          backgroundColor: "hsl(0 84.2% 60.2%)",
+          "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+        }}
+        onClick={addPartnership}
+      >
+        <Plus />
+      </Fab>
 
       <ResizeModal
         open={resizeModal.open}
@@ -407,12 +424,6 @@ export const PartnershipsManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <MessageModal
-        open={messageOpen}
-        message={messageText}
-        type={messageType}
-        onClose={() => setMessageOpen(false)}
-      />
     </Box>
   );
 };

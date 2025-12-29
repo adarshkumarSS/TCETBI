@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Box, Typography, TextField, Button } from "@mui/material";
-import { Upload, Plus, Trash2 } from "lucide-react";
+import { Box, Typography, TextField, Button, Paper, Fab } from "@mui/material";
+import { Upload, Plus, Trash2, Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
 import { fetchHomeData, updateHomeData, HomeData } from "@/api/homeService";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import { ResizeModal } from "@/components/ResizeModal";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { AddContentModal } from "@/components/AddContentModal";
 import { removeImageBackground } from "@/utils/removeBackground";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -26,11 +26,6 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [resizeModalOpen, setResizeModalOpen] = useState(false);
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
   const [addModal, setAddModal] = useState<{
     open: boolean;
     type: "achievement" | "logo" | "successStory" | null;
@@ -129,9 +124,7 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
           success_stories: prev!.success_stories.filter((_, i) => i !== index),
         }));
 
-        setMessageText("✅ Success story deleted successfully!");
-        setMessageType("success");
-        setMessageOpen(true);
+        toast.success("✅ Success story deleted successfully!");
       } else {
         // Existing local-only delete logic for other types
         const updated = { ...data };
@@ -149,9 +142,7 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
       }
     } catch (error) {
       console.error("❌ Error deleting success story:", error);
-      setMessageText("❌ Failed to delete success story!");
-      setMessageType("error");
-      setMessageOpen(true);
+      toast.error("❌ Failed to delete success story!");
     } finally {
       setDeleteConfirm({ open: false, type: "", index: null });
     }
@@ -271,18 +262,12 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
         }))
       );
 
-      const response = await updateHomeData(updatedData);
-      setMessageText(response.message || "✅ Data updated successfully!");
-      setMessageType("success");
-      setMessageOpen(true);
+      await updateHomeData(updatedData);
+      toast.success("✅ Data updated successfully!");
       setIsDirty?.(false);
     } catch (error: any) {
       console.error("Error updating data:", error);
-      const msg =
-        error.response?.data?.message || "❌ Failed to update home page data!";
-      setMessageText(msg);
-      setMessageType("error");
-      setMessageOpen(true);
+      toast.error("❌ Failed to update home page data!");
     } finally {
       setUploading(false);
     }
@@ -339,16 +324,53 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
   if (!data) return <p>Failed to load data.</p>;
 
   return (
-    <>
-      <Box sx={{ mt: 4 }}>
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
+        sx={{
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Home Page Management
+        </Typography>
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={uploading} 
+          startIcon={<Save size={18} />}
+          sx={{
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": {
+              boxShadow: 5,
+            },
+          }}
+        >
+          {uploading ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
+
+      <Box sx={{ mt: 2 }}>
         {/* Vision & Mission */}
         <Typography
-          variant="h5"
+          variant="h6"
           sx={{
-            fontFamily: "Poppins",
             fontWeight: 600,
-            color: "hsl(var(--foreground))",
-            mb: 3,
+            color: "hsl(var(--primary))",
+            mb: 2,
           }}
         >
           Vision & Mission
@@ -361,7 +383,8 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
           label="Vision"
           value={data.vision_mission.vision}
           onChange={(e) => handleVisionMissionChange("vision", e.target.value)}
-          sx={{ ...textFieldStyles, mb: 3 }}
+          sx={{ ...textFieldStyles, mb: 2 }}
+          size="small"
         />
         <TextField
           fullWidth
@@ -370,7 +393,8 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
           label="Mission"
           value={data.vision_mission.mission}
           onChange={(e) => handleVisionMissionChange("mission", e.target.value)}
-          sx={{ ...textFieldStyles, mb: 4 }}
+          sx={{ ...textFieldStyles, mb: 3 }}
+          size="small"
         />
 
         {/* Achievements Section */}
@@ -799,34 +823,28 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
             {uploading ? "Saving..." : "Save Changes"}
           </DarkButton>
         </Box>
-
-        {/* Modals */}
-        <ResizeModal
-          open={resizeModalOpen}
-          image={selectedImage || ""}
-          onClose={() => setResizeModalOpen(false)}
-          onSave={handleCroppedImageSave}
-        />
-        <MessageModal
-          open={messageOpen}
-          message={messageText}
-          type={messageType}
-          onClose={() => setMessageOpen(false)}
-        />
-        <AddContentModal
-          open={addModal.open}
-          type={addModal.type}
-          onClose={() => setAddModal({ open: false, type: null })}
-          onSave={handleAddNew}
-        />
-        <ConfirmModal
-          open={deleteConfirm.open}
-          onCancel={() =>
-            setDeleteConfirm({ open: false, type: "", index: null })
-          }
-          onConfirm={handleConfirmDelete}
-        />
       </Box>
-    </>
+
+      {/* Modals */}
+      <ResizeModal
+        open={resizeModalOpen}
+        image={selectedImage || ""}
+        onClose={() => setResizeModalOpen(false)}
+        onSave={handleCroppedImageSave}
+      />
+      <AddContentModal
+        open={addModal.open}
+        type={addModal.type}
+        onClose={() => setAddModal({ open: false, type: null })}
+        onSave={handleAddNew}
+      />
+      <ConfirmModal
+        open={deleteConfirm.open}
+        onCancel={() =>
+          setDeleteConfirm({ open: false, type: "", index: null })
+        }
+        onConfirm={handleConfirmDelete}
+      />
+    </Box>
   );
 };

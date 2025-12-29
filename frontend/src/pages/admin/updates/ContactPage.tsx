@@ -9,9 +9,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
 } from "@mui/material";
+import { Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import {
   fetchTBIContactData,
   updateTBIContactData,
@@ -25,12 +27,6 @@ export const ContactPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
 
   const [validationModal, setValidationModal] = useState(false);
 
@@ -164,15 +160,12 @@ export const ContactPage: React.FC = () => {
         contact: payloadContact,
       });
 
-      setMessageText(res.message || "Contact info updated successfully!");
-      setMessageType("success");
+      toast.success("✅ Contact info updated successfully!");
     } catch (err) {
       console.error(err);
-      setMessageText("❌ Failed to update TBI contact data!");
-      setMessageType("error");
+      toast.error("❌ Failed to update TBI contact data!");
     } finally {
       setSaving(false);
-      setMessageOpen(true);
     }
   };
 
@@ -187,18 +180,46 @@ export const ContactPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, px: 2, pb: 6 }}>
-      <Typography
-        variant="h5"
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
-          fontFamily: "Poppins",
-          fontWeight: 600,
-          color: "hsl(var(--foreground))",
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
           mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        TBI Contact Information
-      </Typography>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Contact Information
+        </Typography>
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={saving} 
+          startIcon={<Save size={18} />}
+          sx={{
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": {
+              boxShadow: 5,
+            },
+          }}
+        >
+          {saving ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
+
+      <Box sx={{ px: 2 }}>
 
       {/* CEO CARD */}
 
@@ -207,14 +228,14 @@ export const ContactPage: React.FC = () => {
       {contact && (
         <Box
           sx={{
-            p: 3,
-            mb: 3,
+            p: 2,
+            mb: 2,
             border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
+            borderRadius: "12px",
             maxWidth: 900,
             mx: "auto",
             backgroundColor: "hsl(var(--card))",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
           }}
         >
           <Typography
@@ -299,6 +320,7 @@ export const ContactPage: React.FC = () => {
           >
             <TextField
               fullWidth
+              size="small"
               label="Phone"
               value={contact.phone}
               onChange={(e) =>
@@ -310,6 +332,7 @@ export const ContactPage: React.FC = () => {
             />
             <TextField
               fullWidth
+              size="small"
               label="Email"
               value={contact.email}
               onChange={(e) =>
@@ -337,6 +360,7 @@ export const ContactPage: React.FC = () => {
 
           <TextField
             fullWidth
+            size="small"
             label="Quick Title"
             value={contact.quick_title}
             onChange={(e) =>
@@ -349,6 +373,7 @@ export const ContactPage: React.FC = () => {
 
           <TextField
             fullWidth
+            size="small"
             label="Quick Subtitle"
             value={contact.quick_subtitle}
             onChange={(e) =>
@@ -394,6 +419,7 @@ export const ContactPage: React.FC = () => {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
                 fullWidth
+                size="small"
                 label="Contact Phone"
                 value={contact.contact_phone}
                 onChange={(e) =>
@@ -405,6 +431,7 @@ export const ContactPage: React.FC = () => {
               />
               <TextField
                 fullWidth
+                size="small"
                 label="Contact Email"
                 value={contact.contact_email}
                 onChange={(e) =>
@@ -416,6 +443,7 @@ export const ContactPage: React.FC = () => {
               />
               <TextField
                 fullWidth
+                size="small"
                 label="Website"
                 value={contact.website || ""}
                 onChange={(e) =>
@@ -470,26 +498,6 @@ export const ContactPage: React.FC = () => {
           />
         </Box>
       )}
-
-      {/* Save button */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
-        <DarkButton
-          onClick={handleSave}
-          disabled={saving}
-          sx={{
-            px: 4,
-            py: 1.5,
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            color: "white",
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-            "&.Mui-disabled": {
-              backgroundColor: "hsl(0 84.2% 60.2% / 0.5)",
-              color: "white",
-            },
-          }}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </DarkButton>
       </Box>
 
 
@@ -519,13 +527,7 @@ export const ContactPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Message Modal */}
-      <MessageModal
-        open={messageOpen}
-        message={messageText}
-        type={messageType}
-        onClose={() => setMessageOpen(false)}
-      />
+
     </Box>
   );
 };

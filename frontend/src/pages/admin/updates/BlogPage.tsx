@@ -11,10 +11,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Fab,
 } from "@mui/material";
-import { Upload, Plus, Trash2 } from "lucide-react";
+import { Upload, Plus, Trash2, Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ResizeModal } from "@/components/ResizeModal";
 import {
@@ -46,12 +48,6 @@ export const BlogPage: React.FC = () => {
     open: boolean;
     id: number | null;
   }>({ open: false, id: null });
-
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
 
   const [validationModal, setValidationModal] = useState(false);
 
@@ -267,15 +263,12 @@ export const BlogPage: React.FC = () => {
       const refreshed = await fetchBlogs();
       setBlogs(refreshed);
 
-      setMessageText(res.message || "Blogs updated successfully!");
-      setMessageType("success");
+      toast.success("✅ Blogs updated successfully!");
     } catch (err) {
       console.error(err);
-      setMessageText("❌ Failed to update blogs!");
-      setMessageType("error");
+      toast.error("❌ Failed to update blogs!");
     } finally {
       setSaving(false);
-      setMessageOpen(true);
     }
   };
 
@@ -306,42 +299,70 @@ export const BlogPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, px: 2 }}>
-      <Typography
-        variant="h5"
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
-          fontFamily: "Poppins",
-          fontWeight: 600,
-          color: "hsl(var(--foreground))",
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
           mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        Blogs
-      </Typography>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Blog Management
+        </Typography>
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={saving} 
+          startIcon={<Save size={18} />}
+          sx={{
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": {
+              boxShadow: 5,
+            },
+          }}
+        >
+          {saving ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
 
-      {/* Search */}
-      <TextField
-        fullWidth
-        placeholder="Search blogs by title, author, category..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        sx={{ ...textFieldStyles, mb: 3 }}
-      />
+      <Box sx={{ px: 2 }}>
+        {/* Search */}
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search blogs by title, author, category..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ ...textFieldStyles, mb: 2 }}
+        />
 
       {/* Cards */}
       {visibleBlogs.map(({ blog, index }) => (
         <Box
           key={blog.id ?? index}
           sx={{
-            p: 3,
-            mb: 3,
+            p: 2,
+            mb: 2,
             border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
+            borderRadius: "12px",
             position: "relative",
             maxWidth: 750,
             mx: "auto",
             backgroundColor: "hsl(var(--card))",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
           }}
         >
           {/* Delete icon */}
@@ -366,6 +387,7 @@ export const BlogPage: React.FC = () => {
           {/* Title */}
           <TextField
             fullWidth
+            size="small"
             label="Title"
             value={blog.title}
             onChange={(e) => handleChange(index, "title", e.target.value)}
@@ -383,6 +405,7 @@ export const BlogPage: React.FC = () => {
           >
             <TextField
               fullWidth
+              size="small"
               label="Author"
               value={blog.author}
               onChange={(e) => handleChange(index, "author", e.target.value)}
@@ -390,6 +413,7 @@ export const BlogPage: React.FC = () => {
             />
             <TextField
               fullWidth
+              size="small"
               label="Category (Label)"
               value={blog.category}
               onChange={(e) => handleChange(index, "category", e.target.value)}
@@ -400,6 +424,7 @@ export const BlogPage: React.FC = () => {
           {/* Excerpt */}
           <TextField
             fullWidth
+            size="small"
             multiline
             minRows={2}
             maxRows={5}
@@ -447,6 +472,7 @@ export const BlogPage: React.FC = () => {
           >
             <TextField
               fullWidth
+              size="small"
               type="number"
               label="Read Time (minutes)"
               inputProps={{ min: 1 }}
@@ -462,6 +488,7 @@ export const BlogPage: React.FC = () => {
             />
             <TextField
               fullWidth
+              size="small"
               label="Blog Link (internal or external URL)"
               value={blog.link}
               onChange={(e) => {
@@ -511,42 +538,34 @@ export const BlogPage: React.FC = () => {
               component="span"
               variant="outlined"
               fullWidth
-              startIcon={<Upload size={16} />}
+              size="small"
+              startIcon={<Upload size={14} />}
               sx={uploadButtonStyles}
             >
               {blog.image
-                ? "Change Blog Image"
-                : "Upload Blog Image (optional)"}
+                ? "Change Image"
+                : "Upload Image (optional)"}
             </Button>
           </label>
         </Box>
       ))}
 
-      {/* Add blog */}
-      <Button startIcon={<Plus />} onClick={addBlog} sx={uploadButtonStyles}>
-        Add Blog
-      </Button>
-
-      {/* Save changes */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
-        <DarkButton
-          onClick={handleSave}
-          disabled={saving}
-          sx={{
-            px: 4,
-            py: 1.5,
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            color: "white",
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-            "&.Mui-disabled": {
-              backgroundColor: "hsl(0 84.2% 60.2% / 0.5)",
-              color: "white",
-            },
-          }}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </DarkButton>
       </Box>
+
+      {/* Floating Add Button */}
+      <Fab
+        color="primary"
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          backgroundColor: "hsl(0 84.2% 60.2%)",
+          "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+        }}
+        onClick={addBlog}
+      >
+        <Plus />
+      </Fab>
 
       {/* Resize Modal */}
       <ResizeModal
@@ -590,13 +609,7 @@ export const BlogPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Message Modal */}
-      <MessageModal
-        open={messageOpen}
-        message={messageText}
-        type={messageType}
-        onClose={() => setMessageOpen(false)}
-      />
+
     </Box>
   );
 };

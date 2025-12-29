@@ -11,10 +11,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Fab,
 } from "@mui/material";
-import { Upload, Plus, Trash2 } from "lucide-react";
+import { Upload, Plus, Trash2, Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ResizeModal } from "@/components/ResizeModal";
 import {
@@ -91,12 +93,6 @@ export const EventsManagement: React.FC = () => {
     open: boolean;
     id: number | null;
   }>({ open: false, id: null });
-
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
 
   const [validationModal, setValidationModal] = useState(false);
 
@@ -344,15 +340,12 @@ export const EventsManagement: React.FC = () => {
         }))
       );
 
-      setMessageText(res.message || "Updated successfully!");
-      setMessageType("success");
+      toast.success("✅ Events updated successfully!");
     } catch (err) {
       console.error(err);
-      setMessageText("❌ Failed to update events!");
-      setMessageType("error");
+      toast.error("❌ Failed to update events!");
     } finally {
       setSaving(false);
-      setMessageOpen(true);
     }
   };
 
@@ -382,30 +375,58 @@ export const EventsManagement: React.FC = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, px: 2 }}>
-      <Typography
-        variant="h5"
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
-          fontFamily: "Poppins",
-          fontWeight: 600,
-          color: "hsl(var(--foreground))",
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
           mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        Events Management
-      </Typography>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Events Management
+        </Typography>
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={saving} 
+          startIcon={<Save size={18} />}
+          sx={{
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": {
+              boxShadow: 5,
+            },
+          }}
+        >
+          {saving ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
 
-      {/* Search */}
-      <TextField
-        fullWidth
-        placeholder="Search events..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        sx={{ ...textFieldStyles, mb: 3 }}
-      />
+      <Box sx={{ px: 2 }}>
+        {/* Search */}
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search events..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ ...textFieldStyles, mb: 2 }}
+        />
 
-      {/* Status filter buttons */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+        {/* Status filter buttons */}
+        <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
         {["all", "live", "upcoming", "ended"].map((type) => (
           <Button
             key={type}
@@ -436,22 +457,22 @@ export const EventsManagement: React.FC = () => {
             {type.toUpperCase()}
           </Button>
         ))}
-      </Box>
+        </Box>
 
-      {/* Cards */}
-      {visibleEvents.map(({ event, index }) => (
-        <Box
-          key={event.id ?? index}
-          sx={{
-            p: 3,
-            mb: 3,
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "var(--radius)",
-            position: "relative",
-            maxWidth: 650,
-            mx: "auto",
-            backgroundColor: "hsl(var(--card))",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        {/* Cards */}
+        {visibleEvents.map(({ event, index }) => (
+          <Box
+            key={event.id ?? index}
+            sx={{
+              p: 2,
+              mb: 2,
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "12px",
+              position: "relative",
+              maxWidth: 650,
+              mx: "auto",
+              backgroundColor: "hsl(var(--card))",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
           }}
         >
           {/* Delete icon */}
@@ -467,14 +488,14 @@ export const EventsManagement: React.FC = () => {
             <Trash2 size={20} />
           </IconButton>
 
-          {/* Title */}
-          <TextField
-            fullWidth
-            label="Title"
-            value={event.title}
-            onChange={(e) => handleChange(index, "title", e.target.value)}
-            sx={{ ...textFieldStyles, ...compactFieldSpacing }}
-          />
+            <TextField
+              fullWidth
+              size="small"
+              label="Title"
+              value={event.title}
+              onChange={(e) => handleChange(index, "title", e.target.value)}
+              sx={{ ...textFieldStyles, ...compactFieldSpacing }}
+            />
 
           {/* Description */}
           <TextField
@@ -524,46 +545,47 @@ export const EventsManagement: React.FC = () => {
               mb: 1.5,
             }}
           >
-            {/* Duration (auto but editable) */}
-            <TextField
-              fullWidth
-              label="Duration"
-              value={event.duration}
-              onChange={(e) => {
-                handleChange(index, "duration", e.target.value);
-                handleChange(index, "userDurationOverride", true);
-              }}
-              sx={textFieldStyles}
-            />
+              <TextField
+                fullWidth
+                size="small"
+                label="Duration"
+                value={event.duration}
+                onChange={(e) => {
+                  handleChange(index, "duration", e.target.value);
+                  handleChange(index, "userDurationOverride", true);
+                }}
+                sx={textFieldStyles}
+              />
 
-            {/* Status (auto but editable) */}
-            <TextField
-              select
-              fullWidth
-              label="Status"
-              value={event.status || "upcoming"}
-              onChange={(e) => {
-                const newStatus = e.target.value as Status;
-                handleChange(index, "status", newStatus);
-                handleChange(index, "userStatusOverride", true);
-              }}
-              sx={textFieldStyles}
-            >
+              {/* Status (auto but editable) */}
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Status"
+                value={event.status || "upcoming"}
+                onChange={(e) => {
+                  const newStatus = e.target.value as Status;
+                  handleChange(index, "status", newStatus);
+                  handleChange(index, "userStatusOverride", true);
+                }}
+                sx={textFieldStyles}
+              >
               <MenuItem value="live">Live</MenuItem>
               <MenuItem value="upcoming">Upcoming</MenuItem>
               <MenuItem value="ended">Ended</MenuItem>
-            </TextField>
-          </Box>
+              </TextField>
+            </Box>
 
-          {/* Link */}
-          <TextField
-            fullWidth
-            label="Event Link (Optional)"
-            value={event.link || ""}
-            onChange={(e) => handleChange(index, "link", e.target.value)}
-            sx={{ ...textFieldStyles, ...compactFieldSpacing }}
-            placeholder="https://example.com/event-details"
-          />
+            <TextField
+              fullWidth
+              size="small"
+              label="Event Link (Optional)"
+              value={event.link || ""}
+              onChange={(e) => handleChange(index, "link", e.target.value)}
+              sx={{ ...textFieldStyles, ...compactFieldSpacing }}
+              placeholder="https://example.com/event-details"
+            />
 
           {/* Dates */}
           <Box
@@ -687,44 +709,35 @@ export const EventsManagement: React.FC = () => {
             onChange={(e) => handleImageUpload(e, index)}
           />
           <label htmlFor={`img-${index}`}>
-            <Button
-              component="span"
-              variant="outlined"
-              fullWidth
-              startIcon={<Upload size={16} />}
-              sx={uploadButtonStyles}
-            >
-              Upload Event Image
-            </Button>
-          </label>
-        </Box>
-      ))}
-
-      {/* Add event */}
-      <Button startIcon={<Plus />} onClick={addEvent} sx={uploadButtonStyles}>
-        Add Event
-      </Button>
-
-      {/* Save changes */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
-        <DarkButton
-          onClick={handleSave}
-          disabled={saving}
-          sx={{
-            px: 4,
-            py: 1.5,
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            color: "white",
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-            "&.Mui-disabled": {
-              backgroundColor: "hsl(0 84.2% 60.2% / 0.5)",
-              color: "white",
-            },
-          }}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </DarkButton>
+              <Button
+                component="span"
+                variant="outlined"
+                fullWidth
+                size="small"
+                startIcon={<Upload size={14} />}
+                sx={uploadButtonStyles}
+              >
+                Upload Image
+              </Button>
+            </label>
+          </Box>
+        ))}
       </Box>
+
+      {/* Floating Add Button */}
+      <Fab
+        color="primary"
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          backgroundColor: "hsl(0 84.2% 60.2%)",
+          "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+        }}
+        onClick={addEvent}
+      >
+        <Plus />
+      </Fab>
 
       {/* Resize Modal */}
       <ResizeModal
@@ -768,13 +781,7 @@ export const EventsManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Message Modal */}
-      <MessageModal
-        open={messageOpen}
-        message={messageText}
-        type={messageType}
-        onClose={() => setMessageOpen(false)}
-      />
+
     </Box>
   );
 };

@@ -11,10 +11,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Fab,
 } from "@mui/material";
-import { Plus, Edit3, Trash2 } from "lucide-react";
+import { Plus, Edit3, Trash2, Save } from "lucide-react";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { AddPortfolioModal } from "@/components/AddPortfolioModal";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import {
@@ -29,11 +31,6 @@ export const PortfolioPage: React.FC = () => {
   const [data, setData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
 
   const [editModal, setEditModal] = useState<{
     open: boolean;
@@ -137,15 +134,12 @@ export const PortfolioPage: React.FC = () => {
         setData(refreshedData);
       }
 
-      setMessageText(res.message || "✅ Portfolio updated successfully!");
-      setMessageType("success");
+      toast.success("✅ Portfolio updated successfully!");
     } catch (err) {
       console.error("❌ Failed to update portfolio:", err);
-      setMessageText("❌ Failed to update portfolio data!");
-      setMessageType("error");
+      toast.error("❌ Failed to update portfolio data!");
     } finally {
       setUploading(false);
-      setMessageOpen(true);
     }
   };
 
@@ -211,15 +205,12 @@ export const PortfolioPage: React.FC = () => {
           : prev
       );
 
-      setMessageText("✅ Startup deleted successfully!");
-      setMessageType("success");
+      toast.success("✅ Startup deleted successfully!");
     } catch (err) {
       console.error("❌ Failed to delete startup:", err);
-      setMessageText("❌ Failed to delete startup!");
-      setMessageType("error");
+      toast.error("❌ Failed to delete startup!");
     } finally {
       setDeleteModal({ open: false, id: null, category: null });
-      setMessageOpen(true);
     }
   };
 
@@ -233,39 +224,44 @@ export const PortfolioPage: React.FC = () => {
   if (!data) return <p>Failed to load portfolio data.</p>;
 
   return (
-    <Box sx={{ mt: 4 }}>
-      {/* Header */}
-      <Box
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
+          mb: 3,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 4,
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontFamily: "Poppins",
-            fontWeight: 600,
-            color: "hsl(var(--foreground))",
-          }}
-        >
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
           Portfolio Management
         </Typography>
-        <Button
-          startIcon={<Plus size={18} />}
-          onClick={() => setAddModal({ open: true })}
+        <DarkButton 
+          onClick={handleSave} 
+          disabled={uploading} 
+          startIcon={<Save size={18} />}
           sx={{
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            color: "white",
-            fontWeight: 600,
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+            px: 3,
+            py: 1.2,
+            fontSize: "0.95rem",
+            boxShadow: 3,
+            "&:hover": { boxShadow: 5 },
           }}
         >
-          Add Startup
-        </Button>
-      </Box>
+          {uploading ? "Saving..." : "Save Changes"}
+        </DarkButton>
+      </Paper>
+
+      <Box sx={{ px: 2 }}>
 
       {/* Render Startups */}
       {["current", "graduated"].map((type) => (
@@ -353,30 +349,25 @@ export const PortfolioPage: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
+            </Box>
           </Box>
-        </Box>
-      ))}
-
-      {/* Save Button */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
-        <DarkButton
-          onClick={handleSave}
-          disabled={uploading}
-          sx={{
-            px: 4,
-            py: 1.5,
-            backgroundColor: "hsl(0 84.2% 60.2%)",
-            color: "white",
-            "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
-            "&.Mui-disabled": {
-              backgroundColor: "hsl(0 84.2% 60.2% / 0.5)",
-              color: "white",
-            },
-          }}
-        >
-          {uploading ? "Saving..." : "Save Changes"}
-        </DarkButton>
+        ))}
       </Box>
+
+      {/* Floating Add Button */}
+      <Fab
+        color="primary"
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          backgroundColor: "hsl(0 84.2% 60.2%)",
+          "&:hover": { backgroundColor: "hsl(0 84.2% 50.2%)" },
+        }}
+        onClick={() => setAddModal({ open: true })}
+      >
+        <Plus />
+      </Fab>
 
       <ConfirmModal
         open={deleteModal.open}
@@ -427,12 +418,6 @@ export const PortfolioPage: React.FC = () => {
           initialData={editModal.startup}
         />
       )}
-      <MessageModal
-        open={messageOpen}
-        message={messageText}
-        type={messageType}
-        onClose={() => setMessageOpen(false)}
-      />
     </Box>
   );
 };

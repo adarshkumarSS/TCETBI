@@ -45,6 +45,8 @@ import { AdminMentors } from "./pages/admin/AdminMentors";
 import { FundingSupport } from "./pages/support/FundingSupport";
 import { MentoringSupport } from "./pages/support/MentoringSupport";
 import { IdeaValidation } from "./pages/support/IdeaValidation";
+import { FormBuilder } from "./pages/admin/FormBuilder";
+import { FormSubmissions } from "./pages/admin/FormSubmissions";
 
 import NotFound from "./pages/NotFound";
 import CubeCarousel from "./pages/Test";
@@ -333,6 +335,24 @@ const router = createBrowserRouter(
         <>
           <AppContent />
           <AdminMentors />
+        </>
+      ),
+    },
+    {
+      path: "/admin/forms",
+      element: (
+        <>
+          <AppContent />
+          <FormBuilder />
+        </>
+      ),
+    },
+    {
+      path: "/admin/submissions",
+      element: (
+        <>
+          <AppContent />
+          <FormSubmissions />
         </>
       ),
     },

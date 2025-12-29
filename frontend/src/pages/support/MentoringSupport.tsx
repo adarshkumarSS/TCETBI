@@ -1,23 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Container, Typography, Grid, Paper, Avatar, Chip, TextField, Button, CircularProgress, Divider } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Container, Typography, Grid, Paper, Avatar, Chip, TextField, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
 import { supportService } from '../../api/supportService';
 import { Email, Assignment, PersonSearch, RocketLaunch, Search } from '@mui/icons-material';
-import { toast } from 'sonner';
 import { InputAdornment } from '@mui/material';
+import { DynamicForm } from '../../components/DynamicForm';
 
 export const MentoringSupport = () => {
   const [mentors, setMentors] = useState<any[]>([]);
   const [mentorSearch, setMentorSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [mentoringForm, setMentoringForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    startup_name: '',
-    domain: '',
-    description: '',
-  });
 
   useEffect(() => {
     fetchMentors();
@@ -29,24 +20,6 @@ export const MentoringSupport = () => {
       setMentors(data);
     } catch (error) {
       console.error("Failed to fetch mentors", error);
-    }
-  };
-
-  const handleMentoringSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await supportService.submitMentoringRequest({
-        ...mentoringForm,
-        mentor: '' // Default to any if submitting from this procedure section
-      });
-      toast.success("Mentoring request submitted successfully!");
-      setMentoringForm({ name: '', email: '', phone: '', startup_name: '', domain: '', description: '' });
-    } catch (error) {
-      toast.error("Failed to submit mentoring request");
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -95,7 +68,7 @@ export const MentoringSupport = () => {
           </Box>
 
           <Grid container spacing={6}>
-            {/* Left Side - Procedure to apply */}
+            {/* Left Side - Application Form */}
             <Grid size={{ xs: 12, lg: 5 }}>
               <Box sx={{ position: 'sticky', top: 100 }}>
                 <Typography variant="h4" sx={{ fontWeight: 700, mb: 4, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
@@ -122,64 +95,7 @@ export const MentoringSupport = () => {
 
                 <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid hsl(var(--border))', backgroundColor: "hsl(var(--card))" }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Quick Application</Typography>
-                  <form onSubmit={handleMentoringSubmit}>
-                    <Grid container spacing={2}>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Your Name"
-                          value={mentoringForm.name}
-                          onChange={(e) => setMentoringForm({...mentoringForm, name: e.target.value})}
-                          required
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Email"
-                          type="email"
-                          value={mentoringForm.email}
-                          onChange={(e) => setMentoringForm({...mentoringForm, email: e.target.value})}
-                          required
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Startup Name"
-                          value={mentoringForm.startup_name}
-                          onChange={(e) => setMentoringForm({...mentoringForm, startup_name: e.target.value})}
-                          required
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          multiline
-                          rows={3}
-                          label="Mentoring Needs"
-                          value={mentoringForm.description}
-                          onChange={(e) => setMentoringForm({...mentoringForm, description: e.target.value})}
-                          required
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12 }}>
-                        <Button
-                          fullWidth
-                          type="submit"
-                          variant="contained"
-                          disabled={loading}
-                          sx={{ py: 1.5, borderRadius: '12px', bgcolor: 'hsl(var(--primary))' }}
-                        >
-                          {loading ? <CircularProgress size={24} color="inherit" /> : "Submit Request"}
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </form>
+                  <DynamicForm formType="mentoring_support" />
                 </Paper>
               </Box>
             </Grid>

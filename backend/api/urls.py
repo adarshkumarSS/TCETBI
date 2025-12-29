@@ -9,6 +9,13 @@ from .wrappers.media_view import get_media_data, update_album, delete_album
 from .wrappers.blog_view import get_blogs_data, update_blogs_data, delete_blog_item
 from .wrappers.tbi_contact_view import get_tbi_contact_data, update_tbi_contact_data
 from .wrappers.partnership_view import get_partnerships_data, update_partnerships_data, delete_partnership_item
+from .wrappers.form_builder_views import (
+    list_form_templates, get_form_template, create_form_template, update_form_template,
+    delete_form_template, add_form_field, update_form_field, delete_form_field, reorder_form_fields
+)
+from .wrappers.form_submission_views import (
+    get_form_structure, submit_form, list_submissions, get_submission_detail, update_submission_status
+)
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
     submit_incubation, get_incubation_applications, update_application_status,
@@ -101,5 +108,23 @@ urlpatterns = [
     path('user/company-request/delete/', delete_company_request, name='delete_company_request'),
     path('admin/company-requests/', get_company_requests_admin, name='get_company_requests_admin'),
     path('admin/company-requests/<int:request_id>/review/', review_company_request, name='review_company_request'),
+
+    # Form Builder Admin endpoints
+    path('admin/forms/', list_form_templates, name='list_form_templates'),
+    path('admin/forms/<str:form_type>/', get_form_template, name='get_form_template'),
+    path('admin/forms/create/', create_form_template, name='create_form_template'),
+    path('admin/forms/<int:template_id>/update/', update_form_template, name='update_form_template'),
+    path('admin/forms/<int:template_id>/delete/', delete_form_template, name='delete_form_template'),
+    path('admin/forms/<int:template_id>/fields/', add_form_field, name='add_form_field'),
+    path('admin/forms/fields/<int:field_id>/update/', update_form_field, name='update_form_field'),
+    path('admin/forms/fields/<int:field_id>/delete/', delete_form_field, name='delete_form_field'),
+    path('admin/forms/<int:template_id>/reorder/', reorder_form_fields, name='reorder_form_fields'),
+    
+    # Form Submission endpoints
+    path('forms/<str:form_type>/', get_form_structure, name='get_form_structure'),
+    path('forms/<str:form_type>/submit/', submit_form, name='submit_form'),
+    path('admin/submissions/', list_submissions, name='list_submissions'),
+    path('admin/submissions/<int:submission_id>/', get_submission_detail, name='get_submission_detail'),
+    path('admin/submissions/<int:submission_id>/status/', update_submission_status, name='update_submission_status'),
 
 ]

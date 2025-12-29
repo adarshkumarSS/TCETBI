@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Event, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest, Partnership
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Event, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest, Partnership, FormTemplate, FormField, FormSubmission, FormFieldValue
 import os
 from django.contrib.auth.models import User as DjangoUser
 
@@ -249,3 +249,38 @@ class ValidationRequestSerializer(serializers.ModelSerializer):
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             validated_data['user'] = request.user
         return super().create(validated_data)
+
+# Form Builder Serializers
+
+class FormFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormField
+        fields = '__all__'
+        read_only_fields = ['form_template']
+
+class FormTemplateSerializer(serializers.ModelSerializer):
+    fields = FormFieldSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = FormTemplate
+        fields = '__all__'
+
+class FormFieldValueSerializer(serializers.ModelSerializer):
+    field_label = serializers.CharField(source='field.label', read_only=True)
+    field_type = serializers.CharField(source='field.field_type', read_only=True)
+    
+    class Meta:
+        model = FormFieldValue
+        fields = '__all__'
+        read_only_fields = ['submission']
+
+class FormSubmissionSerializer(serializers.ModelSerializer):
+    field_values = FormFieldValueSerializer(many=True, read_only=True)
+    form_name = serializers.CharField(source='form_template.name', read_only=True)
+    form_type = serializers.CharField(source='form_template.form_type', read_only=True)
+    user_details = AppUserSerializer(source='user', read_only=True)
+    
+    class Meta:
+        model = FormSubmission
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at', 'updated_at']

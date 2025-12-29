@@ -10,13 +10,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Fab,
 } from "@mui/material";
 
-import { Upload, Plus, Trash2, FolderPlus } from "lucide-react";
+import { Upload, Plus, Trash2, FolderPlus, Save } from "lucide-react";
 
 import { DarkButton } from "@/components/ui/DarkButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { MessageModal } from "@/components/ui/MessageModal";
+import { toast } from "sonner";
 import { ResizeModal } from "@/components/ResizeModal";
 import { MenuItem } from "@mui/material";
 
@@ -66,12 +68,7 @@ export const MediaPage: React.FC = () => {
   const [newAlbumName, setNewAlbumName] = useState("");
   const [newAlbumCategory, setNewAlbumCategory] = useState("events");
   const [newAlbumFiles, setNewAlbumFiles] = useState<FileList | null>(null);
-
-  const [message, setMessage] = useState({
-    open: false,
-    text: "",
-    type: "info" as "success" | "error" | "info",
-  });
+  const [saving, setSaving] = useState(false);
 
   // --------------------------------------------------
   // Theme TextField Styles
@@ -149,9 +146,9 @@ export const MediaPage: React.FC = () => {
 
       setAlbums((prev) => prev.filter((a) => a.album !== deleteModal.album));
 
-      setMessage({ open: true, text: "Album deleted", type: "success" });
+      toast.success("✅ Album deleted successfully!");
     } catch (err) {
-      setMessage({ open: true, text: "Failed to delete album", type: "error" });
+      toast.error("❌ Failed to delete album");
     }
 
     setDeleteModal({ open: false, album: null });
@@ -232,6 +229,7 @@ export const MediaPage: React.FC = () => {
 
   const handleSave = async () => {
     try {
+      setSaving(true);
       const uploadIfNeeded = async (img: string) => {
         if (img.startsWith("data:") || img.startsWith("blob:")) {
           const blob = await fetch(img).then((r) => r.blob());
@@ -255,7 +253,7 @@ export const MediaPage: React.FC = () => {
 
       await updateAlbum(activeAlbum!.album, final);
 
-      setMessage({ open: true, text: "Album updated!", type: "success" });
+      toast.success("✅ Album updated successfully!");
 
       setAlbums((prev) =>
         prev.map((a) =>
@@ -264,7 +262,9 @@ export const MediaPage: React.FC = () => {
       );
     } catch (err) {
       console.error(err);
-      setMessage({ open: true, text: "Failed to update album", type: "error" });
+      toast.error("❌ Failed to update album");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -274,11 +274,7 @@ export const MediaPage: React.FC = () => {
 
   const handleCreateAlbum = async () => {
     if (!newAlbumName.trim() || !newAlbumFiles || newAlbumFiles.length === 0) {
-      setMessage({
-        open: true,
-        text: "Album name & at least one image required",
-        type: "error",
-      });
+      toast.error("❌ Album name & at least one image required");
       return;
     }
 
@@ -318,11 +314,7 @@ export const MediaPage: React.FC = () => {
         },
       ]);
 
-      setMessage({
-        open: true,
-        text: "New album created!",
-        type: "success",
-      });
+      toast.success("✅ New album created successfully!");
 
       // Reset fields
       setNewAlbumModal(false);
@@ -330,11 +322,7 @@ export const MediaPage: React.FC = () => {
       setNewAlbumFiles(null);
     } catch (err) {
       console.error(err);
-      setMessage({
-        open: true,
-        text: "Failed to create album",
-        type: "error",
-      });
+      toast.error("❌ Failed to create album");
     }
   };
 
@@ -351,55 +339,83 @@ export const MediaPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, px: 2 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontFamily: "Poppins",
-            fontWeight: 600,
-            color: "hsl(var(--foreground))",
-          }}
-        >
-          Media Albums
-        </Typography>
-
-        <Button
-          startIcon={<FolderPlus />}
-          sx={uploadButtonStyles}
-          onClick={() => setNewAlbumModal(true)}
-        >
-          New Album
-        </Button>
-      </Box>
-
-      {/* Album Cards */}
-      <Box
+    <Box sx={{ pb: 10 }}>
+      {/* Sticky Header */}
+      <Paper
+        elevation={4}
         sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
-          gap: 3,
-          mb: 5,
+          position: "sticky",
+          top: 64,
+          zIndex: 100,
+          p: 2.5,
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "hsl(var(--card))",
+          borderBottom: "2px solid hsl(var(--primary))",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        {albums.map((album) => (
-          <Box
-            key={album.album}
-            sx={{
-              p: 2,
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "var(--radius)",
-              backgroundColor: "hsl(var(--card))",
-              position: "relative",
-              cursor: "pointer",
-              transition: "0.25s",
-              "&:hover": {
-                transform: "scale(1.02)",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.20)",
-              },
-            }}
-            onClick={() => openAlbumEditor(album)}
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
+          Media Albums
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            startIcon={<FolderPlus />}
+            sx={uploadButtonStyles}
+            onClick={() => setNewAlbumModal(true)}
           >
+            New Album
+          </Button>
+          {activeAlbum && (
+            <DarkButton 
+              onClick={handleSave} 
+              disabled={saving} 
+              startIcon={<Save size={18} />}
+              sx={{
+                px: 3,
+                py: 1.2,
+                fontSize: "0.95rem",
+                boxShadow: 3,
+                "&:hover": { boxShadow: 5 },
+              }}
+            >
+              {saving ? "Saving..." : "Save Album"}
+            </DarkButton>
+          )}
+        </Box>
+      </Paper>
+
+      <Box sx={{ px: 2 }}>
+
+        {/* Album Cards */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          {albums.map((album) => (
+            <Box
+              key={album.album}
+              sx={{
+                p: 2,
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "12px",
+                backgroundColor: "hsl(var(--card))",
+                position: "relative",
+                cursor: "pointer",
+                transition: "0.2s",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                },
+              }}
+              onClick={() => openAlbumEditor(album)}
+            >
             <Typography
               variant="h6"
               sx={{
@@ -430,9 +446,10 @@ export const MediaPage: React.FC = () => {
               }}
             >
               <Trash2 size={18} />
-            </IconButton>
-          </Box>
-        ))}
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
       </Box>
 
       {/* EDITOR PANEL */}
@@ -801,12 +818,6 @@ export const MediaPage: React.FC = () => {
         onConfirm={handleDeleteConfirm}
       />
 
-      <MessageModal
-        open={message.open}
-        message={message.text}
-        type={message.type}
-        onClose={() => setMessage({ ...message, open: false })}
-      />
     </Box>
   );
 };

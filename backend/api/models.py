@@ -483,3 +483,90 @@ class ValidationRequest(models.Model):
 
     def __str__(self):
         return f"{self.startup_name} - Validation"
+
+# Dynamic Form Builder Models
+class FormTemplate(models.Model):
+    FORM_TYPES = (
+        ('funding_support', 'Funding Support'),
+        ('mentoring_support', 'Mentoring Support'),
+        ('idea_validation', 'Idea Validation'),
+        ('incubation_application', 'Incubation Application'),
+        ('contact', 'Contact Form'),
+    )
+    
+    name = models.CharField(max_length=255)
+    form_type = models.CharField(max_length=50, choices=FORM_TYPES, unique=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.form_type})"
+
+class FormField(models.Model):
+    FIELD_TYPES = (
+        ('text', 'Text Input'),
+        ('email', 'Email'),
+        ('number', 'Number'),
+        ('phone', 'Phone'),
+        ('textarea', 'Text Area'),
+        ('select', 'Dropdown'),
+        ('checkbox', 'Checkbox'),
+        ('radio', 'Radio Button'),
+        ('file', 'File Upload'),
+        ('date', 'Date'),
+    )
+    
+    form_template = models.ForeignKey(FormTemplate, on_delete=models.CASCADE, related_name='fields')
+    field_name = models.CharField(max_length=255)  # Internal identifier
+    label = models.CharField(max_length=255)  # Display label
+    field_type = models.CharField(max_length=50, choices=FIELD_TYPES)
+    placeholder = models.CharField(max_length=255, blank=True, null=True)
+    help_text = models.TextField(blank=True, null=True)
+    is_required = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+    
+    # For dropdown/radio/checkbox options (JSON array)
+    options = models.JSONField(default=list, blank=True, null=True)
+    
+    # Conditional logic (JSON object)
+    # Example: {"show_if": {"field_name": "business_type", "value": "startup"}}
+    conditional_logic = models.JSONField(default=dict, blank=True, null=True)
+    
+    # Validation rules (JSON object)
+    # Example: {"min_length": 10, "max_length": 100, "pattern": "regex"}
+    validation_rules = models.JSONField(default=dict, blank=True, null=True)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.form_template.name} - {self.label}"
+
+class FormSubmission(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('in_progress', 'In Progress'),
+    )
+    
+    form_template = models.ForeignKey(FormTemplate, on_delete=models.CASCADE, related_name='submissions')
+    user = models.ForeignKey('AppUser', on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.form_template.name} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+class FormFieldValue(models.Model):
+    submission = models.ForeignKey(FormSubmission, on_delete=models.CASCADE, related_name='field_values')
+    field = models.ForeignKey(FormField, on_delete=models.CASCADE)
+    value = models.TextField()  # Store as text, parse based on field type
+    file_url = models.URLField(blank=True, null=True)  # For file uploads
+    
+    def __str__(self):
+        return f"{self.field.label}: {self.value[:50]}"
