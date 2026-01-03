@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Container, Typography, Grid, Paper, Avatar, Chip, TextField, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
 import { supportService } from '../../api/supportService';
-import { Email, Assignment, PersonSearch, RocketLaunch, Search } from '@mui/icons-material';
+import { Assignment, PersonSearch, RocketLaunch, Search } from '@mui/icons-material';
 import { InputAdornment } from '@mui/material';
 import { DynamicForm } from '../../components/DynamicForm';
 
@@ -173,10 +173,7 @@ export const MentoringSupport = () => {
                         
                         <Divider sx={{ my: 1, opacity: 0.5 }} />
                         
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'hsl(var(--muted-foreground))', mt: 'auto' }}>
-                          <Email sx={{ fontSize: 18 }} />
-                          <Typography variant="caption" sx={{ wordBreak: 'break-all' }}>{mentor.email}</Typography>
-                        </Box>
+
                       </Paper>
                     </motion.div>
                   </Grid>
@@ -191,6 +188,7 @@ export const MentoringSupport = () => {
               </Grid>
             </Grid>
           </Grid>
+
         </motion.div>
       </Container>
     </Box>

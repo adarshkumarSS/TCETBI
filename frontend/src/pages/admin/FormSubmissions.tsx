@@ -27,6 +27,8 @@ import {
 import { Visibility, Download } from '@mui/icons-material';
 import { toast } from 'sonner';
 import { formBuilderService } from '../../api/formBuilderService';
+import { supportService } from '../../api/supportService';
+import { getIncubationApplications } from '../../api/incubationService';
 
 interface Submission {
   id: number;
@@ -60,12 +62,204 @@ export const FormSubmissions = () => {
     loadSubmissions();
   }, [formTypeFilter, statusFilter]);
 
+// ... (existing imports)
+
   const loadSubmissions = async () => {
     setLoading(true);
     try {
-      const data = await formBuilderService.listSubmissions(formTypeFilter, statusFilter);
-      setSubmissions(data);
+      const results = await Promise.allSettled([
+        formBuilderService.listSubmissions(formTypeFilter === 'dynamic' ? '' : formTypeFilter, statusFilter),
+        supportService.getMentors(),
+        supportService.getFundingRequests(),
+        supportService.getMentoringRequests(),
+        supportService.getValidationRequests(),
+        getIncubationApplications()
+      ]);
+
+      let allSubmissions: Submission[] = [];
+
+      // 1. Dynamic Forms
+      if (results[0].status === 'fulfilled') {
+        const rawData = results[0].value;
+        let dynamicForms: any[] = [];
+        if (Array.isArray(rawData)) dynamicForms = rawData;
+        else if (rawData && Array.isArray(rawData.results)) dynamicForms = rawData.results;
+
+        if (!['mentor_application', 'funding_request', 'mentoring_request', 'validation_request', 'incubation_application'].includes(formTypeFilter)) {
+           allSubmissions = [...allSubmissions, ...dynamicForms];
+        }
+      }
+
+      // Helper to match filter
+      const matchesFilter = (type: string, status: string) => {
+        const typeMatch = !formTypeFilter || formTypeFilter === type;
+        const statusMatch = !statusFilter || statusFilter === status;
+        return typeMatch && statusMatch;
+      };
+
+      // 2. Mentors
+      if (results[1].status === 'fulfilled' && matchesFilter('mentor_application', '')) {
+        const rawData = results[1].value;
+        let mentors: any[] = [];
+        if (Array.isArray(rawData)) mentors = rawData;
+        else if (rawData && Array.isArray(rawData.results)) mentors = rawData.results;
+
+        const formatted = mentors
+          .filter((m: any) => !statusFilter || m.status === statusFilter)
+          .map((m: any) => ({
+          id: m.id,
+          form_name: 'Mentor Application',
+          form_type: 'mentor_application',
+          status: m.status,
+          created_at: m.created_at || new Date().toISOString(),
+          user_details: {
+            full_name: `${m.salutation} ${m.name}`,
+            email: m.email
+          },
+          field_values: [
+            { field_label: 'Designation', field_type: 'text', value: m.designation },
+            { field_label: 'Domain', field_type: 'text', value: m.domain },
+            { field_label: 'Experience (Years)', field_type: 'number', value: m.years_of_experience?.toString() },
+            { field_label: 'LinkedIn', field_type: 'url', value: m.linkedin },
+            { field_label: 'Bio', field_type: 'textarea', value: m.bio },
+            { field_label: 'Expertise', field_type: 'text', value: m.expertise },
+            { field_label: 'Profile Photo', field_type: 'file', value: 'View Photo', file_url: m.image }
+          ]
+        }));
+        allSubmissions = [...allSubmissions, ...formatted];
+      }
+
+      // 3. Funding
+      if (results[2].status === 'fulfilled' && matchesFilter('funding_request', '')) {
+         const rawData = results[2].value;
+         let funding: any[] = [];
+         if (Array.isArray(rawData)) funding = rawData;
+         else if (rawData && Array.isArray(rawData.results)) funding = rawData.results;
+
+         const formatted = funding
+           .filter((f: any) => !statusFilter || f.status === statusFilter)
+           .map((f: any) => ({
+           id: f.id,
+           form_name: 'Funding Request',
+           form_type: 'funding_request',
+           status: f.status,
+           created_at: f.created_at,
+           user_details: {
+             full_name: f.name || f.user_details?.full_name || 'N/A',
+             email: f.email || f.user_details?.email || 'N/A'
+           },
+           field_values: [
+             { field_label: 'Startup Name', field_type: 'text', value: f.startup_name },
+             { field_label: 'Scheme', field_type: 'text', value: f.scheme },
+             { field_label: 'Amount Requested', field_type: 'text', value: f.amount_requested },
+             { field_label: 'Pitch Deck', field_type: 'file', value: 'View Deck', file_url: f.pitch_deck },
+             { field_label: 'Description', field_type: 'textarea', value: f.description }
+           ]
+         }));
+         allSubmissions = [...allSubmissions, ...formatted];
+      }
+
+      // 4. Mentoring Requests
+      if (results[3].status === 'fulfilled' && matchesFilter('mentoring_request', '')) {
+        const rawData = results[3].value;
+        let mentoring: any[] = [];
+        if (Array.isArray(rawData)) mentoring = rawData;
+        else if (rawData && Array.isArray(rawData.results)) mentoring = rawData.results;
+        
+        const formatted = mentoring
+          .filter((m: any) => !statusFilter || m.status === statusFilter)
+          .map((m: any) => ({
+          id: m.id,
+          form_name: 'Mentoring Request',
+          form_type: 'mentoring_request',
+          status: m.status,
+          created_at: m.created_at,
+          user_details: {
+            full_name: m.name || m.user_details?.full_name || 'N/A',
+            email: m.email || m.user_details?.email || 'N/A'
+          },
+          field_values: [
+            { field_label: 'Startup Name', field_type: 'text', value: m.startup_name },
+            { field_label: 'Domain', field_type: 'text', value: m.domain },
+            { field_label: 'Problem Statement', field_type: 'textarea', value: m.problem_statement },
+            { field_label: 'Specific Mentor', field_type: 'text', value: m.mentor_details?.name || 'Any' }
+          ]
+        }));
+        allSubmissions = [...allSubmissions, ...formatted];
+      }
+
+      // 5. Validation Requests
+      if (results[4].status === 'fulfilled' && matchesFilter('validation_request', '')) {
+        const rawData = results[4].value;
+        let validation: any[] = [];
+        if (Array.isArray(rawData)) validation = rawData;
+        else if (rawData && Array.isArray(rawData.results)) validation = rawData.results;
+
+        const formatted = validation
+          .filter((v: any) => !statusFilter || v.status === statusFilter)
+          .map((v: any) => ({
+          id: v.id,
+          form_name: 'Validation Request',
+          form_type: 'validation_request',
+          status: v.status,
+          created_at: v.created_at,
+          user_details: {
+            full_name: v.name || v.user_details?.full_name || 'N/A',
+            email: v.email || v.user_details?.email || 'N/A'
+          },
+          field_values: [
+            { field_label: 'Startup Name', field_type: 'text', value: v.startup_name },
+            { field_label: 'Target Market', field_type: 'text', value: v.target_market },
+            { field_label: 'Idea Description', field_type: 'textarea', value: v.description }
+          ]
+        }));
+        allSubmissions = [...allSubmissions, ...formatted];
+      }
+
+      // 6. Incubation Applications
+      if (results[5].status === 'fulfilled' && matchesFilter('incubation_application', '')) {
+        const incubationData = results[5].value;
+        let incubationList: any[] = [];
+        
+        if (Array.isArray(incubationData)) {
+            incubationList = incubationData;
+        } else if (incubationData && Array.isArray(incubationData.results)) {
+            incubationList = incubationData.results;
+        } else if (incubationData && Array.isArray(incubationData.applications)) {
+            incubationList = incubationData.applications;
+        } else {
+            console.warn("Unexpected incubation data format:", incubationData);
+        }
+
+        const formatted = incubationList
+          .filter((i: any) => !statusFilter || i.status === statusFilter)
+          .map((i: any) => ({
+          id: i.id,
+          form_name: 'Incubation Application',
+          form_type: 'incubation_application',
+          status: i.status || 'pending',
+          created_at: i.created_at,
+          user_details: {
+            full_name: i.founder_name || i.user?.full_name || 'N/A',
+            email: i.email || i.user?.email || 'N/A'
+          },
+          field_values: [
+             { field_label: 'Startup Name', field_type: 'text', value: i.startup_name },
+             { field_label: 'Sector', field_type: 'text', value: i.sector },
+             { field_label: 'Phone', field_type: 'text', value: i.phone_number },
+             { field_label: 'Description', field_type: 'textarea', value: i.description },
+             { field_label: 'Pitch Deck', field_type: 'file', value: 'View Deck', file_url: i.pitch_deck }
+          ]
+        }));
+        allSubmissions = [...allSubmissions, ...formatted];
+      }
+      
+      // Sort by created_at desc
+      allSubmissions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setSubmissions(allSubmissions);
     } catch (error) {
+      console.error(error);
       toast.error('Failed to load submissions');
     } finally {
       setLoading(false);
@@ -164,9 +358,10 @@ export const FormSubmissions = () => {
                 label="Form Type"
               >
                 <MenuItem value="">All Forms</MenuItem>
-                <MenuItem value="funding_support">Funding Support</MenuItem>
-                <MenuItem value="mentoring_support">Mentoring Support</MenuItem>
-                <MenuItem value="idea_validation">Idea Validation</MenuItem>
+                <MenuItem value="mentor_application">Mentor Application</MenuItem>
+                <MenuItem value="funding_request">Funding Request</MenuItem>
+                <MenuItem value="mentoring_request">Mentoring Request</MenuItem>
+                <MenuItem value="validation_request">Idea Validation</MenuItem>
                 <MenuItem value="incubation_application">Incubation Application</MenuItem>
                 <MenuItem value="contact">Contact</MenuItem>
               </Select>

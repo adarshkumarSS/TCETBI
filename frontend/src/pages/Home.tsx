@@ -115,10 +115,50 @@ const HeroSection = () => (
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 1 }}
+          style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            gap: "1.5rem", 
+            flexWrap: "wrap",
+            marginTop: "1rem" 
+          }}
         >
           <Link to="/apply-incubation" style={{ textDecoration: "none" }}>
-            <DarkButton size="large" sx={{ fontSize: "1.1rem", px: 4, py: 2 }}>
+            <DarkButton
+              size="large"
+              sx={{
+                fontSize: "1.1rem",
+                px: 4,
+                py: 2,
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  transform: "translateY(-3px)",
+                },
+              }}
+            >
               Apply for Incubation
+            </DarkButton>
+          </Link>
+          <Link to="/support/apply-mentor" style={{ textDecoration: "none" }}>
+            <DarkButton
+              size="large"
+              sx={{
+                fontSize: "1.1rem",
+                px: 4,
+                py: 2,
+                transition: "all 0.3s ease",
+                backgroundColor: "transparent",
+                border: "2px solid #fff",
+                "&:hover": {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  transform: "translateY(-3px)",
+                },
+              }}
+            >
+              Apply for Mentorship
             </DarkButton>
           </Link>
         </motion.div>
@@ -268,7 +308,7 @@ const AchievementsSection = ({ data }: { data: HomeData["achievements"] }) => (
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <CardContainer className="text-center glow-hover">
+              <CardContainer className="text-center hover-lift">
                 <Loader
                   targetNumber={achievement.number}
                   suffix={achievement.suffix}
@@ -301,7 +341,7 @@ interface Logo {
 }
 
 // Add this small reusable component above PartnersSection 👇
-const GlowingLogo = ({
+const PartnerLogo = ({
   src,
   alt,
   size = 140,
@@ -316,15 +356,12 @@ const GlowingLogo = ({
         display: "inline-flex",
         justifyContent: "center",
         alignItems: "center",
-        p: 1.5,
+        p: 2,
         borderRadius: "16px",
-        overflow: "hidden", // 🧠 prevents scrollbar on hover
-        height: size + 20, // ensures enough fixed space even when scaled
-        transition: "transform 0.3s ease, filter 0.3s ease",
-        filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))",
+        height: size + 20,
+        transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         "&:hover": {
-          transform: "scale(1.05)",
-          filter: "drop-shadow(0 0 15px rgba(255, 255, 255, 0.9))",
+          transform: "scale(1.1)",
         },
       }}
     >
@@ -404,7 +441,7 @@ const PartnersSection = ({
         </Typography>
         <LogoLoop
           logos={govtLogos.map((l) => ({
-            node: <GlowingLogo src={l.src} alt={l.name} />,
+            node: <PartnerLogo src={l.src} alt={l.name} />,
             title: l.name,
             href: "#",
           }))}
@@ -436,7 +473,7 @@ const PartnersSection = ({
         </Typography>
         <LogoLoop
           logos={stateLogos.map((l) => ({
-            node: <GlowingLogo src={l.src} alt={l.name} />,
+            node: <PartnerLogo src={l.src} alt={l.name} />,
             title: l.name,
             href: "#",
           }))}
@@ -458,8 +495,18 @@ const PartnersSection = ({
 export default PartnersSection;
 
 const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories"] }) => (
-  <Box sx={{ py: 8, backgroundColor: "hsl(var(--muted))" }}>
-    <Container maxWidth="lg">
+  <Box
+    sx={{
+      py: 12, // Increased padding
+      position: "relative",
+      background: "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%)",
+      overflow: "hidden",
+    }}
+  >
+    {/* Decorative Elements */}
+
+
+    <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -470,13 +517,27 @@ const SuccessStoriesSection = ({ stories }: { stories: HomeData["success_stories
           variant="h3"
           align="center"
           sx={{
-            mb: 8,
+            mb: 2,
             color: "hsl(var(--foreground))",
             fontFamily: "Poppins, sans-serif",
             fontWeight: 600,
           }}
         >
           Success Stories
+        </Typography>
+        <Typography
+          variant="h6"
+          align="center"
+          sx={{
+            mb: 8,
+            color: "hsl(var(--muted-foreground))",
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 400,
+            maxWidth: "600px",
+            mx: "auto",
+          }}
+        >
+          Discover how our incubation center has helped startups transform their innovative ideas into impactful realities.
         </Typography>
 
         <SuccessStoryCarousel stories={stories} />

@@ -151,67 +151,77 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
       </Box>
 
       {/* Navigation Arrows - Always White */}
-      <IconButton
-        onClick={prevSlide}
+      <Box
         sx={{
           position: 'absolute',
           left: 16,
           top: '50%',
           transform: 'translateY(-50%)',
-          backgroundColor: 'white',
-          color: 'black',
-          borderRadius: '50%',
-          width: 48,
-          height: 48,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: 2,
-          backdropFilter: 'blur(8px)',
-          opacity: 0.9,
-          '&:hover': {
-            backgroundColor: 'white',
-            opacity: 1,
-          },
           zIndex: 10,
         }}
-        component={motion.button}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
       >
-        <ChevronLeft className="w-6 h-6" />
-      </IconButton>
+        <IconButton
+          onClick={prevSlide}
+          sx={{
+            backgroundColor: 'white',
+            color: 'black',
+            borderRadius: '50%',
+            width: 48,
+            height: 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 2,
+            backdropFilter: 'blur(8px)',
+            opacity: 0.9,
+            '&:hover': {
+              backgroundColor: 'white',
+              opacity: 1,
+            },
+          }}
+          component={motion.button}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </IconButton>
+      </Box>
 
-      <IconButton
-        onClick={nextSlide}
+      <Box
         sx={{
           position: 'absolute',
           right: 16,
           top: '50%',
           transform: 'translateY(-50%)',
-          backgroundColor: 'white',
-          color: 'black',
-          borderRadius: '50%',
-          width: 48,
-          height: 48,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: 2,
-          backdropFilter: 'blur(8px)',
-          opacity: 0.9,
-          '&:hover': {
-            backgroundColor: 'white',
-            opacity: 1,
-          },
           zIndex: 10,
         }}
-        component={motion.button}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
       >
-        <ChevronRight className="w-6 h-6" />
-      </IconButton>
+        <IconButton
+          onClick={nextSlide}
+          sx={{
+            backgroundColor: 'white',
+            color: 'black',
+            borderRadius: '50%',
+            width: 48,
+            height: 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 2,
+            backdropFilter: 'blur(8px)',
+            opacity: 0.9,
+            '&:hover': {
+              backgroundColor: 'white',
+              opacity: 1,
+            },
+          }}
+          component={motion.button}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <ChevronRight className="w-6 h-6" />
+        </IconButton>
+      </Box>
 
       {/* Dots Indicator */}
       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 4 }}>

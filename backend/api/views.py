@@ -20,6 +20,7 @@ import cloudinary.uploader
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from utils.cloudinary_utils import delete_cloudinary_image, delete_cloudinary_file
+from .models import Mentor
 
 @api_view(["POST"])
 def submit_contact_message(request):
@@ -1253,22 +1254,115 @@ from rest_framework.permissions import IsAdminUser
 from .models import Mentor, FundingRequest, MentoringRequest, ValidationRequest
 from .serializers import MentorSerializer, FundingRequestSerializer, MentoringRequestSerializer, ValidationRequestSerializer
 
+def send_mentor_status_email(mentor):
+    """Send email notification to mentor about their application status."""
+    try:
+        if not mentor.email:
+            return
+
+        subject = f"Mentor Application Status - TCETBI"
+        status_text = "approved" if mentor.status == 'approved' else "under review"
+        if mentor.status == 'rejected':
+            status_text = "rejected"
+            
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #1976d2;">Mentor Application Status Update</h2>
+            <p>Dear {mentor.salutation} {mentor.name},</p>
+            <p>Thank you for your interest in mentoring at TCETBI.</p>
+            <p>Your application status has been updated to: <strong>{mentor.status.title()}</strong>.</p>
+            {"<p>Congratulations! Your profile is now live on our platform. We look forward to your contributions to the startup ecosystem.</p>" if mentor.status == 'approved' else ""}
+            {"<p>We regret to inform you that your application has been rejected at this time. We will keep your details on file for future opportunities.</p>" if mentor.status == 'rejected' else ""}
+            <p>Best regards,<br>The TCETBI Team</p>
+        </div>
+        """
+        
+        plain_text = f"Dear {mentor.salutation} {mentor.name}, Your mentor application at TCETBI is now {mentor.status}. Best regards, TCETBI Team"
+        
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=plain_text,
+            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
+            to=[mentor.email],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send()
+        print(f"✉️ Mentor status email sent to {mentor.email}")
+    except Exception as e:
+        print(f"❌ Failed to send mentor status email: {e}")
+
 class MentorViewSet(viewsets.ModelViewSet):
     queryset = Mentor.objects.all()
     serializer_class = MentorSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
+            return Mentor.objects.all().order_by('-created_at')
+        return Mentor.objects.filter(status='approved').order_by('-created_at')
+
     def get_permissions(self):
-        print(f"DEBUG: get_permissions called for {self.action}")
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action == 'create':
+            return [AllowAny()]
+        if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdminUser()]
         return [AllowAny()]
 
     def get_authenticators(self):
-        print(f"DEBUG: get_authenticators called for {self.request.method}")
+        # Disable authentication for mentor registration (POST to /api/mentors/)
+        if self.request.method == 'POST':
+            return []
         if self.request.method == 'GET':
             return []
         return super().get_authenticators()
+
+    def create(self, request, *args, **kwargs):
+        print("=== MENTOR CREATE REQUEST ===")
+        print(f"Data received: {request.data}")
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print("!!! SERIALIZER ERRORS !!!")
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        try:
+            print("--- Creating Mentor ---")
+            print(f"Data: {self.request.data}")
+            mentor = serializer.save(status='pending')
+            print(f"Mentor created: {mentor.id}")
+            
+            # Notify admin
+            Notification.objects.create(
+                type="general",
+                title="New Mentor Application",
+                message=f"{mentor.salutation} {mentor.name} has applied as a mentor.",
+                meta={
+                    "mentor_id": mentor.id,
+                    "name": mentor.name,
+                    "email": mentor.email,
+                    "domain": mentor.domain
+                }
+            )
+            print("Notification created successfully")
+        except Exception as e:
+            print(f"!!! Error in MentorViewSet.perform_create: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        mentor = serializer.save()
+        
+        if mentor.status != old_status:
+            send_mentor_status_email(mentor)
 
 class FundingRequestViewSet(viewsets.ModelViewSet):
     queryset = FundingRequest.objects.all()

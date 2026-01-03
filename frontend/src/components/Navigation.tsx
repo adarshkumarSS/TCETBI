@@ -140,7 +140,8 @@ export const Navigation: React.FC = () => {
       children: [
         { label: "Funding Support", path: "/support/funding" },
         { label: "Mentoring Support", path: "/support/mentoring" },
-        { label: "Idea/Product Validation", path: "/support/validation" }
+        { label: "Idea/Product Validation", path: "/support/validation" },
+        { label: "Apply as Mentor", path: "/support/apply-mentor" }
       ]
     },
     { label: "Contact", path: "/contact" },

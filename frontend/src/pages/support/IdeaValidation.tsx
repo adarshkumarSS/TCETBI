@@ -17,6 +17,7 @@ export const IdeaValidation = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
+              style={{ display: 'flex', justifyContent: 'center' }}
             >
               <Lightbulb size={60} color="hsl(var(--primary))" style={{ marginBottom: '16px' }} />
             </motion.div>

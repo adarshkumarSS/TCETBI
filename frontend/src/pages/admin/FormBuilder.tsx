@@ -235,8 +235,7 @@ export const FormBuilder = () => {
                       <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
-                  <TableBody>
-                    <Reorder.Group 
+                  <Reorder.Group 
                       axis="y" 
                       values={orderedFields} 
                       onReorder={handleReorder}
@@ -287,7 +286,6 @@ export const FormBuilder = () => {
                         </Reorder.Item>
                       ))}
                     </Reorder.Group>
-                  </TableBody>
                 </Table>
               </TableContainer>
             </Paper>

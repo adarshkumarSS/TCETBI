@@ -394,16 +394,44 @@ class UserCompanyRequest(models.Model):
         return f"{self.name} - {self.user.username} ({self.status})"
 
 class Mentor(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+    SALUTATION_CHOICES = (
+        ('Mr', 'Mr.'),
+        ('Mrs', 'Mrs.'),
+        ('Ms', 'Ms.'),
+        ('Dr', 'Dr.'),
+        ('Other', 'Other'),
+    )
+    INTEREST_CHOICES = (
+        ('student_startups', 'Student Startups'),
+        ('current_startups', 'Current Startups'),
+        ('both', 'Both'),
+    )
+
+    salutation = models.CharField(max_length=10, choices=SALUTATION_CHOICES, default='Mr')
     name = models.CharField(max_length=255)
-    domain = models.CharField(max_length=255)
-    image = models.TextField() # Cloudinary URL
-    bio = models.TextField()
-    linkedin = models.URLField(blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+    designation = models.CharField(max_length=255, blank=True, null=True)
+    domain = models.CharField(max_length=255)
+    years_of_experience = models.IntegerField(default=0)
+    # Store list of experiences: [{"company": "X", "years": "Y", "role": "Z"}]
+    experience_details = models.JSONField(default=list, blank=True) 
+    interested_in = models.CharField(max_length=50, choices=INTEREST_CHOICES, default='both')
+    image = models.TextField() # Logo or Profile photo (Cloudinary URL)
+    bio = models.TextField()
+    linkedin = models.CharField(max_length=500, blank=True, null=True)
     expertise = models.CharField(max_length=255, blank=True, null=True)
     
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='approved') # default to approved for existing ones
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
     def __str__(self):
-        return self.name
+        return f"{self.salutation} {self.name} ({self.status})"
 
 class FundingRequest(models.Model):
     SCHEME_CHOICES = (
@@ -491,6 +519,7 @@ class FormTemplate(models.Model):
         ('mentoring_support', 'Mentoring Support'),
         ('idea_validation', 'Idea Validation'),
         ('incubation_application', 'Incubation Application'),
+        ('mentor_application', 'Mentor Application'),
         ('contact', 'Contact Form'),
     )
     

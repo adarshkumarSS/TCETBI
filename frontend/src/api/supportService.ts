@@ -2,12 +2,13 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api';
 
-const getAuthHeader = () => {
+const getAuthHeader = (): any => {
     const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token');
+    const headers: any = {};
     if (token) {
-        return { headers: { Authorization: `Bearer ${token}` } };
+        headers.Authorization = `Bearer ${token}`;
     }
-    return {};
+    return { headers };
 };
 
 export const supportService = {
@@ -17,11 +18,19 @@ export const supportService = {
         return response.data;
     },
     createMentor: async (data: any) => {
-        const response = await axios.post(`${API_URL}/mentors/`, data, getAuthHeader());
+        const config = getAuthHeader();
+        if (data instanceof FormData) {
+            config.headers['Content-Type'] = 'multipart/form-data';
+        }
+        const response = await axios.post(`${API_URL}/mentors/`, data, config);
         return response.data;
     },
     updateMentor: async (id: number, data: any) => {
-        const response = await axios.patch(`${API_URL}/mentors/${id}/`, data, getAuthHeader());
+        const config = getAuthHeader();
+        if (data instanceof FormData) {
+            config.headers['Content-Type'] = 'multipart/form-data';
+        }
+        const response = await axios.patch(`${API_URL}/mentors/${id}/`, data, config);
         return response.data;
     },
     deleteMentor: async (id: number) => {
