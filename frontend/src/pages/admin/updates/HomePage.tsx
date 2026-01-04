@@ -224,50 +224,61 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
     if (!data) return;
     try {
       setUploading(true);
-      const uploadImageIfLocal = async (
-        urlOrFile: string | File
-      ): Promise<string> => {
-        if (typeof urlOrFile === "string" && urlOrFile.startsWith("blob:")) {
-          const response = await fetch(urlOrFile);
-          const blob = await response.blob();
-          const file = new File([blob], "image.jpg", { type: blob.type });
-          return await uploadToCloudinary(file);
-        }
-        return urlOrFile as string;
+
+      const formData = new FormData();
+      
+      // Helper to fetch blob and append to FormData
+      const filesToUpload: Record<string, File> = {};
+
+      const processList = async (list: any[], prefix: string, imageField: string) => {
+        return Promise.all(list.map(async (item, index) => {
+           const imageUrl = item[imageField];
+           if (imageUrl && (imageUrl.startsWith("blob:") || imageUrl.startsWith("data:"))) {
+              try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const file = new File([blob], "image.png", { type: blob.type });
+                
+                // Add to our file map
+                const key = `${prefix}_${index}`;
+                filesToUpload[key] = file;
+
+                // Return item with the URL (backend will ignore blob/data URLs and use uploaded file)
+                return item;
+              } catch (e) {
+                console.error(`Failed to process image for ${prefix} index ${index}`, e);
+                return item;
+              }
+           }
+           return item;
+        }));
       };
 
-      const updatedData = { ...data };
-      updatedData.govt_logos = await Promise.all(
-        data.govt_logos.map(async (logo) => ({
-          ...logo,
-          src: logo.src ? await uploadImageIfLocal(logo.src) : logo.src,
-          category: "govt",
-        }))
-      );
+      // We don't actually modify 'data' here, we just extract files
+      await processList(data.govt_logos, "govt_logos", "src");
+      await processList(data.state_logos, "state_logos", "src");
+      await processList(data.success_stories, "success_stories", "image");
 
-      updatedData.state_logos = await Promise.all(
-        data.state_logos.map(async (logo) => ({
-          ...logo,
-          src: logo.src ? await uploadImageIfLocal(logo.src) : logo.src,
-          category: "state",
-        }))
-      );
+      // Append all files to FormData
+      Object.entries(filesToUpload).forEach(([key, file]) => {
+        formData.append(key, file);
+      });
 
-      updatedData.success_stories = await Promise.all(
-        data.success_stories.map(async (story) => ({
-          ...story,
-          image: story.image
-            ? await uploadImageIfLocal(story.image)
-            : story.image,
-        }))
-      );
+      // Append the main data
+      formData.append("data", JSON.stringify(data));
 
-      await updateHomeData(updatedData);
-      toast.success("✅ Data updated successfully!");
+      const response = await updateHomeData(formData);
+      
+      // Show backend message
+      toast.success(response.message || "✅ Data updated successfully!");
       setIsDirty?.(false);
+
+      // Refresh data to show new URLs
+      fetchHomeData().then(setData);
+
     } catch (error: any) {
       console.error("Error updating data:", error);
-      toast.error("❌ Failed to update home page data!");
+      toast.error(error.response?.data?.error || "❌ Failed to update home page data!");
     } finally {
       setUploading(false);
     }

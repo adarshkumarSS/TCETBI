@@ -22,25 +22,37 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
   const [isHovered, setIsHovered] = useState(false);
 
   const nextSlide = useCallback(() => {
+    if (!stories || stories.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % stories.length);
-  }, [stories.length]);
+  }, [stories]);
 
   const prevSlide = useCallback(() => {
+    if (!stories || stories.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + stories.length) % stories.length);
-  }, [stories.length]);
+  }, [stories]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
   }, []);
 
   useEffect(() => {
-    if (!isHovered) {
+    if (!isHovered && stories && stories.length > 0) {
       const interval = setInterval(() => {
         nextSlide();
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [isHovered, nextSlide]);
+  }, [isHovered, nextSlide, stories]);
+
+  if (!stories || stories.length === 0) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+        <Typography variant="h6" sx={{ fontFamily: 'Poppins, sans-serif' }}>
+          No success stories added yet.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -62,7 +74,7 @@ export const SuccessStoryCarousel: React.FC<SuccessStoryCarouselProps> = ({ stor
         >
           {stories.map((story, index) => (
             <Box
-              key={story.id}
+              key={story.id || index}
               sx={{
                 minWidth: '100%',
                 px: 2,
