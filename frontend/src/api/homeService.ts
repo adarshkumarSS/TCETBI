@@ -47,8 +47,11 @@ export const fetchHomeData = async (): Promise<HomeData> => {
 };
 
 // ✅ Update all data (for admin save)
-export const updateHomeData = async (data: HomeData) => {
-  const response = await axios.put(`${BASE_URL}/update-home-data/`, data);
+export const updateHomeData = async (data: HomeData | FormData) => {
+  const isFormData = data instanceof FormData;
+  const response = await axios.put(`${BASE_URL}/update-home-data/`, data, {
+    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+  });
   return response.data;
 };
 

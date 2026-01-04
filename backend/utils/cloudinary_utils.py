@@ -83,3 +83,17 @@ def delete_cloudinary_file(url: str, resource_type: str = 'raw'):
     except Exception as e:
         print("❌ Cloudinary delete error:", e)
         return False
+
+def upload_cloudinary_image(file_obj, folder="TCETBI"):
+    """
+    Uploads an image to Cloudinary and returns the secure URL.
+    """
+    if not file_obj:
+        return None
+        
+    try:
+        response = cloudinary.uploader.upload(file_obj, folder=folder)
+        return response.get('secure_url')
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {e}")
+        return None
