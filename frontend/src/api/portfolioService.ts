@@ -37,8 +37,11 @@ export const fetchPortfolioData = async (): Promise<PortfolioData> => {
   return response.data;
 };
 
-export const updatePortfolioData = async (data: PortfolioData) => {
-  const res = await axios.put(`${BASE_URL}/update-portfolio-data/`, data);
+export const updatePortfolioData = async (data: PortfolioData | FormData) => {
+  const isFormData = data instanceof FormData;
+  const res = await axios.put(`${BASE_URL}/update-portfolio-data/`, data, {
+    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+  });
   return res.data;
 };
 

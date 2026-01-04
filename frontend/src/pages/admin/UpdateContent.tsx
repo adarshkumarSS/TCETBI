@@ -120,7 +120,7 @@ export const UpdateContent = () => {
       case "Home":
         return <HomePage setIsDirty={setIsDirty} />;
       case "Portfolio":
-        return <PortfolioPage />;
+        return <PortfolioPage setIsDirty={setIsDirty} />; // ✅ Pass setIsDirty
       case "People":
         return <PeoplePage />;
       case "Facilities":

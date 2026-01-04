@@ -79,12 +79,12 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
     setResizeOpen(true);
   };
 
-  const handleCroppedSave = async (cropped: File) => {
+  const handleCroppedSave = async (cropped: File, removeBg: boolean) => {
     setResizeOpen(false);
     let imgURL = URL.createObjectURL(cropped);
 
-    // ✨ Auto-remove logo background
-    if (uploadType === "logo") {
+    // ✨ Remove background if requested
+    if (removeBg) {
       try {
         const bgRemoved = await removeImageBackground(cropped);
         if (bgRemoved) imgURL = bgRemoved;
@@ -95,12 +95,10 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
       }
     }
 
-    // ✨ Upload to Cloudinary
-    // ❌ Don't upload now, just preview locally
-    const localURL = URL.createObjectURL(cropped);
+    const localURL = imgURL;
 
     if (uploadType === "logo") setLogoPreview(localURL);
-    else if (ceoIndex !== null) updateCeoImage(ceoIndex, localURL);
+    else if (ceoIndex !== null && typeof ceoIndex === "number") updateCeoImage(ceoIndex, localURL);
   };
 
   const updateCeoImage = (index: number, url: string) => {
@@ -537,23 +535,15 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-      {/* 🟩 Logo Cropping Modal (Square, removes background) */}
-      <SquareResizeModal
-        open={resizeOpen && uploadType === "logo"}
-        image={logoPreview || ""}
-        onClose={() => setResizeOpen(false)}
-        onSave={(imgURL) =>
-          setLogoPreview(
-            typeof imgURL === "string" ? imgURL : URL.createObjectURL(imgURL)
-          )
-        }
-        removeBg={true}
-      />
-
-      {/* 🟦 CEO Cropping Modal (Rectangular, keeps background) */}
+      
+      {/* 🟦 Combined Resize Modal (Used for both Logo & CEO) */}
       <ResizeModal
-        open={resizeOpen && uploadType === "ceo"}
-        image={ceoIndex !== null ? formData.ceos[ceoIndex]?.image || "" : ""}
+        open={resizeOpen}
+        image={
+            uploadType === "logo" 
+                ? logoPreview || "" 
+                : (ceoIndex !== null ? formData.ceos[ceoIndex]?.image || "" : "")
+        }
         onClose={() => setResizeOpen(false)}
         onSave={handleCroppedSave}
       />

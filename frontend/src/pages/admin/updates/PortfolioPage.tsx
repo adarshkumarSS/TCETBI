@@ -27,11 +27,16 @@ import {
 } from "@/api/portfolioService";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
-export const PortfolioPage: React.FC = () => {
+interface PortfolioPageProps {
+  setIsDirty?: (dirty: boolean) => void;
+}
+
+export const PortfolioPage: React.FC<PortfolioPageProps> = ({ setIsDirty }) => {
   const [data, setData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  /* 👇 State for modals */
   const [editModal, setEditModal] = useState<{
     open: boolean;
     startup: any | null;
@@ -39,6 +44,7 @@ export const PortfolioPage: React.FC = () => {
     open: false,
     startup: null,
   });
+
   const [addModal, setAddModal] = useState<{ open: boolean }>({ open: false });
 
   // 🗑️ Delete confirmation modal state
@@ -71,70 +77,67 @@ export const PortfolioPage: React.FC = () => {
       ...data,
       [`${type}_startups`]: [...data[`${type}_startups`], newData],
     });
+    if (setIsDirty) setIsDirty(true); // 📝 Mark as dirty
   };
 
+  // ✅ Save all changes
   // ✅ Save all changes
   const handleSave = async () => {
     if (!data) return;
 
     try {
       setUploading(true);
+      const formData = new FormData();
+      const filesToUpload: Record<string, File> = {};
 
-      const uploadIfLocal = async (
-        url: string,
-        folder: string
-      ): Promise<string> => {
-        if (url?.startsWith("blob:") || url?.startsWith("data:")) {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          const file = new File([blob], "image.jpg", { type: blob.type });
-          const uploaded = await uploadToCloudinary(file, folder);
-          URL.revokeObjectURL(url); // ✅ clean up memory
-          return uploaded;
-        }
-        return url;
+      const processStartup = async (s: any, typePrefix: string, index: number) => {
+          // Process Logo
+          if (s.logo && (s.logo.startsWith("blob:") || s.logo.startsWith("data:"))) {
+              try {
+                  const response = await fetch(s.logo);
+                  const blob = await response.blob();
+                  const file = new File([blob], "logo.png", { type: blob.type });
+                  filesToUpload[`${typePrefix}_${index}_logo`] = file;
+              } catch (e) {
+                  console.error("Failed to process logo", e);
+              }
+          }
+
+          // Process CEOs
+          if (Array.isArray(s.ceos)) {
+              await Promise.all(s.ceos.map(async (ceo: any, cIndex: number) => {
+                  if (ceo.image && (ceo.image.startsWith("blob:") || ceo.image.startsWith("data:"))) {
+                      try {
+                          const response = await fetch(ceo.image);
+                          const blob = await response.blob();
+                          const file = new File([blob], "ceo.png", { type: blob.type });
+                          filesToUpload[`${typePrefix}_${index}_ceos_${cIndex}_image`] = file;
+                      } catch (e) {
+                          console.error("Failed to process CEO image", e);
+                      }
+                  }
+              }));
+          }
       };
 
-      const processStartup = async (s: any, category: string) => {
-        const logo = s.logo
-          ? await uploadIfLocal(s.logo, "TCETBI/Startups/Logos")
-          : s.logo;
+      await Promise.all(data.current_startups.map((s, i) => processStartup(s, "current_startups", i)));
+      await Promise.all(data.graduated_startups.map((s, i) => processStartup(s, "graduated_startups", i)));
 
-        // ✅ Handle multi-CEO uploads safely
-        const ceos = Array.isArray(s.ceos)
-          ? await Promise.all(
-              s.ceos.map(async (ceo: any) => ({
-                ...ceo,
-                image: ceo.image
-                  ? await uploadIfLocal(ceo.image, "TCETBI/Startups/CEOs")
-                  : ceo.image,
-              }))
-            )
-          : [];
+      Object.entries(filesToUpload).forEach(([key, file]) => {
+          formData.append(key, file);
+      });
 
-        return { ...s, logo, ceos, category };
-      };
+      formData.append("data", JSON.stringify(data));
 
-      // ✅ Upload everything & prepare payload
-      const updatedData = {
-        current_startups: await Promise.all(
-          data.current_startups.map((s) => processStartup(s, "current"))
-        ),
-        graduated_startups: await Promise.all(
-          data.graduated_startups.map((s) => processStartup(s, "graduated"))
-        ),
-      };
-
-      // ✅ Send update request to backend
-      const res = await updatePortfolioData(updatedData);
-
-      // 🔁 Only re-fetch if backend confirms success
-      if (res.message?.toLowerCase().trim().includes("success")) {
+      const res = await updatePortfolioData(formData);
+      
+      if (res.message?.toLowerCase().includes("success") || res.message?.toLowerCase().includes("updated")) {
         const refreshedData = await fetchPortfolioData();
         setData(refreshedData);
       }
-
       toast.success("✅ Portfolio updated successfully!");
+      if (setIsDirty) setIsDirty(false); // ✅ Reset dirty state
+
     } catch (err) {
       console.error("❌ Failed to update portfolio:", err);
       toast.error("❌ Failed to update portfolio data!");
@@ -180,6 +183,7 @@ export const PortfolioPage: React.FC = () => {
     }
 
     setEditModal({ open: false, startup: null });
+    if (setIsDirty) setIsDirty(true); // 📝 Mark as dirty
   };
 
   // 🗑️ Open confirmation modal
@@ -206,6 +210,7 @@ export const PortfolioPage: React.FC = () => {
       );
 
       toast.success("✅ Startup deleted successfully!");
+      if (setIsDirty) setIsDirty(true); // 📝 Mark as dirty (technically saved, but good to ensure consistent state)
     } catch (err) {
       console.error("❌ Failed to delete startup:", err);
       toast.error("❌ Failed to delete startup!");

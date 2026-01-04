@@ -28,21 +28,75 @@ def get_portfolio_data(request):
 def update_portfolio_data(request):
     """
     Synchronizes startup and CEO data with the database.
-
-    Handles:
-    - Startup creation, update, and deletion
-    - Category changes (current ↔ graduated)
-    - CEO creation, update, and deletion
-    - Cloudinary cleanup for replaced or removed images
     """
+    import json
+    from utils.cloudinary_utils import upload_cloudinary_image
 
-    payload = request.data or {}
+    # 1. Parse Data
+    raw_data = request.data
+    if 'data' in request.data and isinstance(request.data['data'], str):
+        try:
+            data = json.loads(request.data['data'])
+        except json.JSONDecodeError:
+            return Response({"error": "❌ Invalid JSON data format."}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        data = raw_data or {}
+
+    # 2. Handle File Uploads
+    if request.FILES:
+        for key, file_obj in request.FILES.items():
+            # key formats expected: 
+            # current_startups_0_logo
+            # current_startups_0_ceos_0_image
+            try:
+                parts = key.split('_')
+                if len(parts) >= 4 and parts[1] == 'startups':
+                    category_key = f"{parts[0]}_{parts[1]}" # current_startups or graduated_startups
+                    
+                    try:
+                        startup_index = int(parts[2])
+                    except ValueError: continue
+
+                    if category_key not in data: continue
+                    if startup_index >= len(data[category_key]): continue
+                    
+                    if parts[3] == 'logo':
+                        # Upload logo
+                        print(f"⬆️ Uploading logo for {category_key}[{startup_index}]...")
+                        url = upload_cloudinary_image(file_obj, folder="TCETBI/Startups/Logos")
+                        if url:
+                            data[category_key][startup_index]['logo'] = url
+                        else:
+                            print(f"⚠️ Failed to upload logo for {category_key}[{startup_index}]")
+                            
+                    elif len(parts) == 6 and parts[3] == 'ceos' and parts[5] == 'image':
+                        try:
+                            ceo_index = int(parts[4])
+                        except ValueError: continue
+
+                        if 'ceos' in data[category_key][startup_index] and ceo_index < len(data[category_key][startup_index]['ceos']):
+                            print(f"⬆️ Uploading CEO image for {category_key}[{startup_index}] CEO [{ceo_index}]...")
+                            url = upload_cloudinary_image(file_obj, folder="TCETBI/Startups/CEOs")
+                            if url:
+                                data[category_key][startup_index]['ceos'][ceo_index]['image'] = url
+                            else:
+                                print(f"⚠️ Failed to upload CEO image")
+
+            except Exception as e:
+                print(f"❌ Error processing upload {key}: {e}")
+                continue
+
+    payload = data
     all_existing = {s.id: s for s in Startup.objects.prefetch_related("ceos").all()}
 
     def update_or_create_startup(s_data, category: str):
         sid = s_data.get("id")
         ceos_data = s_data.get("ceos", [])
+        
+        # SAFETY: invalid blob/data URLs should have been replaced by uploads or should be ignored
         new_logo = s_data.get("logo")
+        if new_logo and (new_logo.startswith('blob:') or new_logo.startswith('data:')):
+            new_logo = None
 
         # ✅ Either fetch existing startup or create new
         startup = all_existing.pop(sid, None) if sid else None
@@ -63,14 +117,15 @@ def update_portfolio_data(request):
 
         if startup:
             # 🧹 Clean old logo if replaced
-            if startup.logo and startup.logo != new_logo:
+            if startup.logo and new_logo and startup.logo != new_logo:
                 delete_cloudinary_image(startup.logo)
 
             # Update fields
             for field, value in fields_to_update.items():
                 setattr(startup, field, value)
 
-            startup.logo = new_logo or startup.logo
+            if new_logo:
+                startup.logo = new_logo
             startup.save()
         else:
             startup = Startup.objects.create(**fields_to_update, logo=new_logo or "")
@@ -80,17 +135,22 @@ def update_portfolio_data(request):
 
         for ceo_data in ceos_data:
             cid = ceo_data.get("id")
+            
             new_image = ceo_data.get("image", "")
+            if new_image and (new_image.startswith('blob:') or new_image.startswith('data:')):
+                new_image = None
+
             ceo = existing_ceos.pop(cid, None) if cid else None
 
             if ceo:
                 # 🧹 Clean old image if replaced
-                if ceo.image and ceo.image != new_image:
+                if ceo.image and new_image and ceo.image != new_image:
                     delete_cloudinary_image(ceo.image)
 
                 ceo.name = ceo_data.get("name") or ceo.name
                 ceo.bio = ceo_data.get("bio") or ceo.bio
-                ceo.image = new_image or ceo.image
+                if new_image:
+                    ceo.image = new_image
                 ceo.save()
             else:
                 CEO.objects.create(
