@@ -9,7 +9,7 @@ import LogoLoop from "../components/LogoLoop";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { fetchHomeData, HomeData } from "../api/homeService";
-import CommonLoader from "../components/CommonLoader";
+import PageLoader from "../components/PageLoader";
 
 const HeroSection = () => (
   <Box
@@ -551,25 +551,17 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const startTime = Date.now();
     fetchHomeData()
       .then((res) => {
-        const loadTime = Date.now() - startTime;
-        // Only show loader if loading took more than 300ms to prevent flashing
-        const minLoadTime = 300;
-        if (loadTime < minLoadTime) {
-          setTimeout(() => setData(res), minLoadTime - loadTime);
-        } else {
-          setData(res);
-        }
+        setData(res);
       })
       .catch(() => console.error("Failed to load home data"))
       .finally(() => {
-        setTimeout(() => setLoading(false), 300);
+        setLoading(false);
       });
   }, []);
 
-  if (loading) return <CommonLoader />;
+  if (loading) return <PageLoader />;
 
   if (!data) return <p>Error loading homepage data.</p>;
 

@@ -12,10 +12,17 @@ export interface Person {
   linkedin?: string;
 }
 
+export interface CustomSection {
+  id: string;
+  title: string;
+  members: Person[];
+}
+
 export interface PeopleData {
   founder: Person;
   ceo: Person;
   board_members: Person[];
+  custom_sections?: CustomSection[];
 }
 
 export const fetchPeopleData = async (): Promise<PeopleData> => {

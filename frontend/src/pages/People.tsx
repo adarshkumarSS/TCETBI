@@ -4,7 +4,7 @@ import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import { CardContainer } from "../components/ui/CardContainer";
 import { useEffect, useState } from "react";
 import { fetchPeopleData, PeopleData } from "../api/peopleService";
-import CommonLoader from "../components/CommonLoader";
+import PageLoader from "../components/PageLoader";
 
 // 🟢 Founder Section
 const FounderSection = ({ data }: { data: PeopleData["founder"] }) => {
@@ -312,14 +312,14 @@ const BoardMembersSection = ({ data }: { data: PeopleData["board_members"] }) =>
               display: "grid",
               gridTemplateColumns: {
                 xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
               },
               gap: 4,
             }}
           >
             {data.map((member, index) => (
-              <Box key={member.id || index}>
+              <Box key={member.id || index} sx={{ height: "100%", width: "100%" }}>
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -327,9 +327,10 @@ const BoardMembersSection = ({ data }: { data: PeopleData["board_members"] }) =>
                   viewport={{ once: true }}
                   onMouseEnter={() => setHoveredMember(member.id)}
                   onMouseLeave={() => setHoveredMember(null)}
+                  style={{ height: "100%", width: "100%" }}
                 >
                   <CardContainer
-                    className="text-center h-full relative overflow-hidden"
+                    className="text-center h-full w-full relative overflow-hidden"
                     style={{
                       transition: "all 0.3s ease",
                       transform:
@@ -464,31 +465,215 @@ const BoardMembersSection = ({ data }: { data: PeopleData["board_members"] }) =>
 };
 
 
+// 🟡 Custom Section
+const CustomSectionRenderer = ({ title, members }: { title: string; members: PeopleData["board_members"] }) => {
+  const [hoveredMember, setHoveredMember] = useState<number | null>(null);
+  if (!members?.length) return null;
+
+  return (
+    <Box sx={{ py: 8, backgroundColor: "hsl(var(--background))" }}>
+      <Container maxWidth="lg">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <Typography
+            variant="h3"
+            align="center"
+            sx={{
+              mb: 8,
+              color: "hsl(var(--foreground))",
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 600,
+            }}
+          >
+            {title}
+          </Typography>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
+              },
+              gap: 4,
+            }}
+          >
+            {members.map((member, index) => (
+              <Box key={member.id || index} sx={{ height: "100%", width: "100%" }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  onMouseEnter={() => setHoveredMember(member.id || index)}
+                  onMouseLeave={() => setHoveredMember(null)}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <CardContainer
+                    className="text-center h-full w-full relative overflow-hidden"
+                    style={{
+                      transition: "all 0.3s ease",
+                      transform:
+                        hoveredMember === (member.id || index) ? "scale(1.03)" : "scale(1)",
+                      boxShadow:
+                        hoveredMember === (member.id || index)
+                          ? "0 8px 24px rgba(0,0,0,0.25)"
+                          : "0 2px 8px rgba(0,0,0,0.1)",
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                  >
+                    <motion.img
+                      src={member.image}
+                      alt={member.name}
+                      style={{
+                        width: 120,
+                        height: 120,
+                        objectFit: "cover",
+                        borderRadius: "50%",
+                        margin: "0 auto 16px",
+                        display: "block",
+                      }}
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        mb: 1,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {member.name}
+                    </Typography>
+                    {member.position && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mb: 2,
+                          color: "hsl(var(--primary))",
+                          fontFamily: "Poppins, sans-serif",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {member.position}
+                      </Typography>
+                    )}
+
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{
+                        opacity: hoveredMember === (member.id || index) ? 1 : 0,
+                        height: hoveredMember === (member.id || index) ? "auto" : 0,
+                      }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      style={{
+                        overflow: "hidden",
+                      }}
+                    >
+                      {member.bio && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "hsl(var(--muted-foreground))",
+                            fontFamily: "Poppins, sans-serif",
+                            lineHeight: 1.4,
+                            mb: 2,
+                          }}
+                        >
+                          {member.bio}
+                        </Typography>
+                      )}
+                      
+                      {member.experience && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "hsl(var(--primary))",
+                            fontFamily: "Poppins, sans-serif",
+                            fontSize: "0.85rem",
+                            mb: 2,
+                          }}
+                        >
+                          Experience: {member.experience}
+                        </Typography>
+                      )}
+
+                      {member.linkedin && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                          <Link
+                            href={member.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            underline="none"
+                            aria-label="Visit LinkedIn Profile"
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 0.8,
+                              color: "hsl(var(--primary))",
+                              padding: "6px 12px",
+                              borderRadius: "var(--radius)",
+                              transition: "all 0.2s ease-in-out",
+                              "&:hover": {
+                                backgroundColor: "hsla(var(--primary), 0.1)",
+                                transform: "translateY(-1px)",
+                              },
+                            }}
+                          >
+                            <LinkedInIcon sx={{ fontSize: 24 }} />
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              sx={{
+                                fontFamily: "Poppins, sans-serif",
+                                fontWeight: 500,
+                                fontSize: "1rem",
+                              }}
+                            >
+                              LinkedIn
+                            </Typography>
+                          </Link>
+                        </Box>
+                      )}
+                    </motion.div>
+                  </CardContainer>
+                </motion.div>
+              </Box>
+            ))}
+          </Box>
+        </motion.div>
+      </Container>
+    </Box>
+  );
+};
+
+
 // 🧠 Main Component
 export const People: React.FC = () => {
   const [data, setData] = useState<PeopleData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const startTime = Date.now();
     fetchPeopleData()
       .then((res) => {
-        const loadTime = Date.now() - startTime;
-        // Only show loader if loading took more than 300ms to prevent flashing
-        const minLoadTime = 300;
-        if (loadTime < minLoadTime) {
-          setTimeout(() => setData(res), minLoadTime - loadTime);
-        } else {
-          setData(res);
-        }
+        setData(res);
       })
       .catch(() => console.error("❌ Failed to load people data"))
       .finally(() => {
-        setTimeout(() => setLoading(false), 300);
+        setLoading(false);
       });
   }, []);
 
-  if (loading) return <CommonLoader />;
+  if (loading) return <PageLoader />;
 
   if (!data) return <p>Error loading people data.</p>;
 
@@ -517,6 +702,11 @@ export const People: React.FC = () => {
       <FounderSection data={data.founder} />
       <CEOSection data={data.ceo} />
       <BoardMembersSection data={data.board_members} />
+      
+      {/* 🆕 Render Custom Sections */}
+      {data.custom_sections?.map((section) => (
+        <CustomSectionRenderer key={section.id} title={section.title} members={section.members} />
+      ))}
     </Box>
   );
 };

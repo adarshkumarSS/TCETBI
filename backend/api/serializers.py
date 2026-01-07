@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, Facility , FacilityVideo, Event, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest, Partnership, FormTemplate, FormField, FormSubmission, FormFieldValue
+from .models import VisionMission, Achievement, Logo, SuccessStory, Startup, CEO, TBICEO, Founder, BoardMember, CustomSection, Facility , FacilityVideo, Event, MediaItem, Blog, TBIContactInfo, ContactMessage, Notification, IncubationApplication, AppUser, UserCompanyRequest, Partnership, FormTemplate, FormField, FormSubmission, FormFieldValue
 import os
 from django.contrib.auth.models import User as DjangoUser
 
@@ -68,6 +68,11 @@ class TBICEOSerializer(serializers.ModelSerializer):
 class BoardMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoardMember
+        fields = '__all__'
+
+class CustomSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomSection
         fields = '__all__'
 
 class FacilitySerializer(serializers.ModelSerializer):

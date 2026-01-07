@@ -111,6 +111,14 @@ class BoardMember(models.Model):
     def __str__(self):
         return self.name
 
+class CustomSection(models.Model):
+    title = models.CharField(max_length=200)
+    order = models.IntegerField(default=0)
+    members = models.JSONField(default=list)  # List of member objects
+
+    def __str__(self):
+        return self.title
+
 class Facility(models.Model):
     CATEGORY_CHOICES = [
         ("SHARED", "Shared Infrastructure"),

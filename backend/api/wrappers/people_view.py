@@ -4,21 +4,30 @@ from ..models import Founder, TBICEO, BoardMember
 from ..serializers import FounderSerializer, TBICEOSerializer, BoardMemberSerializer
 from utils.cloudinary_utils import delete_cloudinary_image
 from rest_framework import status
+from django.db import transaction
 
 @api_view(['GET'])
 def get_people_data(request):
+    from ..models import CustomSection
+    from ..serializers import CustomSectionSerializer
+    
     founder = FounderSerializer(Founder.objects.first()).data
     ceo = TBICEOSerializer(TBICEO.objects.first()).data
     board_members = BoardMemberSerializer(BoardMember.objects.all(), many=True).data
+    
+    custom_sections = CustomSectionSerializer(CustomSection.objects.all().order_by('order'), many=True).data
 
     return Response({
         "founder": founder,
         "ceo": ceo,
-        "board_members": board_members
+        "board_members": board_members,
+        "custom_sections": custom_sections
     })
 
 @api_view(["PUT"])
+@transaction.atomic
 def update_people_data(request):
+    from ..models import CustomSection
     data = request.data
 
     # Founder
@@ -73,11 +82,38 @@ def update_people_data(request):
         else:
             BoardMember.objects.create(**m)
 
-    # delete missing ones
+    # delete missing board members
     for r in existing.values():
         if r.image:
             delete_cloudinary_image(r.image)
         r.delete()
+
+    # Custom Sections
+    sent_sections = data.get("custom_sections", [])
+    existing_sections = {str(s.id): s for s in CustomSection.objects.all()}
+    
+    for i, section_data in enumerate(sent_sections):
+        sid = str(section_data.get("id"))
+        
+        # If ID is numeric (existing in DB)
+        if sid in existing_sections:
+            sec = existing_sections.pop(sid)
+            sec.title = section_data.get("title", sec.title)
+            sec.members = section_data.get("members", [])
+            sec.order = i
+            sec.save()
+        else:
+            # Create new
+            CustomSection.objects.create(
+                title=section_data.get("title", "Untitled Section"),
+                members=section_data.get("members", []),
+                order=i
+            )
+            
+    # Delete removed sections
+    for sec in existing_sections.values():
+        # Optional: Clean up images in members JSON if needed, but tricky without knowing old state perfectly
+        sec.delete()
 
     return Response({"message": "✅ People data updated successfully!"})
 

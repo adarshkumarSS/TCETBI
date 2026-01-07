@@ -76,7 +76,12 @@ export const PeoplePage: React.FC = () => {
 
   useEffect(() => {
     fetchPeopleData()
-      .then(setData)
+      .then((res) => {
+        setData(res);
+        if (res.custom_sections) {
+          setCustomSections(res.custom_sections);
+        }
+      })
       .catch(() => toast.error("Failed to load people data"))
       .finally(() => setLoading(false));
   }, []);
@@ -86,12 +91,22 @@ export const PeoplePage: React.FC = () => {
     folder: string
   ): Promise<string> => {
     if (url?.startsWith("blob:") || url?.startsWith("data:")) {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const file = new File([blob], "image.jpg", { type: blob.type });
-      const uploaded = await uploadToCloudinary(file, folder);
-      URL.revokeObjectURL(url);
-      return uploaded;
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], "image.jpg", { type: blob.type });
+        const uploaded = await uploadToCloudinary(file, folder);
+        URL.revokeObjectURL(url);
+        return uploaded;
+      } catch (error) {
+        console.error("Failed to process image:", error);
+        // If we can't fetch the blob, it might be revoked. 
+        // We shouldn't send a broken blob URL to backend.
+        // Return empty string or handle gracefully? 
+        // If we return raw blob url, backend saves it, breaking things later.
+        // Let's return "" if it fails, to trigger a "missing image" state rather than corrupted one.
+        return ""; 
+      }
     }
     return url;
   };
@@ -122,16 +137,41 @@ export const PeoplePage: React.FC = () => {
         (m) => m.name?.trim() || m.bio?.trim() || m.image?.trim()
       );
 
-      founder.image = await uploadIfLocal(
-        founder.image,
-        "TCETBI/People/Founder"
-      );
+      founder.image = await uploadIfLocal(founder.image, "TCETBI/People/Founder");
       ceo.image = await uploadIfLocal(ceo.image, "TCETBI/People/CEO");
+      
       for (const m of board_members) {
         m.image = await uploadIfLocal(m.image, "TCETBI/People/Board");
       }
 
-      await updatePeopleData({ founder, ceo, board_members });
+      // 🔄 Upload images for custom sections
+      const processedCustomSections = await Promise.all(
+        customSections.map(async (section) => ({
+          ...section,
+          members: await Promise.all(
+            section.members.map(async (m) => ({
+              ...m,
+              image: await uploadIfLocal(m.image, `TCETBI/People/${section.title}`),
+            }))
+          ),
+        }))
+      );
+
+      // Include custom_sections in payload
+      await updatePeopleData({ 
+        founder, 
+        ceo, 
+        board_members, 
+        custom_sections: processedCustomSections
+      });
+      
+      // 🔄 Refetch to sync state (and replace blobs with real URLs)
+      const refreshedData = await fetchPeopleData();
+      setData(refreshedData);
+      if (refreshedData.custom_sections) {
+        setCustomSections(refreshedData.custom_sections);
+      }
+      
       toast.success("✅ People data updated successfully!");
     } catch (err) {
       console.error("❌ Update failed:", err);
