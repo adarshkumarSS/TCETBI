@@ -88,4 +88,4 @@ def update_tbi_contact_data(request):
                 map_embed_url=contact_payload.get("map_embed_url", ""),
             )
 
-    return Response({"message": "✅ TBI contact updated successfully!"})
+    return Response({"message": "[OK] TBI contact updated successfully!"})

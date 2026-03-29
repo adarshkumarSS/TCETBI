@@ -48,17 +48,17 @@ def delete_cloudinary_image(url: str):
     public_id = extract_public_id_from_url(url)
 
     if not public_id:
-        print(f"⚠️ Could not extract public_id from URL: {url}")
+        print(f"[WARN] Could not extract public_id from URL: {url}")
         return False
 
-    print(f"🗑 Deleting Cloudinary image → {public_id}")
+    print(f"[DELETE] Cloudinary image -> {public_id}")
 
     try:
         res = cloudinary.uploader.destroy(public_id)
-        print("✔ Cloudinary delete response:", res)
+        print("[OK] Cloudinary delete response:", res)
         return res
     except Exception as e:
-        print("❌ Cloudinary delete error:", e)
+        print("[ERROR] Cloudinary delete error:", e)
         return False
 
 def delete_cloudinary_file(url: str, resource_type: str = 'raw'):
@@ -71,18 +71,17 @@ def delete_cloudinary_file(url: str, resource_type: str = 'raw'):
         public_id = extract_public_id_from_url(url)
 
     if not public_id:
-        print(f"⚠️ Could not extract public_id from URL: {url}")
+        print(f"[WARN] Could not extract public_id from URL: {url}")
         return False
 
-    print(f"🗑 Deleting Cloudinary file ({resource_type}) → {public_id}")
+    print(f"[DELETE] Deleting Cloudinary file ({resource_type}) -> {public_id}")
 
     try:
         res = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
-        print("✔ Cloudinary delete response:", res)
+        print("[OK] Cloudinary delete response:", res)
         return res
     except Exception as e:
-        print("❌ Cloudinary delete error:", e)
-        return False
+        print("[ERROR] Cloudinary delete error:", e)
 
 def upload_cloudinary_image(file_obj, folder="TCETBI"):
     """
@@ -95,5 +94,5 @@ def upload_cloudinary_image(file_obj, folder="TCETBI"):
         response = cloudinary.uploader.upload(file_obj, folder=folder)
         return response.get('secure_url')
     except Exception as e:
-        print(f"❌ Cloudinary upload error: {e}")
+        print(f"[ERROR] Cloudinary upload error: {e}")
         return None

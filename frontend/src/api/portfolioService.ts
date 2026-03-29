@@ -23,6 +23,10 @@ export interface Startup {
   facebook?: string;
   category: "current" | "graduated";
   ceos: CEO[];
+  owner_name?: string;
+  owner_description?: string;
+  owner_company_name?: string;
+  owner_linkedin?: string;
 }
 
 // ✅ Returned object shape from backend
@@ -40,7 +44,7 @@ export const fetchPortfolioData = async (): Promise<PortfolioData> => {
 export const updatePortfolioData = async (data: PortfolioData | FormData) => {
   const isFormData = data instanceof FormData;
   const res = await axios.put(`${BASE_URL}/update-portfolio-data/`, data, {
-    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+    headers: {},
   });
   return res.data;
 };

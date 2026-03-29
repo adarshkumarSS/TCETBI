@@ -285,6 +285,41 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
                 />
               ))}
 
+              {/* Owner Information */}
+              <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                Owner Information
+              </Typography>
+              <TextField
+                fullWidth
+                label="Owner Name"
+                sx={{ mb: 1, ...textFieldStyles }}
+                value={formData.owner_name || ""}
+                onChange={(e) => handleChange("owner_name", e.target.value)}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Owner Description"
+                sx={{ mb: 1, ...textFieldStyles }}
+                value={formData.owner_description || ""}
+                onChange={(e) => handleChange("owner_description", e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label="Owner Company Name"
+                sx={{ mb: 1, ...textFieldStyles }}
+                value={formData.owner_company_name || ""}
+                onChange={(e) => handleChange("owner_company_name", e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label="Owner LinkedIn URL"
+                sx={{ mb: 1, ...textFieldStyles }}
+                value={formData.owner_linkedin || ""}
+                onChange={(e) => handleChange("owner_linkedin", e.target.value)}
+              />
+
               {/* Logo Upload */}
               <Box sx={{ textAlign: "center", mt: 2 }}>
                 {logoPreview && (

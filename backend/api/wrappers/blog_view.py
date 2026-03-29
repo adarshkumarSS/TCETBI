@@ -51,7 +51,7 @@ def update_blogs_data(request):
                 image=new_img or "",
             )
 
-    return Response({"message": "✅ Blogs updated successfully!"})
+    return Response({"message": "[OK] Blogs updated successfully!"})
 
 @api_view(["DELETE"])
 def delete_blog_item(request, id):
@@ -62,7 +62,7 @@ def delete_blog_item(request, id):
             delete_cloudinary_image(blog.image)
 
         blog.delete()
-        return Response({"message": "✅ Blog deleted"})
+        return Response({"message": "[OK] Blog deleted"})
 
     except Blog.DoesNotExist:
-        return Response({"error": "❌ No blog with this ID"}, status=404)
+        return Response({"error": "[ERROR] No blog with this ID"}, status=404)

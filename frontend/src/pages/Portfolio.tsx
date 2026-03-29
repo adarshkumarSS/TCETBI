@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Box,
   Typography,
@@ -14,10 +14,15 @@ import {
   TableRow,
   Paper,
   Chip,
-  Avatar
+  Avatar,
+  Dialog,
+  DialogContent,
+  IconButton,
+  Button,
 } from "@mui/material";
 import { useEffect, useState, useMemo } from "react";
-import { Search } from "@mui/icons-material";
+import { Search, Close } from "@mui/icons-material";
+import { Linkedin } from "lucide-react";
 import {
   fetchPortfolioData,
   PortfolioData,
@@ -30,7 +35,7 @@ const CompanyRow = ({
   startup,
   status,
   onClick,
-  index
+  index,
 }: {
   startup: Startup;
   status: "Current" | "Graduated";
@@ -48,7 +53,7 @@ const CompanyRow = ({
       cursor: "pointer",
       "&:hover": {
         backgroundColor: "hsl(var(--muted) / 0.5)",
-      }
+      },
     }}
   >
     <TableCell>
@@ -65,7 +70,7 @@ const CompanyRow = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "hsl(var(--muted))"
+            bgcolor: "hsl(var(--muted))",
           }}
         >
           <img
@@ -75,7 +80,7 @@ const CompanyRow = ({
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              display: "block"
+              display: "block",
             }}
           />
         </Box>
@@ -99,9 +104,10 @@ const CompanyRow = ({
         label={status}
         size="small"
         sx={{
-          backgroundColor: status === "Current"
-            ? "hsl(142 76% 36%)"
-            : "hsl(221 83% 53%)",
+          backgroundColor:
+            status === "Current"
+              ? "hsl(142 76% 36%)"
+              : "hsl(221 83% 53%)",
           color: "white",
           fontWeight: 600,
           fontSize: "0.75rem",
@@ -131,6 +137,7 @@ const CompanyRow = ({
         {startup.sector}
       </Typography>
     </TableCell>
+
   </TableRow>
 );
 
@@ -152,27 +159,37 @@ export const Portfolio: React.FC = () => {
   const allCompanies = useMemo(() => {
     if (!portfolio) return [];
 
-    const currentCompanies = portfolio.current_startups.map(startup => ({
+    const currentCompanies = portfolio.current_startups.map((startup) => ({
       ...startup,
-      status: "Current" as const
+      status: "Current" as const,
     }));
 
-    const graduatedCompanies = portfolio.graduated_startups.map(startup => ({
+    const graduatedCompanies = portfolio.graduated_startups.map((startup) => ({
       ...startup,
-      status: "Graduated" as const
+      status: "Graduated" as const,
     }));
 
-    return [...currentCompanies, ...graduatedCompanies].filter(company =>
-      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    return [...currentCompanies, ...graduatedCompanies].filter(
+      (company) =>
+        company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.sector.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [portfolio, searchTerm]);
 
-  if (loading) return (
-    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "hsl(var(--background))" }}>
-      <CircularProgress />
-    </Box>
-  );
+  if (loading)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          backgroundColor: "hsl(var(--background))",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   if (!portfolio) return <p>Failed to load portfolio data.</p>;
 
@@ -266,19 +283,49 @@ export const Portfolio: React.FC = () => {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: "hsl(var(--muted))" }}>
-                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                    >
                       Logo
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                    >
                       Company Name
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                    >
                       Status
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                    >
                       Year
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "hsl(var(--foreground))", fontFamily: "Poppins, sans-serif" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                    >
                       Sector
                     </TableCell>
                   </TableRow>
@@ -303,7 +350,9 @@ export const Portfolio: React.FC = () => {
                             fontFamily: "Poppins, sans-serif",
                           }}
                         >
-                          {searchTerm ? "No companies found matching your search." : "No companies available."}
+                          {searchTerm
+                            ? "No companies found matching your search."
+                            : "No companies available."}
                         </Typography>
                       </TableCell>
                     </TableRow>

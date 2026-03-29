@@ -44,7 +44,7 @@ def update_home_data(request):
         try:
             data = json.loads(request.data['data'])
         except json.JSONDecodeError:
-            return Response({"error": "❌ Invalid JSON data format."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "[ERROR] Invalid JSON data format."}, status=status.HTTP_400_BAD_REQUEST)
     else:
         # Fallback for direct JSON requests (no files)
         data = raw_data
@@ -86,16 +86,16 @@ def update_home_data(request):
                         data[list_name][index][field_name] = url
                         uploaded_urls[key] = url
                     else:
-                        print(f"⚠️ Failed to upload image for {list_name} item {index}, skipping image update.")
+                        print(f"[WARN] Failed to upload image for {list_name} item {index}, skipping image update.")
             except ValueError:
                 continue
             except Exception as e:
-                print(f"❌ Error processing file {key}: {e}")
+                print(f"[ERROR] Error processing file {key}: {e}")
                 continue
 
     except Exception as e:
-        print(f"❌ Pre-processing critical error: {e}")
-        return Response({"error": f"❌ Pre-processing error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"[ERROR] Pre-processing critical error: {e}")
+        return Response({"error": f"[ERROR] Pre-processing error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
     # 3. Process Updates (Existing Logic) with 'data' object
@@ -191,7 +191,7 @@ def update_home_data(request):
                 if logo_id and logo_id in existing:
                     obj = existing[logo_id]
 
-                    # ✅ delete old Cloudinary image if changed
+                    # [OK] delete old Cloudinary image if changed
                     if new_src and obj.src and obj.src != new_src:
                         delete_cloudinary_image(obj.src)
 
@@ -202,7 +202,7 @@ def update_home_data(request):
 
                     existing.pop(logo_id)
                 else:
-                    # ✅ only allow relevant fields
+                    # [OK] only allow relevant fields
                     if logo.get('name') and new_src:
                         Logo.objects.create(
                             name=logo['name'],
@@ -210,7 +210,7 @@ def update_home_data(request):
                             category=category
                         )
 
-            # ✅ delete remaining (removed) logos
+            # [OK] delete remaining (removed) logos
             for remaining in existing.values():
                 if remaining.src:
                     delete_cloudinary_image(remaining.src)
@@ -237,11 +237,11 @@ def update_home_data(request):
                 obj = existing_stories[sid]
                 updated = False
 
-                # ✅ delete old Cloudinary image if changed
+                # [OK] delete old Cloudinary image if changed
                 if new_image and obj.image and obj.image != new_image:
                     delete_cloudinary_image(obj.image)
 
-                # ✅ only update valid fields
+                # [OK] only update valid fields
                 # Handle image separately due to safety check
                 if new_image and obj.image != new_image:
                     obj.image = new_image
@@ -258,7 +258,7 @@ def update_home_data(request):
 
                 existing_stories.pop(sid)
             else:
-                # ✅ Check for required fields before creating
+                # [OK] Check for required fields before creating
                 if new_image and all(k in story for k in ['title', 'description', 'sector', 'impact']):
                     SuccessStory.objects.create(
                         title=story['title'],
@@ -268,19 +268,19 @@ def update_home_data(request):
                         impact=story['impact']
                     )
 
-        # ✅ delete removed success stories
+        # [OK] delete removed success stories
         for remaining in existing_stories.values():
             if remaining.image:
                 delete_cloudinary_image(remaining.image)
             remaining.delete()
             
     except Exception as e:
-        print(f"❌ Logic Error in update_home_data: {e}")
+        print(f"[ERROR] Logic Error in update_home_data: {e}")
         import traceback
         traceback.print_exc()
-        return Response({"error": f"❌ Server Error during update: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": f"[ERROR] Server Error during update: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response({"message": "✅ Backend: Home data and images updated successfully!"})
+    return Response({"message": "[OK] Backend: Home data and images updated successfully!"})
 
 @api_view(["DELETE"])
 def delete_success_story(request, id):
@@ -290,15 +290,15 @@ def delete_success_story(request, id):
     try:
         story = SuccessStory.objects.get(id=id)
 
-        # ✅ Remove image from Cloudinary if present
+        # [OK] Remove image from Cloudinary if present
         if story.image:
             delete_cloudinary_image(story.image)
 
         story.delete()
-        return Response({"message": "✅ Success story deleted successfully!"}, status=status.HTTP_200_OK)
+        return Response({"message": "[OK] Success story deleted successfully!"}, status=status.HTTP_200_OK)
 
     except SuccessStory.DoesNotExist:
-        return Response({"error": "❌ Success story not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "[ERROR] Success story not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"error": f"❌ Error deleting success story: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": f"[ERROR] Error deleting success story: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

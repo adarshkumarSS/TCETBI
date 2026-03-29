@@ -21,7 +21,7 @@ def get_facilities_data(request):
 @api_view(["PUT"])
 @transaction.atomic
 def update_facilities_data(request):
-    print("🔥 ENTERED UPDATE API")
+    print("[WARN] ENTERED UPDATE API")
     print("Incoming payload:", request.data)
 
     payload = request.data or {}
@@ -89,7 +89,7 @@ def update_facilities_data(request):
                 url=vid_data.get("url", ""),
                 thumbnail=vid_data.get("thumbnail", ""),
             )
-    return Response({"message": "✅ Facilities & Videos updated successfully!"})
+    return Response({"message": "[OK] Facilities & Videos updated successfully!"})
 
 @api_view(["DELETE"])
 def delete_facility_item(request, id):
@@ -99,7 +99,7 @@ def delete_facility_item(request, id):
         if fac.image:
             delete_cloudinary_image(fac.image)
         fac.delete()
-        return Response({"message": "✅ Facility deleted"})
+        return Response({"message": "[OK] Facility deleted"})
     except Facility.DoesNotExist:
         pass
 
@@ -111,4 +111,4 @@ def delete_facility_item(request, id):
     except FacilityVideo.DoesNotExist:
         pass
 
-    return Response({"error": "❌ No facility/video with this ID"}, status=404)
+    return Response({"error": "[ERROR] No facility/video with this ID"}, status=404)

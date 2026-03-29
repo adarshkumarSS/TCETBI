@@ -115,7 +115,7 @@ def update_people_data(request):
         # Optional: Clean up images in members JSON if needed, but tricky without knowing old state perfectly
         sec.delete()
 
-    return Response({"message": "✅ People data updated successfully!"})
+    return Response({"message": "[OK] People data updated successfully!"})
 
 @api_view(["DELETE"])
 def delete_board_member(request, id):
@@ -125,7 +125,7 @@ def delete_board_member(request, id):
         if member.image:
             delete_cloudinary_image(member.image)
         member.delete()
-        return Response({"message": "✅ Board member deleted successfully!"}, status=status.HTTP_200_OK)
+        return Response({"message": "[OK] Board member deleted successfully!"}, status=status.HTTP_200_OK)
     except BoardMember.DoesNotExist:
         return Response({"error": "Board member not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

@@ -69,6 +69,10 @@ def seed_portfolio():
                 {"title": "GreenGrid", "desc": "AI-based smart energy optimization system."},
             ],
             "category": "current",
+            "owner_name": "Dr. Priya Sharma",
+            "owner_description": "Environmental engineer with 10+ years in sustainable tech. Founded EcoTech to make clean water accessible to everyone.",
+            "owner_company_name": "EcoTech Solutions",
+            "owner_linkedin": "https://linkedin.com/in/priyasharma",
         },
         {
             "name": "AgriConnect",
@@ -90,6 +94,10 @@ def seed_portfolio():
                 {"title": "AgriLink", "desc": "Marketplace for farmers and suppliers."},
             ],
             "category": "current",
+            "owner_name": "Rajesh Kumar",
+            "owner_description": "AgriTech specialist passionate about farmer empowerment and bridging technology gaps in agriculture.",
+            "owner_company_name": "AgriConnect",
+            "owner_linkedin": "https://linkedin.com/in/rajeshkumar",
         },
         {
             "name": "HealthTech Innovations",
@@ -111,6 +119,10 @@ def seed_portfolio():
                 {"title": "RuralCare", "desc": "Offline telemedicine platform for remote areas."},
             ],
             "category": "current",
+            "owner_name": "Dr. Anitha Raman",
+            "owner_description": "Medical doctor and AI innovator dedicated to making healthcare accessible in rural India.",
+            "owner_company_name": "HealthTech Innovations",
+            "owner_linkedin": "https://linkedin.com/in/anitharaman",
         },
         # 🔵 Graduated Startups
         {
@@ -133,6 +145,10 @@ def seed_portfolio():
                 {"title": "Insight360", "desc": "Real-time analytics and reporting engine."},
             ],
             "category": "graduated",
+            "owner_name": "Arun Krishnan",
+            "owner_description": "Serial entrepreneur with successful B2B exits and a passion for automating enterprise workflows.",
+            "owner_company_name": "TechVentures Ltd",
+            "owner_linkedin": "https://linkedin.com/in/arunkrishnan",
         },
         {
             "name": "GreenTech Systems",
@@ -154,6 +170,10 @@ def seed_portfolio():
                 {"title": "RecycleBot", "desc": "Automated waste recycling machine."},
             ],
             "category": "graduated",
+            "owner_name": "Lakshmi Iyer",
+            "owner_description": "Engineer driving large-scale sustainability initiatives for smart cities across India.",
+            "owner_company_name": "GreenTech Systems",
+            "owner_linkedin": "https://linkedin.com/in/lakshmiiyer",
         },
                 # 🟣 Emerging Startups
         {
@@ -176,6 +196,10 @@ def seed_portfolio():
                 {"title": "SmartPay", "desc": "Instant micro-loan and repayment platform."},
             ],
             "category": "current",
+            "owner_name": "Aman Mehta",
+            "owner_description": "FinTech innovator focused on micro-loans and financial inclusion for small businesses.",
+            "owner_company_name": "FinNova Labs",
+            "owner_linkedin": "https://linkedin.com/in/amanmehta",
         },
         {
             "name": "EduSphere",
@@ -197,6 +221,10 @@ def seed_portfolio():
                 {"title": "ClassSync", "desc": "Teacher-student collaboration dashboard."},
             ],
             "category": "current",
+            "owner_name": "Ritika Sen",
+            "owner_description": "Education reformer passionate about making digital learning accessible in regional languages.",
+            "owner_company_name": "EduSphere",
+            "owner_linkedin": "https://linkedin.com/in/ritika-sen",
         },
         {
             "name": "AutoVolt Motors",
@@ -218,6 +246,10 @@ def seed_portfolio():
                 {"title": "ChargeNet", "desc": "Smart EV charging grid management system."},
             ],
             "category": "current",
+            "owner_name": "Vikram Chauhan",
+            "owner_description": "EV design expert with 15+ years in sustainable mobility, building vehicles for Indian roads.",
+            "owner_company_name": "AutoVolt Motors",
+            "owner_linkedin": "https://linkedin.com/in/vikramchauhan",
         },
         {
             "name": "CyberSentinel AI",
@@ -239,6 +271,10 @@ def seed_portfolio():
                 {"title": "Shield360", "desc": "Endpoint security powered by ML anomaly detection."},
             ],
             "category": "graduated",
+            "owner_name": "Harshit Desai",
+            "owner_description": "Ex-ethical hacker turned cybersecurity entrepreneur, preventing threats with AI-first solutions.",
+            "owner_company_name": "CyberSentinel AI",
+            "owner_linkedin": "https://linkedin.com/in/harshitdesai",
         },
         {
             "name": "MedGenomeX",
@@ -260,6 +296,10 @@ def seed_portfolio():
                 {"title": "GenomeVault", "desc": "Encrypted cloud storage for genomic data."},
             ],
             "category": "current",
+            "owner_name": "Dr. Suresh Nambiar",
+            "owner_description": "Biotech leader advancing genetic diagnostics to predict and prevent hereditary diseases.",
+            "owner_company_name": "MedGenomeX",
+            "owner_linkedin": "https://linkedin.com/in/sureshnambiar",
         },
         {
             "name": "AeroNext Robotics",
@@ -281,6 +321,10 @@ def seed_portfolio():
                 {"title": "PathAI", "desc": "Real-time route optimization for aerial navigation."},
             ],
             "category": "graduated",
+            "owner_name": "Karan Thakur",
+            "owner_description": "Aerospace engineer innovating drone-based logistics for remote and urban deliveries.",
+            "owner_company_name": "AeroNext Robotics",
+            "owner_linkedin": "https://linkedin.com/in/karanthakur",
         },
 
     ]
@@ -303,6 +347,10 @@ def seed_portfolio():
             facebook=s["facebook"],
             products=s["products"],
             category=s["category"],
+            owner_name=s.get("owner_name", ""),
+            owner_description=s.get("owner_description", ""),
+            owner_company_name=s.get("owner_company_name", ""),
+            owner_linkedin=s.get("owner_linkedin", ""),
         )
 
         for i, ceo_data in enumerate(s["ceos"]):

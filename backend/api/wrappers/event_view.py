@@ -59,7 +59,7 @@ def update_events_data(request):
                 endDate=event_data.get("endDate", ""),
             )
 
-    return Response({"message": "✅ Events updated successfully!"})
+    return Response({"message": "[OK] Events updated successfully!"})
 
 
 @api_view(["DELETE"])
@@ -71,7 +71,7 @@ def delete_event_item(request, id):
             delete_cloudinary_image(event.image)
 
         event.delete()
-        return Response({"message": "✅ Event deleted"})
+        return Response({"message": "[OK] Event deleted"})
 
     except Event.DoesNotExist:
-        return Response({"error": "❌ No event with this ID"}, status=404)
+        return Response({"error": "[ERROR] No event with this ID"}, status=404)

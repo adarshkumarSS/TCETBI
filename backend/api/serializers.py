@@ -38,7 +38,7 @@ class StartupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Startup
-        fields = ['id', 'name', 'logo', 'description', 'sector', 'founded', 'website', 'location', 'linkedin', 'twitter', 'facebook', 'products', 'category', 'ceos']
+        fields = ['id', 'name', 'logo', 'description', 'sector', 'founded', 'website', 'location', 'linkedin', 'twitter', 'facebook', 'products', 'category', 'ceos', 'owner_name', 'owner_description', 'owner_company_name', 'owner_linkedin']
 
     def update(self, instance, validated_data):
         ceos_data = validated_data.pop('ceos', [])

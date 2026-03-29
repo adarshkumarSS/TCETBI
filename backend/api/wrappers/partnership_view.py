@@ -43,7 +43,7 @@ def update_partnerships_data(request):
                 website=p_data.get("website", ""),
             )
 
-    return Response({"message": "✅ Partnerships updated successfully!"})
+    return Response({"message": "[OK] Partnerships updated successfully!"})
 
 @api_view(["DELETE"])
 def delete_partnership_item(request, id):
@@ -52,6 +52,6 @@ def delete_partnership_item(request, id):
         if partnership.logo:
             delete_cloudinary_image(partnership.logo)
         partnership.delete()
-        return Response({"message": "✅ Partnership deleted"})
+        return Response({"message": "[OK] Partnership deleted"})
     except Partnership.DoesNotExist:
-        return Response({"error": "❌ No partnership with this ID"}, status=404)
+        return Response({"error": "[ERROR] No partnership with this ID"}, status=404)

@@ -30,10 +30,10 @@ def submit_contact_message(request):
 
     if serializer.is_valid():
         msg = serializer.save()
-        print(f"✅ Contact message saved with ID #{msg.id}")
+        print(f"[OK] Contact message saved with ID #{msg.id}")
 
         # When submit button is clicked, this creates 1 notification (no email sent)
-        print("📧 Creating notification only...")
+        print("[EMAIL] Creating notification only...")
         notification = Notification.objects.create(
             type="contact",
             title="New Contact Message",
@@ -46,7 +46,7 @@ def submit_contact_message(request):
                 "message": msg.message,
             }
         )
-        print(f"🔔 LOG NOTIFICATION ONLY: #{notification.id} created (no email)")
+        print(f"[NOTIFY] LOG NOTIFICATION ONLY: #{notification.id} created (no email)")
 
         return Response({"message": "Message submitted successfully!"}, status=201)
 
@@ -238,11 +238,11 @@ def submit_incubation(request):
     unique_key = f"incubation_submit_lock:{user_email}"
 
     if cache.get(unique_key):
-        print(f"[REQUEST {request_id}] 🔥 Duplicate request blocked for email: {user_email}")
+        print(f"[REQUEST {request_id}] [WARN] Duplicate request blocked for email: {user_email}")
         return Response({"message": "Duplicate request ignored"}, status=200)
 
     cache.set(unique_key, True, timeout=5)
-    print(f"[REQUEST {request_id}] 🔒 Cache lock set for email: {user_email}")
+    print(f"[REQUEST {request_id}] [LOCK] Cache lock set for email: {user_email}")
     # Validate PDF size (<2MB)
     resume = request.FILES.get("resume")
     if resume and resume.size > 2 * 1024 * 1024:
@@ -321,11 +321,11 @@ def submit_incubation(request):
 
     if serializer.is_valid():
         app = serializer.save()
-        print(f"[REQUEST {request_id}] ✅ Application saved with ID #{app.id}")
+        print(f"[REQUEST {request_id}] [OK] Application saved with ID #{app.id}")
 
         # === SINGLE POINT FOR NOTIFICATION + EMAIL ===
         # When submit button is clicked, this creates 1 notification AND sends 1 email
-        print(f"[REQUEST {request_id}] 📧 Creating notification and sending email...")
+        print(f"[REQUEST {request_id}] [EMAIL] Creating notification and sending email...")
 
         notification = Notification.objects.create(
             type="application",
@@ -338,11 +338,11 @@ def submit_incubation(request):
                 "email": app.email,
             }
         )
-        print(f"[REQUEST {request_id}] 🔔 LOG NOTIFICATION: #{notification.id} created")
+        print(f"[REQUEST {request_id}] [NOTIFY] LOG NOTIFICATION: #{notification.id} created")
 
         # Automatically send email when notification is created
         send_incubation_email_to_ceo(app)
-        print(f"[REQUEST {request_id}] ✉️ EMAIL sent to CEO for application #{app.id}")
+        print(f"[REQUEST {request_id}] [EMAIL] EMAIL sent to CEO for application #{app.id}")
 
         return Response({
             "message": "Application submitted successfully! Notification sent and email dispatched.",
@@ -388,13 +388,13 @@ def update_application_status(request, id):
                         status='approved',
                         must_change_password=True
                     )
-                    print(f"✅ Created new user {user.email} from application #{app.id}")
+                    print(f"[OK] Created new user {user.email} from application #{app.id}")
                 else:
                     # If user exists, ensure they are approved
                     if user.status != 'approved':
                         user.status = 'approved'
                         user.save()
-                    print(f"ℹ️ User {user.email} already exists for application #{app.id}")
+                    print(f"[INFO] User {user.email} already exists for application #{app.id}")
 
                 # 2. Create Company Request Draft if not exists for this user
                 if not UserCompanyRequest.objects.filter(user=user, name=app.businessName).exists():
@@ -407,7 +407,7 @@ def update_application_status(request, id):
                         ceo_name=app.fullName,
                         status='draft'
                     )
-                    print(f"✅ Created company request draft for {app.businessName}")
+                    print(f"[OK] Created company request draft for {app.businessName}")
 
                 # 3. Send Email with credentials if new user was created
                 if temp_password:
@@ -455,9 +455,9 @@ def update_application_status(request, id):
                         )
                         msg.attach_alternative(html_content, "text/html")
                         msg.send()
-                        print(f"✉️ Approval email sent to {app.email}")
+                        print(f"[EMAIL] Approval email sent to {app.email}")
                     except Exception as e:
-                        print(f"❌ Failed to send approval email: {e}")
+                        print(f"[ERROR] Failed to send approval email: {e}")
 
             return Response({"message": f"Application {new_status}"})
         else:
@@ -485,7 +485,7 @@ def create_admin_user():
             user.is_staff = True
             user.is_superuser = True
             user.save()
-            print(f"✅ Admin user created: {user.username} (AppUser)")
+            print(f"[OK] Admin user created: {user.username} (AppUser)")
         else:
             user = AppUser.objects.get(username=admin_email)
             # Do NOT reset password here, otherwise changing it via UI won't work
@@ -494,9 +494,9 @@ def create_admin_user():
             user.is_superuser = True
             user.status = 'approved'
             user.save()
-            print(f"✅ Admin user updated: {user.username} (AppUser)")
+            print(f"[OK] Admin user updated: {user.username} (AppUser)")
     except Exception as e:
-        print(f"❌ Error creating admin user: {e}")
+        print(f"[ERROR] Error creating admin user: {e}")
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -1287,9 +1287,9 @@ def send_mentor_status_email(mentor):
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send()
-        print(f"✉️ Mentor status email sent to {mentor.email}")
+        print(f"[EMAIL] Mentor status email sent to {mentor.email}")
     except Exception as e:
-        print(f"❌ Failed to send mentor status email: {e}")
+        print(f"[ERROR] Failed to send mentor status email: {e}")
 
 class MentorViewSet(viewsets.ModelViewSet):
     queryset = Mentor.objects.all()

@@ -38,7 +38,7 @@ def update_portfolio_data(request):
         try:
             data = json.loads(request.data['data'])
         except json.JSONDecodeError:
-            return Response({"error": "❌ Invalid JSON data format."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "[ERROR] Invalid JSON data format."}, status=status.HTTP_400_BAD_REQUEST)
     else:
         data = raw_data or {}
 
@@ -67,7 +67,7 @@ def update_portfolio_data(request):
                         if url:
                             data[category_key][startup_index]['logo'] = url
                         else:
-                            print(f"⚠️ Failed to upload logo for {category_key}[{startup_index}]")
+                            print(f"[WARN] Failed to upload logo for {category_key}[{startup_index}]")
                             
                     elif len(parts) == 6 and parts[3] == 'ceos' and parts[5] == 'image':
                         try:
@@ -80,10 +80,10 @@ def update_portfolio_data(request):
                             if url:
                                 data[category_key][startup_index]['ceos'][ceo_index]['image'] = url
                             else:
-                                print(f"⚠️ Failed to upload CEO image")
+                                print(f"[WARN] Failed to upload CEO image")
 
             except Exception as e:
-                print(f"❌ Error processing upload {key}: {e}")
+                print(f"[ERROR] Error processing upload {key}: {e}")
                 continue
 
     payload = data
@@ -98,7 +98,7 @@ def update_portfolio_data(request):
         if new_logo and (new_logo.startswith('blob:') or new_logo.startswith('data:')):
             new_logo = None
 
-        # ✅ Either fetch existing startup or create new
+        # [OK] Either fetch existing startup or create new
         startup = all_existing.pop(sid, None) if sid else None
 
         fields_to_update = {
@@ -113,6 +113,10 @@ def update_portfolio_data(request):
             "facebook": s_data.get("facebook") or "",
             "products": s_data.get("products", []),
             "category": category,
+            "owner_name": s_data.get("owner_name") or "",
+            "owner_description": s_data.get("owner_description") or "",
+            "owner_company_name": s_data.get("owner_company_name") or "",
+            "owner_linkedin": s_data.get("owner_linkedin") or "",
         }
 
         if startup:
@@ -130,7 +134,7 @@ def update_portfolio_data(request):
         else:
             startup = Startup.objects.create(**fields_to_update, logo=new_logo or "")
 
-        # ✅ Handle CEO synchronization
+        # [OK] Handle CEO synchronization
         existing_ceos = {ceo.id: ceo for ceo in startup.ceos.all()}
 
         for ceo_data in ceos_data:
@@ -166,7 +170,7 @@ def update_portfolio_data(request):
                 delete_cloudinary_image(removed_ceo.image)
             removed_ceo.delete()
 
-    # ✅ Loop through categories explicitly
+    # [OK] Loop through categories explicitly
     categories = {
         "current": payload.get("current_startups", []),
         "graduated": payload.get("graduated_startups", []),
@@ -186,7 +190,7 @@ def update_portfolio_data(request):
             ceo.delete()
         orphan.delete()
 
-    return Response({"message": "✅ Portfolio data updated successfully!"}, status=status.HTTP_200_OK)
+    return Response({"message": "[OK] Portfolio data updated successfully!"}, status=status.HTTP_200_OK)
 
 
 
@@ -201,7 +205,7 @@ def delete_startup(request, id):
                 delete_cloudinary_image(ceo.image)
             ceo.delete()
         startup.delete()
-        return Response({"message": "✅ Startup deleted successfully!"}, status=200)
+        return Response({"message": "[OK] Startup deleted successfully!"}, status=200)
     except Startup.DoesNotExist:
         return Response({"error": "Startup not found"}, status=404)
 
