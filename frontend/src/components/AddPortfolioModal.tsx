@@ -14,7 +14,6 @@ import {
 import { Upload, ImagePlus, Plus, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ResizeModal } from "@/components/ResizeModal";
-import { removeImageBackground } from "@/utils/removeBackground";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import { SquareResizeModal } from "@/components/SquareResizeModal";
 
@@ -79,23 +78,9 @@ export const AddPortfolioModal: React.FC<AddPortfolioModalProps> = ({
     setResizeOpen(true);
   };
 
-  const handleCroppedSave = async (cropped: File, removeBg: boolean) => {
+  const handleCroppedSave = async (cropped: File) => {
     setResizeOpen(false);
-    let imgURL = URL.createObjectURL(cropped);
-
-    // ✨ Remove background if requested
-    if (removeBg) {
-      try {
-        const bgRemoved = await removeImageBackground(cropped);
-        if (bgRemoved) imgURL = bgRemoved;
-      } catch {
-        console.warn(
-          "⚠️ Background removal failed, using original cropped image"
-        );
-      }
-    }
-
-    const localURL = imgURL;
+    const localURL = URL.createObjectURL(cropped);
 
     if (uploadType === "logo") setLogoPreview(localURL);
     else if (ceoIndex !== null && typeof ceoIndex === "number") updateCeoImage(ceoIndex, localURL);

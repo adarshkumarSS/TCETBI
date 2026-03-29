@@ -137,16 +137,12 @@ export const PeoplePage: React.FC = () => {
         (m) => m.name?.trim() || m.bio?.trim() || m.image?.trim()
       );
 
-      founder.image = await uploadIfLocal(founder.image, "TCETBI/People/Founder");
-      ceo.image = await uploadIfLocal(ceo.image, "TCETBI/People/CEO");
-      
-      for (const m of board_members) {
-        m.image = await uploadIfLocal(m.image, "TCETBI/People/Board");
-      }
-
-      // 🔄 Upload images for custom sections
-      const processedCustomSections = await Promise.all(
-        customSections.map(async (section) => ({
+      // 🔄 Upload all images in PARALLEL for speed
+      const [newFounderImg, newCeoImg, newBoardImgList, processedCustomSections] = await Promise.all([
+        uploadIfLocal(founder.image, "TCETBI/People/Founder"),
+        uploadIfLocal(ceo.image, "TCETBI/People/CEO"),
+        Promise.all(board_members.map(m => uploadIfLocal(m.image, "TCETBI/People/Board"))),
+        Promise.all(customSections.map(async (section) => ({
           ...section,
           members: await Promise.all(
             section.members.map(async (m) => ({
@@ -154,10 +150,15 @@ export const PeoplePage: React.FC = () => {
               image: await uploadIfLocal(m.image, `TCETBI/People/${section.title}`),
             }))
           ),
-        }))
-      );
+        })))
+      ]);
 
-      // Include custom_sections in payload
+      // Update objects with new URLs
+      founder.image = newFounderImg;
+      ceo.image = newCeoImg;
+      board_members.forEach((m, i) => m.image = newBoardImgList[i]);
+
+      // Include custom_sections in payload and SAVE
       await updatePeopleData({ 
         founder, 
         ceo, 
@@ -765,7 +766,6 @@ export const PeoplePage: React.FC = () => {
         image={cropModal.image}
         onClose={() => setCropModal({ open: false, image: "", type: null })}
         onSave={handleCropSave}
-        removeBg={false}
       />
       <ConfirmModal
         open={deleteConfirm.open}

@@ -20,16 +20,40 @@ def list_form_templates(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def get_form_template(request, form_type):
-    """Get specific form template with fields"""
-    try:
-        template = FormTemplate.objects.get(form_type=form_type)
-        serializer = FormTemplateSerializer(template)
-        return Response(serializer.data)
-    except FormTemplate.DoesNotExist:
-        return Response(
-            {'error': 'Form template not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    """Get specific form template with fields. Creates default if missing."""
+    template = FormTemplate.objects.filter(form_type=form_type).first()
+    
+    if not template:
+        # Check if it's a valid form type from our choices
+        form_choices = dict(FormTemplate.FORM_TYPES)
+        if form_type in form_choices:
+            with transaction.atomic():
+                template = FormTemplate.objects.create(
+                    form_type=form_type,
+                    name=form_choices[form_type],
+                    description=f"Standard form for {form_choices[form_type].lower()}",
+                    is_active=True
+                )
+                
+                # Add default fields
+                default_fields = [
+                    {"field_name": "full_name", "label": "Full Name", "field_type": "text", "is_required": True, "placeholder": "Enter your full name", "order": 0},
+                    {"field_name": "email", "label": "Email Address", "field_type": "email", "is_required": True, "placeholder": "example@email.com", "order": 1},
+                    {"field_name": "phone", "label": "Phone Number", "field_type": "phone", "is_required": False, "placeholder": "+91 00000 00000", "order": 2},
+                    {"field_name": "subject", "label": "Subject", "field_type": "text", "is_required": True, "placeholder": "What is this about?", "order": 3},
+                    {"field_name": "message", "label": "Message", "field_type": "textarea", "is_required": True, "placeholder": "Share your thoughts...", "order": 4},
+                ]
+                
+                for f_data in default_fields:
+                    FormField.objects.create(form_template=template, **f_data)
+        else:
+            return Response(
+                {'error': f'Invalid form type: {form_type}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    serializer = FormTemplateSerializer(template)
+    return Response(serializer.data)
 
 
 @api_view(['POST'])

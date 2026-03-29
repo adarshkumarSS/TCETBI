@@ -193,8 +193,6 @@ export const MediaPage: React.FC = () => {
     });
 
     setResizeModal({ open: false, index: null, image: "" });
-    URL.revokeObjectURL(url);
-
   };
 
   // --------------------------------------------------
@@ -235,21 +233,22 @@ export const MediaPage: React.FC = () => {
           const blob = await fetch(img).then((r) => r.blob());
           const file = new File([blob], "media.jpg", { type: blob.type });
 
-          return await uploadToCloudinary(
+          const uploaded = await uploadToCloudinary(
             file,
             `TCETBI/Media/${activeAlbum!.album}`
           );
+          if (img.startsWith("blob:")) URL.revokeObjectURL(img);
+          return uploaded;
         }
         return img;
       };
 
-      const final = [];
-      for (const item of editItems) {
-        final.push({
+      const final = await Promise.all(
+        editItems.map(async (item) => ({
           ...item,
           image: await uploadIfNeeded(item.image),
-        });
-      }
+        }))
+      );
 
       await updateAlbum(activeAlbum!.album, final);
 

@@ -11,7 +11,7 @@ import {
 import { Upload, ImagePlus } from "lucide-react";
 import { useState } from "react";
 import { ResizeModal } from "@/components/ResizeModal";
-import { removeImageBackground } from "@/utils/removeBackground";
+import { toast } from "sonner";
 
 interface AddContentModalProps {
   open: boolean;
@@ -43,18 +43,7 @@ export const AddContentModal: React.FC<AddContentModalProps> = ({
 
   const handleCroppedSave = async (cropped: File) => {
     setResizeOpen(false);
-    let imgURL = URL.createObjectURL(cropped);
-
-    // ✅ Only remove background for logos
-    if (type === "logo") {
-      try {
-        const bgRemoved = await removeImageBackground(cropped);
-        if (bgRemoved) imgURL = bgRemoved;
-      } catch (e) {
-        console.warn("Background removal failed, using cropped version");
-      }
-    }
-
+    const imgURL = URL.createObjectURL(cropped);
     setPreview(imgURL);
   };
 
@@ -62,6 +51,16 @@ export const AddContentModal: React.FC<AddContentModalProps> = ({
     setFormData({ ...formData, [field]: value });
 
   const handleSave = () => {
+    // 🔍 Basic Validation
+    if (type === "logo") {
+      if (!formData.category) return toast.warning("⚠️ Please select a category (India or TN).");
+      if (!formData.name?.trim()) return toast.warning("⚠️ Please enter a logo name.");
+      if (!preview) return toast.warning("⚠️ Please upload a logo image.");
+    } else if (type === "successStory") {
+      if (!formData.title?.trim()) return toast.warning("⚠️ Please enter a story title.");
+      if (!preview) return toast.warning("⚠️ Please upload a story image.");
+    }
+
     const newEntry = {
       ...formData,
       src: preview || "",

@@ -46,6 +46,7 @@ def update_events_data(request):
             event.status = event_data.get("status", event.status)
             event.startDate = parse_date(event_data.get("startDate"))
             event.endDate = parse_date(event_data.get("endDate"))
+            event.link = event_data.get("link", event.link)
             event.save()
 
         else:
@@ -57,6 +58,7 @@ def update_events_data(request):
                 status=event_data.get("status", "upcoming"),
                 startDate=event_data.get("startDate", ""),
                 endDate=event_data.get("endDate", ""),
+                link=event_data.get("link", ""),
             )
 
     return Response({"message": "[OK] Events updated successfully!"})

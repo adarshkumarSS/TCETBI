@@ -127,7 +127,25 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ setIsDirty }) => {
           formData.append(key, file);
       });
 
-      formData.append("data", JSON.stringify(data));
+      // ✅ Create a clean copy of data to avoid sending massive base64 strings twice
+      const cleanData = JSON.parse(JSON.stringify(data));
+      const stripUrls = (startup: any) => {
+          if (startup.logo && (startup.logo.startsWith("blob:") || startup.logo.startsWith("data:"))) {
+              startup.logo = "";
+          }
+          if (Array.isArray(startup.ceos)) {
+              startup.ceos.forEach((ceo: any) => {
+                  if (ceo.image && (ceo.image.startsWith("blob:") || ceo.image.startsWith("data:"))) {
+                      ceo.image = "";
+                  }
+              });
+          }
+      };
+
+      cleanData.current_startups.forEach(stripUrls);
+      cleanData.graduated_startups.forEach(stripUrls);
+
+      formData.append("data", JSON.stringify(cleanData));
 
       const res = await updatePortfolioData(formData);
       
@@ -138,9 +156,11 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ setIsDirty }) => {
       toast.success("✅ Portfolio updated successfully!");
       if (setIsDirty) setIsDirty(false); // ✅ Reset dirty state
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ Failed to update portfolio:", err);
-      toast.error("❌ Failed to update portfolio data!");
+      const serverError = err.response?.data?.error || err.response?.data?.detail || "❌ Failed to update portfolio data!";
+      toast.error(serverError);
+      console.log("Full Server Error Response:", err.response?.data);
     } finally {
       setUploading(false);
     }

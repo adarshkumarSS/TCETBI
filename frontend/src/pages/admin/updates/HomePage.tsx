@@ -7,7 +7,6 @@ import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import { ResizeModal } from "@/components/ResizeModal";
 import { toast } from "sonner";
 import { AddContentModal } from "@/components/AddContentModal";
-import { removeImageBackground } from "@/utils/removeBackground";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { deleteSuccessStory } from "@/api/homeService";
 
@@ -166,21 +165,11 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
     reader.readAsDataURL(file);
   };
 
-  // ✅ Cropping + background removal
-  const handleCroppedImageSave = async (croppedFile: File, removeBg: boolean) => {
+  // ✅ Cropping save
+  const handleCroppedImageSave = async (croppedFile: File) => {
     if (!data || !uploadContext) return;
 
-    let imageURL = URL.createObjectURL(croppedFile);
-
-    // ✅ Remove background if requested
-    if (removeBg) {
-      try {
-        const bgRemoved = await removeImageBackground(croppedFile);
-        if (bgRemoved) imageURL = bgRemoved;
-      } catch {
-        console.warn("Background removal failed, using original image.");
-      }
-    }
+    const imageURL = URL.createObjectURL(croppedFile);
 
     if (uploadContext.type === "govtIndia") {
       const updated = [...data.govt_logos];
@@ -264,8 +253,23 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
         formData.append(key, file);
       });
 
-      // Append the main data
-      formData.append("data", JSON.stringify(data));
+      // Create a clean copy of data for the JSON field to avoid sending massive base64/blob strings twice
+      const cleanData = JSON.parse(JSON.stringify(data));
+      
+      const stripUrls = (list: any[], imageField: string) => {
+        list.forEach(item => {
+          if (item[imageField] && (item[imageField].startsWith("blob:") || item[imageField].startsWith("data:"))) {
+            item[imageField] = ""; // Backend will use the uploaded file instead
+          }
+        });
+      };
+
+      stripUrls(cleanData.govt_logos, "src");
+      stripUrls(cleanData.state_logos, "src");
+      stripUrls(cleanData.success_stories, "image");
+
+      // Append the clean data
+      formData.append("data", JSON.stringify(cleanData));
 
       const response = await updateHomeData(formData);
       
@@ -278,7 +282,9 @@ export const HomePage: React.FC<HomePageProps> = ({ setIsDirty }) => {
 
     } catch (error: any) {
       console.error("Error updating data:", error);
-      toast.error(error.response?.data?.error || "❌ Failed to update home page data!");
+      const serverError = error.response?.data?.error || error.response?.data?.detail || "❌ Failed to update home page data!";
+      toast.error(serverError);
+      console.log("Full Server Error Response:", error.response?.data);
     } finally {
       setUploading(false);
     }

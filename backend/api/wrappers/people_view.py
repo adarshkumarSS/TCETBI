@@ -24,6 +24,15 @@ def get_people_data(request):
         "custom_sections": custom_sections
     })
 
+def get_images_from_members(members):
+    """Extracts all Cloudinary image URLs from a list of member dicts."""
+    urls = set()
+    for m in members:
+        img = m.get("image")
+        if img and "cloudinary.com" in img:
+            urls.add(img)
+    return urls
+
 @api_view(["PUT"])
 @transaction.atomic
 def update_people_data(request):
@@ -31,6 +40,7 @@ def update_people_data(request):
     data = request.data
 
     # Founder
+    # ... (same as before) ...
     founder_data = data.get("founder")
     founder_obj = Founder.objects.first()
     if founder_data:
@@ -63,13 +73,13 @@ def update_people_data(request):
             ceo_obj.save()
 
     # Board Members
-    existing = {m.id: m for m in BoardMember.objects.all()}
-    sent_members = data.get("board_members", [])
+    existing_board = {m.id: m for m in BoardMember.objects.all()}
+    sent_board = data.get("board_members", [])
 
-    for m in sent_members:
+    for m in sent_board:
         mid = m.get("id")
-        if mid and mid in existing:
-            obj = existing[mid]
+        if mid and mid in existing_board:
+            obj = existing_board[mid]
             for field in ["name", "position", "bio", "experience", "email", "linkedin"]:
                 if m.get(field) is not None:
                     setattr(obj, field, m[field])
@@ -78,26 +88,35 @@ def update_people_data(request):
                     delete_cloudinary_image(obj.image)
                 obj.image = m["image"]
             obj.save()
-            existing.pop(mid)
+            existing_board.pop(mid)
         else:
-            BoardMember.objects.create(**m)
+            # Create new board member (strip id if exists)
+            m_data = m.copy()
+            m_data.pop('id', None) 
+            BoardMember.objects.create(**m_data)
 
-    # delete missing board members
-    for r in existing.values():
+    for r in existing_board.values():
         if r.image:
             delete_cloudinary_image(r.image)
         r.delete()
 
-    # Custom Sections
+    # 🔄 Custom Sections (Clean up images in members JSON)
     sent_sections = data.get("custom_sections", [])
     existing_sections = {str(s.id): s for s in CustomSection.objects.all()}
     
     for i, section_data in enumerate(sent_sections):
         sid = str(section_data.get("id"))
         
-        # If ID is numeric (existing in DB)
         if sid in existing_sections:
             sec = existing_sections.pop(sid)
+            
+            # 🔍 IMAGE CLEANUP: Detect removed members' images
+            old_urls = get_images_from_members(sec.members)
+            new_urls = get_images_from_members(section_data.get("members", []))
+            removed_urls = old_urls - new_urls
+            for url in removed_urls:
+                delete_cloudinary_image(url)
+
             sec.title = section_data.get("title", sec.title)
             sec.members = section_data.get("members", [])
             sec.order = i
@@ -110,9 +129,11 @@ def update_people_data(request):
                 order=i
             )
             
-    # Delete removed sections
+    # Delete removed sections (and ALL their members' images)
     for sec in existing_sections.values():
-        # Optional: Clean up images in members JSON if needed, but tricky without knowing old state perfectly
+        urls_to_delete = get_images_from_members(sec.members)
+        for url in urls_to_delete:
+            delete_cloudinary_image(url)
         sec.delete()
 
     return Response({"message": "[OK] People data updated successfully!"})

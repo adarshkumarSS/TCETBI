@@ -483,6 +483,7 @@ export const EventsManagement: React.FC = () => {
               top: 8,
               right: 8,
               color: "hsl(0 84.2% 60.2%)",
+              zIndex: 10,
             }}
           >
             <Trash2 size={20} />

@@ -10,17 +10,49 @@ from ..serializers import FormTemplateSerializer, FormSubmissionSerializer
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_form_structure(request, form_type):
-    """Get form structure for public use"""
-    try:
-        template = FormTemplate.objects.get(form_type=form_type, is_active=True)
-        serializer = FormTemplateSerializer(template)
-        return Response(serializer.data)
-    except FormTemplate.DoesNotExist:
-        return Response(
-            {'error': 'Form not found or inactive'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    """Get form structure for public use with fallback to default template."""
+    template = FormTemplate.objects.filter(form_type=form_type, is_active=True).first()
+    
+    if not template:
+        # Check if it exists at all (maybe inactive)
+        all_template = FormTemplate.objects.filter(form_type=form_type).first()
+        if all_template and not all_template.is_active:
+            return Response({'error': 'Form is currently inactive'}, status=status.HTTP_404_NOT_FOUND)
+
+        # It's actually missing, create it on the fly with defaults
+        form_choices = dict(FormTemplate.FORM_TYPES)
+        if form_type in form_choices:
+            try:
+                with transaction.atomic():
+                    template = FormTemplate.objects.create(
+                        form_type=form_type,
+                        name=form_choices[form_type],
+                        description=f"Standard form for {form_choices[form_type].lower()}",
+                        is_active=True
+                    )
+                    
+                    default_fields = [
+                        {"field_name": "full_name", "label": "Full Name", "field_type": "text", "is_required": True, "placeholder": "Enter your full name", "order": 0},
+                        {"field_name": "email", "label": "Email Address", "field_type": "email", "is_required": True, "placeholder": "example@email.com", "order": 1},
+                        {"field_name": "phone", "label": "Phone Number", "field_type": "phone", "is_required": False, "placeholder": "+91 00000 00000", "order": 2},
+                        {"field_name": "subject", "label": "Subject", "field_type": "text", "is_required": True, "placeholder": "What is this about?", "order": 3},
+                        {"field_name": "message", "label": "Message", "field_type": "textarea", "is_required": True, "placeholder": "Share your thoughts...", "order": 4},
+                    ]
+                    
+                    for f_data in default_fields:
+                        FormField.objects.create(form_template=template, **f_data)
+            except Exception as e:
+                # In case of racing conditions where it's created simultaneously by another request
+                template = FormTemplate.objects.filter(form_type=form_type, is_active=True).first()
+                if not template:
+                    return Response({'error': 'Failed to resolve form template'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({'error': f'Invalid form type: {form_type}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = FormTemplateSerializer(template)
+    return Response(serializer.data)
 
 
 @api_view(['POST'])

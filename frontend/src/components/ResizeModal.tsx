@@ -10,8 +10,6 @@ import {
   Typography,
   Slider,
   IconButton,
-  FormControlLabel,
-  Checkbox,
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
@@ -21,7 +19,7 @@ interface ResizeModalProps {
   open: boolean;
   image: string;
   onClose: () => void;
-  onSave: (croppedImage: File, removeBg: boolean) => void;
+  onSave: (croppedImage: File) => void;
 }
 
 export const ResizeModal: React.FC<ResizeModalProps> = ({
@@ -33,7 +31,6 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
   const [zoom, setZoom] = useState(1);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [aspect, setAspect] = useState(4 / 3);
-  const [removeBg, setRemoveBg] = useState(false);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
@@ -72,7 +69,7 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
 
   const handleSave = async () => {
     const cropped = await createCroppedImage();
-    onSave(cropped, removeBg);
+    onSave(cropped);
   };
 
   const handleAspectChange = (
@@ -155,8 +152,8 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
 
       {/* --- Controls --- */}
       <Box sx={{ px: 3, pt: 2 }}>
-        {/* Aspect Ratio & Remove BG */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 2 }}>
+        {/* Aspect Ratio */}
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 2 }}>
           <ToggleButtonGroup
             value={aspect}
             exclusive
@@ -187,26 +184,6 @@ export const ResizeModal: React.FC<ResizeModalProps> = ({
               Wide (16:9)
             </ToggleButton>
           </ToggleButtonGroup>
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={removeBg}
-                onChange={(e) => setRemoveBg(e.target.checked)}
-                sx={{
-                  color: "hsl(var(--muted-foreground))",
-                  "&.Mui-checked": {
-                    color: "hsl(var(--primary))",
-                  },
-                }}
-              />
-            }
-            label={
-              <Typography variant="body2" sx={{ fontFamily: "Poppins, sans-serif" }}>
-                Remove Background
-              </Typography>
-            }
-          />
         </Box>
 
         {/* Zoom Controls */}

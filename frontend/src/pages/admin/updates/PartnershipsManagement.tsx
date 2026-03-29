@@ -301,6 +301,7 @@ export const PartnershipsManagement: React.FC = () => {
               top: 10,
               right: 10,
               color: "hsl(0 84.2% 60.2%)",
+              zIndex: 10,
             }}
           >
             <Trash2 size={20} />

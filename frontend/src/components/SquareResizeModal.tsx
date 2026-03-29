@@ -11,14 +11,12 @@ import {
   IconButton,
 } from "@mui/material";
 import { ZoomIn, ZoomOut, Crop as CropIcon, X } from "lucide-react";
-import { removeImageBackground } from "@/utils/removeBackground";
 
 interface SquareResizeModalProps {
   open: boolean;
   image: string;
   onClose: () => void;
   onSave: (croppedImage: File | string) => void;
-  removeBg?: boolean; // ✅ NEW FLAG
 }
 
 export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
@@ -26,7 +24,6 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
   image,
   onClose,
   onSave,
-  removeBg = true, // ✅ Default to true
 }) => {
   const [zoom, setZoom] = useState(1);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -72,24 +69,7 @@ export const SquareResizeModal: React.FC<SquareResizeModalProps> = ({
     try {
       setProcessing(true);
       const croppedFile = await createCroppedImage();
-
-      if (removeBg) {
-        // ✅ background removal only if enabled
-        try {
-          const bgRemoved = await removeImageBackground(croppedFile);
-          if (bgRemoved) {
-            onSave(bgRemoved);
-          } else {
-            onSave(URL.createObjectURL(croppedFile));
-          }
-        } catch {
-          console.warn("⚠️ Background removal failed, using original image");
-          onSave(URL.createObjectURL(croppedFile));
-        }
-      } else {
-        // ✅ skip background removal (for people page)
-        onSave(URL.createObjectURL(croppedFile));
-      }
+      onSave(URL.createObjectURL(croppedFile));
     } finally {
       setProcessing(false);
       onClose();

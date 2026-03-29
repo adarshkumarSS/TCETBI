@@ -18,6 +18,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
 
+# Increase maximum request size (for base64/large images)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
