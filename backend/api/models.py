@@ -598,6 +598,7 @@ class FormSubmission(models.Model):
     form_template = models.ForeignKey(FormTemplate, on_delete=models.CASCADE, related_name='submissions')
     user = models.ForeignKey('AppUser', on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_read = models.BooleanField(default=False)
     admin_notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

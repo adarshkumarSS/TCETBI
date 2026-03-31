@@ -273,6 +273,7 @@ class FormTemplateSerializer(serializers.ModelSerializer):
 class FormFieldValueSerializer(serializers.ModelSerializer):
     field_label = serializers.CharField(source='field.label', read_only=True)
     field_type = serializers.CharField(source='field.field_type', read_only=True)
+    field_name = serializers.CharField(source='field.field_name', read_only=True)
     
     class Meta:
         model = FormFieldValue
@@ -287,5 +288,5 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = FormSubmission
-        fields = '__all__'
+        fields = ['id', 'form_template', 'user', 'status', 'is_read', 'admin_notes', 'created_at', 'updated_at', 'field_values', 'form_name', 'form_type', 'user_details']
         read_only_fields = ['user', 'created_at', 'updated_at']

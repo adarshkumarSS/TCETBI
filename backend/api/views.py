@@ -11,7 +11,7 @@ from django.core.cache import cache
 import os
 import json
 
-from .models import Notification, IncubationApplication, TBICEO, AppUser, UserCompanyRequest, Startup, CEO
+from .models import Notification, IncubationApplication, TBICEO, AppUser, UserCompanyRequest, Startup, CEO, FormSubmission, FormTemplate
 from .serializers import ContactMessageSerializer, NotificationSerializer, UserRegistrationSerializer, AppUserSerializer, UserCompanyRequestSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import parser_classes
@@ -81,150 +81,7 @@ def delete_notification(request, id):
     except Notification.DoesNotExist:
         return Response({"error": "Not found"}, status=404)
 
-def send_incubation_email_to_ceo(application):
-    """Send email notification to CEO about new incubation application."""
-    try:
-        # Get CEO email from database
-        ceo = TBICEO.objects.first()
-        if not ceo or not ceo.email:
-            print(f"CEO email not found - CEO object: {ceo}, Email: {ceo.email if ceo else 'N/A'}")
-            return
-
-        # Create email content with HTML formatting for better readability
-        subject = f"New Incubation Application - {application.businessName}"
-
-        # Helper function to format services
-        def format_services():
-            if not application.services:
-                return 'None'
-            services = []
-            for key, value in application.services.items():
-                if value:
-                    # Convert camelCase to Title Case
-                    formatted = ''.join([' ' + c.lower() if c.isupper() else c for c in key]).strip().title()
-                    services.append(formatted)
-            return ', '.join(services)
-
-        # Build HTML email content
-        application_data = f"""
-        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px;">New Incubation Application Received</h2>
-
-            <h3 style="color: #333; margin-top: 30px;">Business Details</h3>
-            <ul style="margin-left: 20px;">
-                <li><strong>Business Name:</strong> {application.businessName}</li>
-                <li><strong>Business Type:</strong> {application.businessType}</li>
-                <li><strong>Legal Entity:</strong> {application.legalEntity}</li>
-                <li><strong>Description:</strong> {application.businessDescription}</li>
-            </ul>
-
-            <h3 style="color: #333; margin-top: 30px;">Personal Details</h3>
-            <ul style="margin-left: 20px;">
-                <li><strong>Full Name:</strong> {application.salutation} {application.fullName}</li>
-                <li><strong>Father's Name:</strong> {application.fatherName}</li>
-                <li><strong>Age:</strong> {application.age}</li>
-                <li><strong>Email:</strong> {application.email}</li>
-                <li><strong>Residential Mobile:</strong> {application.resMobile}</li>
-                <li><strong>Office Mobile:</strong> {application.offMobile or 'N/A'}</li>
-            </ul>
-
-            <h3 style="color: #333; margin-top: 30px;">Address</h3>
-            <p style="margin-left: 20px;">{application.address}<br>{application.city}, {application.state} - {application.post}<br>{application.country}</p>
-
-            <h3 style="color: #333; margin-top: 30px;">Business Information</h3>
-            <ul style="margin-left: 20px;">
-                <li><strong>Services Required:</strong> {format_services()}</li>
-                <li><strong>Number of Chairs:</strong> {application.numChairs or 'N/A'}</li>
-                <li><strong>Full-time Employees:</strong> {application.fullTimeEmployees or 'N/A'}</li>
-                <li><strong>Part-time Employees:</strong> {application.partTimeEmployees or 'N/A'}</li>
-                <li><strong>Consultants:</strong> {application.consultants or 'N/A'}</li>
-            </ul>
-
-            <h3 style="color: #333; margin-top: 30px;">References</h3>
-            <div style="margin-left: 20px;">
-                <p><strong>Reference 1:</strong></p>
-                <p style="margin-left: 20px;">Name: {application.reference1.get('name', '')}<br>
-                Mobile: {application.reference1.get('mobile', '')}<br>
-                Email: {application.reference1.get('email', '')}<br>
-                Address: {application.reference1.get('address', '')}</p>
-
-                <p style="margin-top: 15px;"><strong>Reference 2:</strong></p>
-                <p style="margin-left: 20px;">Name: {application.reference2.get('name', '')}<br>
-                Mobile: {application.reference2.get('mobile', '')}<br>
-                Email: {application.reference2.get('email', '')}<br>
-                Address: {application.reference2.get('address', '')}</p>
-            </div>
-
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-            <p style="color: #666; font-size: 12px;">Application ID: #{application.id}<br>
-            Submitted at: {application.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
-
-            <div style="margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
-                <p style="margin: 0; font-weight: bold; color: #1976d2;">Please review this application in the admin dashboard.</p>
-            </div>
-        </div>
-        """
-
-        # Also include plain text version for better compatibility
-        plain_text_content = f"""
-        New Incubation Application Received
-
-        Business Details:
-        - Business Name: {application.businessName}
-        - Business Type: {application.businessType}
-        - Legal Entity: {application.legalEntity}
-        - Business Description: {application.businessDescription}
-
-        Personal Details:
-        - Full Name: {application.salutation} {application.fullName}
-        - Father's Name: {application.fatherName}
-        - Age: {application.age}
-        - Email: {application.email}
-        - Residential Mobile: {application.resMobile}
-        - Office Mobile: {application.offMobile or 'N/A'}
-
-        Address:
-        {application.address}
-        {application.city}, {application.state} - {application.post}
-        {application.country}
-
-        Business Information:
-        - Services Required: {format_services()}
-        - Number of Chairs: {application.numChairs or 'N/A'}
-        - Full-time Employees: {application.fullTimeEmployees or 'N/A'}
-        - Part-time Employees: {application.partTimeEmployees or 'N/A'}
-        - Consultants: {application.consultants or 'N/A'}
-
-        References:
-        Reference 1: {application.reference1}
-        Reference 2: {application.reference2}
-
-        Application ID: #{application.id}
-        Submitted at: {application.created_at.strftime('%Y-%m-%d %H:%M:%S')}
-        """
-
-        recipient_list = [ceo.email]
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@tcetbi.edu')
-        if admin_email and admin_email not in recipient_list:
-            recipient_list.append(admin_email)
-            print(f"Adding admin {admin_email} to notification recipient list")
-
-        # Send unified HTML + plain text email
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=plain_text_content,
-            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
-            to=recipient_list,
-        )
-        msg.attach_alternative(application_data, "text/html")
-        msg.send()
-
-        print(f"Email notification sent successfully to CEO: {ceo.email} for application #{application.id}")
-
-    except Exception as e:
-        print(f"Error sending email notification to CEO: {e}")
-        # DON'T create a notification for email errors - just log them
-        # This was causing duplicate notifications!
+from .utils.email_utils import send_incubation_email_to_ceo, send_approval_email, send_user_approval_email
 
 @api_view(["POST"])
 @parser_classes([MultiPartParser, FormParser])
@@ -355,115 +212,92 @@ def submit_incubation(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_incubation_applications(request):
-    applications = IncubationApplication.objects.order_by("-created_at")
-    data = IncubationSerializer(applications, many=True).data
+    """
+    Get all incubation applications. Returning FormSubmissions (dynamic) 
+    instead of just IncubationApplication model to allow the admin dashboard 
+    to be truly dynamic.
+    """
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    submissions = FormSubmission.objects.filter(
+        form_template__form_type='incubation_application'
+    ).select_related('form_template', 'user').prefetch_related('field_values', 'field_values__field').order_by("is_read", "-created_at")
+    
+    print(f"DEBUG: Found {submissions.count()} incubation applications")
+    
+    from .serializers import FormSubmissionSerializer
+    data = FormSubmissionSerializer(submissions, many=True).data
+    
     return Response({"applications": data})
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def update_application_status(request, id):
+    """
+    Update incubation application status (using FormSubmission ID).
+    """
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
-        app = IncubationApplication.objects.get(id=id)
+        submission = FormSubmission.objects.get(id=id)
         new_status = request.data.get("status")
         if new_status in ["pending", "approved", "rejected"]:
-            old_status = app.status
-            app.status = new_status
-            app.save()
+            old_status = submission.status
+            submission.status = new_status
+            submission.save()
 
             if new_status == "approved" and old_status != "approved":
-                import secrets
-                # 1. Create User if not exists
-                user = AppUser.objects.filter(email=app.email).first()
-                temp_password = None
-                
-                if not user:
-                    temp_password = secrets.token_urlsafe(10)
-                    user = AppUser.objects.create_user(
-                        username=app.email, # Use email as username
-                        email=app.email,
-                        password=temp_password,
-                        full_name=app.fullName,
-                        phone=app.resMobile,
-                        status='approved',
-                        must_change_password=True
-                    )
-                    print(f"[OK] Created new user {user.email} from application #{app.id}")
-                else:
-                    # If user exists, ensure they are approved
-                    if user.status != 'approved':
-                        user.status = 'approved'
-                        user.save()
-                    print(f"[INFO] User {user.email} already exists for application #{app.id}")
-
-                # 2. Create Company Request Draft if not exists for this user
-                if not UserCompanyRequest.objects.filter(user=user, name=app.businessName).exists():
-                    UserCompanyRequest.objects.create(
-                        user=user,
-                        name=app.businessName,
-                        description=app.businessDescription,
-                        sector=app.businessType,
-                        location=f"{app.city}, {app.state}",
-                        ceo_name=app.fullName,
-                        status='draft'
-                    )
-                    print(f"[OK] Created company request draft for {app.businessName}")
-
-                # 3. Send Email with credentials if new user was created
-                if temp_password:
+                # Only for incubation applications
+                if submission.form_template.form_type == 'incubation_application':
+                    # Map dynamic fields to send approval email
+                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    
+                    email = field_values.get('email').value if field_values.get('email') else None
+                    fullName = field_values.get('fullName').value if field_values.get('fullName') else 'User'
+                    businessName = field_values.get('businessName').value if field_values.get('businessName') else 'Startup'
+                    businessDescription = field_values.get('businessDescription').value if field_values.get('businessDescription') else ''
+                    businessType = field_values.get('businessType').value if field_values.get('businessType') else ''
+                    city = field_values.get('city').value if field_values.get('city') else ''
+                    state = field_values.get('state').value if field_values.get('state') else ''
+                    resMobile = field_values.get('resMobile').value if field_values.get('resMobile') else ''
+                    
+                    if email:
+                        send_approval_email(email, fullName, businessName, businessDescription, businessType, city, state, resMobile)
+                    
+                    # Also try to update the synced IncubationApplication if it exists (by search since they aren't FK'd)
                     try:
-                        subject = "Welcome to TCETBI - Your Incubation Application is Approved!"
-                        context = {
-                            'full_name': app.fullName,
-                            'business_name': app.businessName,
-                            'email': app.email,
-                            'password': temp_password,
-                            'login_url': f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/auth"
-                        }
-                        
-                        html_content = f"""
-                        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                            <h2 style="color: #1976d2;">Congratulations!</h2>
-                            <p>Dear {app.fullName},</p>
-                            <p>We are pleased to inform you that your application for incubation for <strong>{app.businessName}</strong> at TCETBI has been <strong>approved</strong>!</p>
-                            
-                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
-                                <h3 style="margin-top: 0; color: #1976d2;">Your Account Credentials</h3>
-                                <p>An account has been created for you to manage your incubation journey.</p>
-                                <p><strong>Login Email:</strong> {app.email}</p>
-                                <p><strong>Temporary Password:</strong> <span style="font-family: monospace; background: #eee; padding: 2px 5px;">{temp_password}</span></p>
-                                <p style="color: #d32f2f; font-size: 14px;"><em>* Note: You will be required to change this password on your first login.</em></p>
-                            </div>
-                            
-                            <p>You can now log in to the TCETBI portal to complete your startup profile and access our resources.</p>
-                            
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="{context['login_url']}" style="background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login to Portal</a>
-                            </div>
-                            
-                            <p style="margin-top: 30px;">Best regards,<br>The TCETBI Team</p>
-                        </div>
-                        """
-                        
-                        plain_text = f"Congratulations {app.fullName}! Your incubation application for {app.businessName} has been approved. Your login email is {app.email} and your temporary password is {temp_password}. Please change your password on first login at {context['login_url']}"
-                        
-                        msg = EmailMultiAlternatives(
-                            subject=subject,
-                            body=plain_text,
-                            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
-                            to=[app.email],
-                        )
-                        msg.attach_alternative(html_content, "text/html")
-                        msg.send()
-                        print(f"[EMAIL] Approval email sent to {app.email}")
-                    except Exception as e:
-                        print(f"[ERROR] Failed to send approval email: {e}")
+                        inc_app = IncubationApplication.objects.filter(email=email, businessName=businessName).order_by('-created_at').first()
+                        if inc_app:
+                            inc_app.status = 'approved'
+                            inc_app.save()
+                    except:
+                        pass
 
             return Response({"message": f"Application {new_status}"})
         else:
             return Response({"error": "Invalid status"}, status=400)
-    except IncubationApplication.DoesNotExist:
-        return Response({"error": "Not found"}, status=404)
+    except FormSubmission.DoesNotExist:
+        return Response({"error": "Submission not found"}, status=404)
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_application_as_read(request, id):
+    """
+    Mark an application (FormSubmission) as read.
+    """
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        submission = FormSubmission.objects.get(id=id)
+        submission.is_read = True
+        submission.save()
+        return Response({"message": "Application marked as read"})
+    except FormSubmission.DoesNotExist:
+        return Response({"error": "Submission not found"}, status=404)
 
 
 # Authentication Views
@@ -769,8 +603,13 @@ def update_user_status(request, user_id):
         user = AppUser.objects.get(id=user_id)
         new_status = request.data.get('status')
         if new_status in ['pending', 'approved', 'blocked']:
+            old_status = user.status
             user.status = new_status
             user.save()
+            
+            if new_status == 'approved' and old_status != 'approved':
+                send_user_approval_email(user)
+                
             return Response({'message': f'User status updated to {new_status}'})
         else:
             return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)

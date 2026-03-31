@@ -15,6 +15,8 @@ import {
   Paper,
   Chip,
   FormHelperText,
+  Radio,
+  RadioGroup,
 } from '@mui/material';
 import { CloudUpload, Send, CheckCircle } from '@mui/icons-material';
 import { toast } from 'sonner';
@@ -302,12 +304,12 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
 
           {field.field_type === 'select' && (
             <Box>
-              <FormControl fullWidth error={hasError}>
-                <InputLabel>{field.label}</InputLabel>
+              <FormControl fullWidth error={hasError} required={field.is_required}>
+                <InputLabel>{`${field.label}${field.is_required ? ' *' : ''}`}</InputLabel>
                 <Select
                   value={formData[field.field_name] || ''}
                   onChange={(e) => handleInputChange(field.field_name, e.target.value)}
-                  label={field.label}
+                  label={`${field.label}${field.is_required ? ' *' : ''}`}
                   required={field.is_required}
                   size="medium"
                 >
@@ -369,6 +371,37 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
                   {errors[field.field_name] || field.help_text}
                 </Typography>
               )}
+            </Box>
+          )}
+
+          {field.field_type === 'radio' && (
+            <Box>
+              <FormControl component="fieldset" error={hasError} required={field.is_required}>
+                <Typography variant="body1" sx={{ mb: 1, color: hasError ? 'error.main' : 'text.primary', fontWeight: 500 }}>
+                  {field.label} {field.is_required && '*'}
+                </Typography>
+                <RadioGroup
+                  value={formData[field.field_name] || ''}
+                  onChange={(e) => handleInputChange(field.field_name, e.target.value)}
+                >
+                  <Grid container spacing={1}>
+                    {field.options?.map((option) => (
+                      <Grid size={{ xs: 12, sm: 6 }} key={option}>
+                        <FormControlLabel 
+                          value={option} 
+                          control={<Radio sx={{ color: 'hsl(var(--primary))', '&.Mui-checked': { color: 'hsl(var(--primary))' } }} />} 
+                          label={option} 
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </RadioGroup>
+                {(errors[field.field_name] || field.help_text) && (
+                  <FormHelperText sx={{ ml: 0 }}>
+                    {errors[field.field_name] || field.help_text}
+                  </FormHelperText>
+                )}
+              </FormControl>
             </Box>
           )}
 

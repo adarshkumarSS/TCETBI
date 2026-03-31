@@ -439,7 +439,7 @@ export const FormBuilder = () => {
               />
             </Grid>
             
-            {(currentField?.field_type === 'select' || currentField?.field_type === 'radio') && (
+            {(currentField?.field_type === 'select' || currentField?.field_type === 'radio' || currentField?.field_type === 'checkbox') && (
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3, bgcolor: 'hsl(var(--muted) / 0.3)', borderRadius: '12px' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
@@ -448,15 +448,15 @@ export const FormBuilder = () => {
                   <TextField
                     fullWidth
                     label="Options (comma-separated)"
-                    value={currentField?.options?.join(', ') || ''}
-                    onChange={(e) =>
+                    defaultValue={currentField?.options?.join(', ') || ''}
+                    onBlur={(e) =>
                       setCurrentField({
                         ...currentField,
                         options: e.target.value.split(',').map((s) => s.trim()).filter(s => s),
                       })
                     }
                     placeholder="Option 1, Option 2, Option 3"
-                    helperText="Separate each option with a comma"
+                    helperText="Separate each option with a comma. Changes apply when you click outside the field."
                     multiline
                     rows={3}
                   />

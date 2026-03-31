@@ -44,3 +44,14 @@ export const updateApplicationStatus = async (id: number, status: string) => {
     throw error.response?.data || { error: "Something went wrong" };
   }
 };
+
+export const markApplicationAsRead = async (id: number) => {
+  try {
+    const res = await axios.post(`${BASE_URL}/incubation-applications/${id}/read/`, {}, {
+      headers: getAuthHeaders()
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error("Failed to mark as read:", error);
+  }
+};

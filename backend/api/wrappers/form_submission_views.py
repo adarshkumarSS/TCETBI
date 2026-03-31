@@ -5,8 +5,10 @@ from rest_framework import status
 from django.db import transaction
 import cloudinary.uploader
 
-from ..models import FormTemplate, FormField, FormSubmission, FormFieldValue, Notification
+from ..models import FormTemplate, FormField, FormSubmission, FormFieldValue, Notification, IncubationApplication
 from ..serializers import FormTemplateSerializer, FormSubmissionSerializer
+from ..utils.email_utils import send_incubation_email_to_ceo, send_approval_email
+import json
 
 
 @api_view(['GET'])
@@ -99,11 +101,69 @@ def submit_form(request, form_type):
         
         # Create notification
         Notification.objects.create(
-            type='general',
+            type='application' if form_type == 'incubation_application' else 'general',
             title=f'New {template.name} Submission',
-            message=f'A new {template.name} has been submitted.',
+            message=f'A new {template.name} has been submitted by {form_data.get("fullName", "User")}.',
             meta={'submission_id': submission.id, 'form_type': form_type}
         )
+
+        # SPECIAL HANDLING FOR INCUBATION APPLICATION
+        if form_type == 'incubation_application':
+            try:
+                # Gather all values into a dict for mapping
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                
+                # Map dynamic fields to IncubationApplication model
+                inc_app = IncubationApplication.objects.create(
+                    businessName=field_values.get('businessName').value if field_values.get('businessName') else 'N/A',
+                    salutation=field_values.get('salutation').value if field_values.get('salutation') else 'Mr',
+                    fullName=field_values.get('fullName').value if field_values.get('fullName') else 'N/A',
+                    fatherName=field_values.get('fatherName').value if field_values.get('fatherName') else 'N/A',
+                    age=int(field_values.get('age').value) if field_values.get('age') and field_values.get('age').value.isdigit() else 0,
+                    email=field_values.get('email').value if field_values.get('email') else 'N/A',
+                    resMobile=field_values.get('resMobile').value if field_values.get('resMobile') else 'N/A',
+                    offMobile=field_values.get('offMobile').value if field_values.get('offMobile') else None,
+                    address=field_values.get('address').value if field_values.get('address') else 'N/A',
+                    city=field_values.get('city').value if field_values.get('city') else 'N/A',
+                    state=field_values.get('state').value if field_values.get('state') else 'N/A',
+                    post=field_values.get('post').value if field_values.get('post') else 'N/A',
+                    country=field_values.get('country').value if field_values.get('country') else 'N/A',
+                    businessType=field_values.get('businessType').value if field_values.get('businessType') else 'Other',
+                    legalEntity=field_values.get('legalEntity').value if field_values.get('legalEntity') else 'Other',
+                    businessDescription=field_values.get('businessDescription').value if field_values.get('businessDescription') else 'N/A',
+                    numChairs=int(field_values.get('numChairs').value) if field_values.get('numChairs') and field_values.get('numChairs').value.isdigit() else None,
+                    fullTimeEmployees=int(field_values.get('fullTimeEmployees').value) if field_values.get('fullTimeEmployees') and field_values.get('fullTimeEmployees').value.isdigit() else None,
+                    partTimeEmployees=int(field_values.get('partTimeEmployees').value) if field_values.get('partTimeEmployees') and field_values.get('partTimeEmployees').value.isdigit() else None,
+                    consultants=int(field_values.get('consultants').value) if field_values.get('consultants') and field_values.get('consultants').value.isdigit() else None,
+                    declaration=True if field_values.get('declaration') and field_values.get('declaration').value.lower() == 'true' else False,
+                    profile_image=field_values.get('profile_image').file_url if field_values.get('profile_image') else None,
+                    resume_pdf=field_values.get('resume').file_url if field_values.get('resume') else None,
+                )
+                
+                # Map References
+                reference1 = {
+                    "name": field_values.get('reference1Name').value if field_values.get('reference1Name') else '',
+                    "mobile": field_values.get('reference1Mobile').value if field_values.get('reference1Mobile') else '',
+                    "email": field_values.get('reference1Email').value if field_values.get('reference1Email') else '',
+                    "address": field_values.get('reference1Address').value if field_values.get('reference1Address') else '',
+                }
+                reference2 = {
+                    "name": field_values.get('reference2Name').value if field_values.get('reference2Name') else '',
+                    "mobile": field_values.get('reference2Mobile').value if field_values.get('reference2Mobile') else '',
+                    "email": field_values.get('reference2Email').value if field_values.get('reference2Email') else '',
+                    "address": field_values.get('reference2Address').value if field_values.get('reference2Address') else '',
+                }
+                inc_app.reference1 = reference1
+                inc_app.reference2 = reference2
+                inc_app.save()
+                
+                # Send email to CEO/Admin
+                send_incubation_email_to_ceo(inc_app)
+                print(f"[RE-SYNC] Created IncubationApplication #{inc_app.id} from FormSubmission #{submission.id}")
+                
+            except Exception as inc_err:
+                print(f"[ERROR] Failed to re-sync incubation application: {inc_err}")
+                # Don't fail the whole request if re-sync fails
         
         serializer = FormSubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -165,7 +225,35 @@ def update_submission_status(request, submission_id):
         admin_notes = request.data.get('admin_notes')
         
         if new_status:
+            old_status = submission.status
             submission.status = new_status
+            
+            # SPECIAL HANDLING FOR INCUBATION APPROVAL
+            if submission.form_template.form_type == 'incubation_application' and new_status == 'approved' and old_status != 'approved':
+                # Map dynamic fields to send approval email
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                
+                email = field_values.get('email').value if field_values.get('email') else None
+                fullName = field_values.get('fullName').value if field_values.get('fullName') else 'User'
+                businessName = field_values.get('businessName').value if field_values.get('businessName') else 'Startup'
+                businessDescription = field_values.get('businessDescription').value if field_values.get('businessDescription') else ''
+                businessType = field_values.get('businessType').value if field_values.get('businessType') else ''
+                city = field_values.get('city').value if field_values.get('city') else ''
+                state = field_values.get('state').value if field_values.get('state') else ''
+                resMobile = field_values.get('resMobile').value if field_values.get('resMobile') else ''
+                
+                if email:
+                    send_approval_email(email, fullName, businessName, businessDescription, businessType, city, state, resMobile)
+                    
+                    # Also try to update the linked IncubationApplication if it exists (by search since they aren't FK'd)
+                    try:
+                        inc_app = IncubationApplication.objects.filter(email=email, businessName=businessName).order_by('-created_at').first()
+                        if inc_app:
+                            inc_app.status = 'approved'
+                            inc_app.save()
+                    except:
+                        pass
+
         if admin_notes is not None:
             submission.admin_notes = admin_notes
         
