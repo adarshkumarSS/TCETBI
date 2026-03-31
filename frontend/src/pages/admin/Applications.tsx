@@ -3,9 +3,17 @@ import { Box, Typography, Modal, Backdrop, Fade, IconButton, Avatar, TextField, 
 import { Search as SearchIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
-import { Check, X, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, X, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getIncubationApplications, updateApplicationStatus, markApplicationAsRead } from "@/api/incubationService";
+import { 
+  getIncubationApplications, 
+  updateApplicationStatus, 
+  markApplicationAsRead, 
+  deleteIncubationApplication,
+  bulkDeleteIncubationApplications
+} from "@/api/incubationService";
+import { toast } from "sonner";
+import { Checkbox } from "@mui/material";
 
 interface FieldValue {
   id: number;
@@ -14,6 +22,7 @@ interface FieldValue {
   field_name: string;
   value: string;
   file_url: string | null;
+  is_main_title?: boolean;
 }
 
 interface Application {
@@ -25,6 +34,7 @@ interface Application {
   created_at: string;
   field_values: FieldValue[];
   user_details?: any;
+  main_title?: string;
 }
 
 export const Applications = () => {
@@ -39,6 +49,7 @@ export const Applications = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -70,31 +81,39 @@ export const Applications = () => {
     }
   }, [isAuthenticated]);
 
-  // Helper to get field value by name
   const getVal = (app: Application, fieldName: string) => {
     return app.field_values.find(fv => fv.field_name === fieldName)?.value || "";
   };
 
+  const getHeading = (app: Application | null) => {
+    if (!app) return 'Unnamed Venture';
+    return app.main_title || 'Unnamed Venture';
+  };
+
   useEffect(() => {
     const filtered = applications.filter(app => {
-      const bName = getVal(app, 'businessName');
-      const fName = getVal(app, 'fullName');
-      const email = getVal(app, 'email');
-      const bType = getVal(app, 'businessType');
-
+      const search = searchTerm.toLowerCase();
+      
+      // Filter by status
       if (statusFilter !== "all" && app.status !== statusFilter) {
         return false;
       }
 
+      // Filter by search term
       if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        return (
-          bName.toLowerCase().includes(search) ||
-          fName.toLowerCase().includes(search) ||
-          email.toLowerCase().includes(search) ||
-          bType.toLowerCase().includes(search) ||
-          app.status.toLowerCase().includes(search)
+        // Check all field values
+        const hasSearchInFields = app.field_values.some(fv => 
+          fv.value?.toLowerCase().includes(search) || 
+          fv.field_label?.toLowerCase().includes(search)
         );
+
+        // Also check status and user details if available
+        const hasSearchInMeta = 
+          app.status.toLowerCase().includes(search) ||
+          app.main_title?.toLowerCase().includes(search) ||
+          app.form_name?.toLowerCase().includes(search);
+
+        return hasSearchInFields || hasSearchInMeta;
       }
 
       return true;
@@ -158,6 +177,57 @@ export const Applications = () => {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation(); // Avoid opening the modal
+    if (!window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) return;
+    
+    try {
+      setLoading(true);
+      await deleteIncubationApplication(id);
+      setApplications(prev => prev.filter(app => app.id !== id));
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      toast.success("Application deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete application:", error);
+      toast.error("Failed to delete application");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} applications? This action cannot be undone.`)) return;
+
+    try {
+      setLoading(true);
+      await bulkDeleteIncubationApplications(selectedIds);
+      setApplications(prev => prev.filter(app => !selectedIds.includes(app.id)));
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} applications deleted successfully`);
+    } catch (error) {
+      console.error("Failed to bulk delete applications:", error);
+      toast.error("Failed to bulk delete applications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredApplications.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredApplications.map(app => app.id));
+    }
+  };
+
+  const toggleSelect = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   if (isAuthLoading) {
     return (
       <Box sx={{ minHeight: "100vh", backgroundColor: "hsl(var(--background))", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -174,14 +244,56 @@ export const Applications = () => {
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "hsl(var(--background))", pt: 12, px: 4 }}>
       <Box sx={{ maxWidth: "1200px", mx: "auto" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
-          <IconButton onClick={() => navigate("/admin")} sx={{ color: "hsl(var(--foreground))", "&:hover": { backgroundColor: "hsl(var(--muted))" } }}>
-            <ArrowLeft size={24} />
-          </IconButton>
-          <Typography variant="h4" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, color: "hsl(var(--foreground))" }}>
-            Incubation Applications
-          </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton onClick={() => navigate("/admin")} sx={{ color: "hsl(var(--foreground))", "&:hover": { backgroundColor: "hsl(var(--muted))" } }}>
+              <ArrowLeft size={24} />
+            </IconButton>
+            <Typography variant="h4" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, color: "hsl(var(--foreground))" }}>
+              Incubation Applications
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            {selectedIds.length > 0 && (
+              <DarkButton 
+                onClick={handleBulkDelete}
+                sx={{ bgcolor: 'hsl(var(--destructive))', color: 'white', '&:hover': { bgcolor: 'hsl(var(--destructive) / 0.9)' } }}
+              >
+                Delete Selected ({selectedIds.length})
+              </DarkButton>
+            )}
+            <Box sx={{ position: "relative" }}>
+              <SearchIcon size={20} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "hsl(var(--muted-foreground))" }} />
+              <input
+                type="text"
+                placeholder="Search applications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: "10px 12px 10px 40px",
+                  borderRadius: "12px",
+                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "hsl(var(--card))",
+                  color: "hsl(var(--foreground))"
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
+
+        {filteredApplications.length > 0 && (
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Checkbox 
+              checked={selectedIds.length === filteredApplications.length && filteredApplications.length > 0}
+              indeterminate={selectedIds.length > 0 && selectedIds.length < filteredApplications.length}
+              onChange={toggleSelectAll}
+              sx={{ color: 'hsl(var(--primary))', '&.Mui-checked': { color: 'hsl(var(--primary))' }, '&.MuiCheckbox-indeterminate': { color: 'hsl(var(--primary))' } }}
+            />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'hsl(var(--muted-foreground))' }}>
+              Select All Applications
+            </Typography>
+          </Box>
+        )}
 
         <Box sx={{ mb: 3 }}>
           <TextField
@@ -226,16 +338,37 @@ export const Applications = () => {
             {filteredApplications.map((app) => (
               <Card key={app.id} className={`cursor-pointer hover:shadow-lg transition-shadow ${!app.is_read ? 'border-primary/50' : ''}`} onClick={() => handleOpen(app)}>
                 <CardHeader>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <CardTitle className={!app.is_read ? 'font-bold text-primary' : 'font-semibold'}>
-                      {getVal(app, 'businessName') || 'Unnamed Venture'}
-                    </CardTitle>
-                    {!app.is_read && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ px: 1, py: 0.25, bgcolor: 'hsl(var(--primary))', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>NEW</Box>
-                        <Box sx={{ width: 8, height: 8, bgcolor: 'hsl(var(--primary))', borderRadius: '50%' }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                      <Checkbox 
+                        checked={selectedIds.includes(app.id)}
+                        onClick={(e) => toggleSelect(e, app.id)}
+                        sx={{ mt: -0.5, p: 0.5, color: 'hsl(var(--primary))', '&.Mui-checked': { color: 'hsl(var(--primary))' } }}
+                      />
+                      <Box>
+                        <CardTitle className={!app.is_read ? 'font-bold text-primary' : 'font-semibold'}>
+                          {getHeading(app)}
+                        </CardTitle>
                       </Box>
-                    )}
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {!app.is_read && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ px: 1, py: 0.25, bgcolor: 'hsl(var(--primary))', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>NEW</Box>
+                          <Box sx={{ width: 8, height: 8, bgcolor: 'hsl(var(--primary))', borderRadius: '50%' }} />
+                        </Box>
+                      )}
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => handleDelete(e, app.id)}
+                        sx={{ 
+                          color: 'hsl(var(--muted-foreground))', 
+                          '&:hover': { color: 'hsl(var(--destructive))', bgcolor: 'hsl(var(--destructive) / 0.1)' } 
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Box>
                   </Box>
                 </CardHeader>
                 <CardContent>
@@ -255,7 +388,7 @@ export const Applications = () => {
               {selectedApp && (
                 <>
                   <Box sx={{ mb: 4, pb: 2, borderBottom: '1px solid hsl(var(--border))' }}>
-                    <Typography variant="h5" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, mb: 1 }}>{getVal(selectedApp, 'businessName')}</Typography>
+                    <Typography variant="h5" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, mb: 1 }}>{getHeading(selectedApp)}</Typography>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ px: 1.5, py: 0.5, borderRadius: 'full', bgcolor: selectedApp.status === 'approved' ? '#dcfce7' : selectedApp.status === 'rejected' ? '#fee2e2' : '#f3f4f6', color: selectedApp.status === 'approved' ? '#166534' : selectedApp.status === 'rejected' ? '#991b1b' : '#374151', textTransform: 'capitalize', fontWeight: 600 }}>
                         {selectedApp.status}
@@ -280,11 +413,11 @@ export const Applications = () => {
                     </Box>
                   ))}
 
-                  {selectedApp.field_values.filter(fv => fv.field_type === 'file').length > 0 && (
+                  {selectedApp.field_values.filter(fv => fv.field_type === 'file' && fv.file_url).length > 0 && (
                     <Box sx={{ mt: 4 }}>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "hsl(var(--primary))" }}>Attachments</Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        {selectedApp.field_values.filter(fv => fv.field_type === 'file').map(fv => (
+                        {selectedApp.field_values.filter(fv => fv.field_type === 'file' && fv.file_url).map(fv => (
                           <Box key={fv.id} sx={{ p: 2, border: '1px solid hsl(var(--border))', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 2, minWidth: '200px' }}>
                             {fv.file_url && (fv.file_url.endsWith('.png') || fv.file_url.endsWith('.jpg') || fv.file_url.endsWith('.jpeg')) ? (
                               <Avatar src={fv.file_url} variant="rounded" sx={{ width: 40, height: 40 }} />

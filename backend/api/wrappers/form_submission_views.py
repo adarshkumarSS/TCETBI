@@ -8,6 +8,7 @@ import cloudinary.uploader
 from ..models import FormTemplate, FormField, FormSubmission, FormFieldValue, Notification, IncubationApplication
 from ..serializers import FormTemplateSerializer, FormSubmissionSerializer
 from ..utils.email_utils import send_incubation_email_to_ceo, send_approval_email
+from ..utils.drive_utils import upload_to_drive
 import json
 
 
@@ -82,14 +83,41 @@ def submit_form(request, form_type):
             # Handle file uploads
             if field.field_type == 'file' and field_name in files:
                 file = files[field_name]
-                folder = f"TCETBI/FormSubmissions/{form_type}"
-                upload_result = cloudinary.uploader.upload(
-                    file,
-                    folder=folder,
-                    resource_type="auto"
-                )
-                file_url = upload_result.get('secure_url')
-                value = file.name
+                ext = file.name.split('.')[-1].lower() if '.' in file.name else ''
+                is_image = ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
+                
+                if is_image:
+                    # Upload images to Cloudinary
+                    folder = f"TCETBI/FormSubmissions/{form_type}/Images"
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder=folder,
+                        resource_type="image"
+                    )
+                    file_url = upload_result.get('secure_url')
+                    value = file.name
+                else:
+                    # Upload non-images to Google Drive
+                    print(f"[DRIVE-DEBUG] Attempting upload for {file.name}")
+                    drive_view_link, drive_file_id = upload_to_drive(file, file.name)
+                    if drive_view_link:
+                        print(f"[DRIVE-DEBUG] SUCCESS: {drive_view_link}")
+                        file_url = drive_view_link
+                        value = f"{file.name} (G-Drive)"
+                    else:
+                        print(f"[DRIVE-DEBUG] FAILED, falling back to Cloudinary")
+                        # Reset file pointer before fallback in case Drive read it
+                        file.seek(0)
+                        # Fallback to Cloudinary auto if Drive fails
+                        folder = f"TCETBI/FormSubmissions/{form_type}/Documents"
+                        upload_result = cloudinary.uploader.upload(
+                            file,
+                            folder=folder,
+                            resource_type="auto"
+                        )
+                        file_url = upload_result.get('secure_url')
+                        print(f"[CLOUDINARY-DEBUG] Fallback URL: {file_url}")
+                        value = file.name
             
             # Create field value
             FormFieldValue.objects.create(

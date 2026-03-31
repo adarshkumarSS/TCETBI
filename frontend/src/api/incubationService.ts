@@ -55,3 +55,25 @@ export const markApplicationAsRead = async (id: number) => {
     console.error("Failed to mark as read:", error);
   }
 };
+
+export const deleteIncubationApplication = async (id: number) => {
+  try {
+    const res = await axios.delete(`${BASE_URL}/incubation-applications/${id}/delete/`, {
+      headers: getAuthHeaders()
+    });
+    return res.data;
+  } catch (error: any) {
+    throw error.response?.data || { error: "Something went wrong" };
+  }
+};
+
+export const bulkDeleteIncubationApplications = async (ids: number[]) => {
+  try {
+    const res = await axios.post(`${BASE_URL}/incubation-applications/bulk-delete/`, { ids }, {
+      headers: getAuthHeaders()
+    });
+    return res.data;
+  } catch (error: any) {
+    throw error.response?.data || { error: "Something went wrong" };
+  }
+};

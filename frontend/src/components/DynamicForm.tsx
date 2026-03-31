@@ -62,7 +62,8 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
       const initialData: Record<string, any> = {};
       data.fields?.forEach((field: FormFieldData) => {
         if (field.field_type === 'checkbox') {
-          initialData[field.field_name] = false;
+          // If it has options, it's a multi-checkbox (array), otherwise single (boolean)
+          initialData[field.field_name] = field.options && field.options.length > 0 ? [] : false;
         } else {
           initialData[field.field_name] = '';
         }
@@ -82,13 +83,69 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
     }
   };
 
-  const handleFileChange = (fieldName: string, file: File | null) => {
-    if (file) {
-      setFiles({ ...files, [fieldName]: file });
-      setFormData({ ...formData, [fieldName]: file.name });
+  const handleFileChange = (fieldName: string, file: File | null, field: FormFieldData) => {
+    if (!file) return;
+
+    // Check validation rules
+    if (field.validation_rules) {
+      const { allowed_file_types, max_file_size } = field.validation_rules;
+      
+      // Type validation
+      if (allowed_file_types && allowed_file_types.length > 0) {
+        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+        if (!allowed_file_types.map(t => t.toLowerCase()).includes(fileExtension)) {
+          toast.error(`Invalid file type. Allowed types: ${allowed_file_types.join(', ')}`);
+          setErrors({ ...errors, [fieldName]: `Please upload a file with these extensions: ${allowed_file_types.join(', ')}` });
+          // Clear file from state on failure
+          setFiles(prev => {
+            const next = { ...prev };
+            delete next[fieldName];
+            return next;
+          });
+          setFormData(prev => ({ ...prev, [fieldName]: '' }));
+          return;
+        }
+      }
+
+      // Size validation
+      if (max_file_size) {
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > max_file_size) {
+          toast.error(`File too large. Max size: ${max_file_size}MB`);
+          setErrors({ ...errors, [fieldName]: `File must be smaller than ${max_file_size}MB` });
+          // Clear file from state on failure
+          setFiles(prev => {
+            const next = { ...prev };
+            delete next[fieldName];
+            return next;
+          });
+          setFormData(prev => ({ ...prev, [fieldName]: '' }));
+          return;
+        }
+      }
+    }
+
+    setFiles({ ...files, [fieldName]: file });
+    setFormData({ ...formData, [fieldName]: file.name });
+    if (errors[fieldName]) {
+      setErrors({ ...errors, [fieldName]: '' });
     }
   };
 
+  const handleCheckboxChange = (fieldName: string, option: string, checked: boolean) => {
+    const currentValues = Array.isArray(formData[fieldName]) ? [...formData[fieldName]] : [];
+    if (checked) {
+      if (!currentValues.includes(option)) currentValues.push(option);
+    } else {
+      const index = currentValues.indexOf(option);
+      if (index > -1) currentValues.splice(index, 1);
+    }
+    setFormData({ ...formData, [fieldName]: currentValues });
+    if (errors[fieldName]) {
+      setErrors({ ...errors, [fieldName]: '' });
+    }
+  };
+      
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -127,7 +184,10 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
       
       // Add regular form data
       Object.keys(formData).forEach((key) => {
-        if (!files[key]) {
+        const field = fields.find(f => f.field_name === key);
+        // Only append if it's not a file field OR if a file actually exists for it
+        // This prevents sending filenames as strings or empty strings for missing files
+        if (field?.field_type !== 'file') {
           submitData.append(key, formData[key]);
         }
       });
@@ -330,23 +390,48 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
 
           {field.field_type === 'checkbox' && (
             <Box>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData[field.field_name] || false}
-                    onChange={(e) => handleInputChange(field.field_name, e.target.checked)}
-                    required={field.is_required}
-                    sx={{
-                      color: 'hsl(var(--primary))',
-                      '&.Mui-checked': { color: 'hsl(var(--primary))' },
-                    }}
-                  />
-                }
-                label={field.label}
-              />
-              {field.help_text && (
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', ml: 4 }}>
-                  {field.help_text}
+              <Typography variant="body1" sx={{ mb: 1, color: hasError ? 'error.main' : 'text.primary', fontWeight: 500 }}>
+                {field.label} {field.is_required && '*'}
+              </Typography>
+              {field.options && field.options.length > 0 ? (
+                <Grid container spacing={1}>
+                  {field.options.map((option) => (
+                    <Grid size={{ xs: 12, sm: 6 }} key={option}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={Array.isArray(formData[field.field_name]) && formData[field.field_name].includes(option)}
+                            onChange={(e) => handleCheckboxChange(field.field_name, option, e.target.checked)}
+                            sx={{
+                              color: 'hsl(var(--primary))',
+                              '&.Mui-checked': { color: 'hsl(var(--primary))' },
+                            }}
+                          />
+                        }
+                        label={option}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData[field.field_name] || false}
+                      onChange={(e) => handleInputChange(field.field_name, e.target.checked)}
+                      required={field.is_required}
+                      sx={{
+                        color: 'hsl(var(--primary))',
+                        '&.Mui-checked': { color: 'hsl(var(--primary))' },
+                      }}
+                    />
+                  }
+                  label="I agree / Yes"
+                />
+              )}
+              {(errors[field.field_name] || field.help_text) && (
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: hasError ? 'error.main' : 'text.secondary', ml: 1 }}>
+                  {errors[field.field_name] || field.help_text}
                 </Typography>
               )}
             </Box>
@@ -426,7 +511,7 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
                 <input
                   type="file"
                   hidden
-                  onChange={(e) => handleFileChange(field.field_name, e.target.files?.[0] || null)}
+                  onChange={(e) => handleFileChange(field.field_name, e.target.files?.[0] || null, field)}
                   required={field.is_required}
                 />
               </Button>
@@ -445,11 +530,23 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
                   size="small"
                 />
               )}
-              {(errors[field.field_name] || field.help_text) && (
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: hasError ? 'error.main' : 'text.secondary', ml: 1 }}>
-                  {errors[field.field_name] || field.help_text}
-                </Typography>
-              )}
+              {(() => {
+                const rules = field.validation_rules;
+                let helperText = field.help_text || '';
+                if (rules) {
+                  const ruleText = [];
+                  if (rules.allowed_file_types?.length) ruleText.push(`Allowed: ${rules.allowed_file_types.join(', ')}`);
+                  if (rules.max_file_size) ruleText.push(`Max size: ${rules.max_file_size}MB`);
+                  if (ruleText.length > 0) {
+                    helperText = helperText ? `${helperText} (${ruleText.join(' | ')})` : ruleText.join(' | ');
+                  }
+                }
+                return (errors[field.field_name] || helperText) && (
+                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: hasError ? 'error.main' : 'text.secondary', ml: 1 }}>
+                    {errors[field.field_name] || helperText}
+                  </Typography>
+                );
+              })()}
             </Box>
           )}
         </motion.div>

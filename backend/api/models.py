@@ -569,6 +569,7 @@ class FormField(models.Model):
     help_text = models.TextField(blank=True, null=True)
     is_required = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
+    is_main_title = models.BooleanField(default=False)
     
     # For dropdown/radio/checkbox options (JSON array)
     options = models.JSONField(default=list, blank=True, null=True)

@@ -13,36 +13,41 @@ def send_incubation_email_to_ceo(application):
             print(f"CEO email not found - CEO object: {ceo}, Email: {ceo.email if ceo else 'N/A'}")
             return
 
-        # Handle both old model and mapped dict from FormSubmission
-        businessName = getattr(application, 'businessName', application.get('businessName', 'N/A'))
-        fullName = getattr(application, 'fullName', application.get('fullName', 'N/A'))
-        salutation = getattr(application, 'salutation', application.get('salutation', 'N/A'))
-        businessType = getattr(application, 'businessType', application.get('businessType', 'N/A'))
-        legalEntity = getattr(application, 'legalEntity', application.get('legalEntity', 'N/A'))
-        businessDescription = getattr(application, 'businessDescription', application.get('businessDescription', 'N/A'))
-        fatherName = getattr(application, 'fatherName', application.get('fatherName', 'N/A'))
-        age = getattr(application, 'age', application.get('age', 'N/A'))
-        email = getattr(application, 'email', application.get('email', 'N/A'))
-        resMobile = getattr(application, 'resMobile', application.get('resMobile', 'N/A'))
-        offMobile = getattr(application, 'offMobile', application.get('offMobile', 'N/A'))
-        address = getattr(application, 'address', application.get('address', 'N/A'))
-        city = getattr(application, 'city', application.get('city', 'N/A'))
-        state = getattr(application, 'state', application.get('state', 'N/A'))
-        post = getattr(application, 'post', application.get('post', 'N/A'))
-        country = getattr(application, 'country', application.get('country', 'N/A'))
-        numChairs = getattr(application, 'numChairs', application.get('numChairs', 'N/A'))
-        fullTimeEmployees = getattr(application, 'fullTimeEmployees', application.get('fullTimeEmployees', 'N/A'))
-        partTimeEmployees = getattr(application, 'partTimeEmployees', application.get('partTimeEmployees', 'N/A'))
-        consultants = getattr(application, 'consultants', application.get('consultants', 'N/A'))
+        # Helper to safely get values from both dict and model
+        def get_val(obj, key, default='N/A'):
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
+        businessName = get_val(application, 'businessName')
+        fullName = get_val(application, 'fullName')
+        salutation = get_val(application, 'salutation')
+        businessType = get_val(application, 'businessType')
+        legalEntity = get_val(application, 'legalEntity')
+        businessDescription = get_val(application, 'businessDescription')
+        fatherName = get_val(application, 'fatherName')
+        age = get_val(application, 'age')
+        email = get_val(application, 'email')
+        resMobile = get_val(application, 'resMobile')
+        offMobile = get_val(application, 'offMobile')
+        address = get_val(application, 'address')
+        city = get_val(application, 'city')
+        state = get_val(application, 'state')
+        post = get_val(application, 'post')
+        country = get_val(application, 'country')
+        numChairs = get_val(application, 'numChairs')
+        fullTimeEmployees = get_val(application, 'fullTimeEmployees')
+        partTimeEmployees = get_val(application, 'partTimeEmployees')
+        consultants = get_val(application, 'consultants')
         
         # Services
-        services = getattr(application, 'services', application.get('services', {}))
+        services = get_val(application, 'services', {})
         
         # References
-        reference1 = getattr(application, 'reference1', application.get('reference1', {}))
-        reference2 = getattr(application, 'reference2', application.get('reference2', {}))
+        reference1 = get_val(application, 'reference1', {})
+        reference2 = get_val(application, 'reference2', {})
         
-        id = getattr(application, 'id', application.get('id', 'N/A'))
+        id = get_val(application, 'id')
         created_at = getattr(application, 'created_at', None)
         created_at_str = created_at.strftime('%Y-%m-%d %H:%M:%S') if created_at and hasattr(created_at, 'strftime') else 'N/A'
 

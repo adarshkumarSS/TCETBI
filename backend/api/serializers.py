@@ -274,6 +274,7 @@ class FormFieldValueSerializer(serializers.ModelSerializer):
     field_label = serializers.CharField(source='field.label', read_only=True)
     field_type = serializers.CharField(source='field.field_type', read_only=True)
     field_name = serializers.CharField(source='field.field_name', read_only=True)
+    is_main_title = serializers.BooleanField(source='field.is_main_title', read_only=True)
     
     class Meta:
         model = FormFieldValue
@@ -285,8 +286,34 @@ class FormSubmissionSerializer(serializers.ModelSerializer):
     form_name = serializers.CharField(source='form_template.name', read_only=True)
     form_type = serializers.CharField(source='form_template.form_type', read_only=True)
     user_details = AppUserSerializer(source='user', read_only=True)
+    main_title = serializers.SerializerMethodField()
     
+    def get_main_title(self, obj):
+        # 1. Try to find field specifically marked as main title
+        main_fv = obj.field_values.filter(field__is_main_title=True).first()
+        if main_fv and main_fv.value:
+            return main_fv.value
+            
+        # 2. Try common field name matches
+        common_names = ['businessName', 'startup_name', 'company_name', 'fullName', 'full_name', 'name']
+        for name in common_names:
+            fv = obj.field_values.filter(field__field_name=name).first()
+            if fv and fv.value:
+                return fv.value
+                
+        # 3. Try to find any field whose label contains 'name'
+        name_fv = obj.field_values.filter(field__label__icontains='name').first()
+        if name_fv and name_fv.value:
+            return name_fv.value
+            
+        # 4. Fallback to any non-empty first text field
+        any_fv = obj.field_values.filter(field__field_type='text').first()
+        if any_fv and any_fv.value:
+            return any_fv.value
+            
+        return 'Unnamed Venture'
+
     class Meta:
         model = FormSubmission
-        fields = ['id', 'form_template', 'user', 'status', 'is_read', 'admin_notes', 'created_at', 'updated_at', 'field_values', 'form_name', 'form_type', 'user_details']
+        fields = ['id', 'form_template', 'user', 'status', 'is_read', 'admin_notes', 'created_at', 'updated_at', 'field_values', 'form_name', 'form_type', 'user_details', 'main_title']
         read_only_fields = ['user', 'created_at', 'updated_at']

@@ -41,6 +41,11 @@ interface FormField {
   is_required: boolean;
   order: number;
   options?: string[];
+  is_main_title: boolean;
+  validation_rules?: {
+    allowed_file_types?: string[];
+    max_file_size?: number; // in MB
+  };
 }
 
 interface FormTemplate {
@@ -97,6 +102,7 @@ export const FormBuilder = () => {
       label: '',
       field_type: 'text',
       is_required: false,
+      is_main_title: false,
       order: selectedTemplate?.fields.length || 0,
     });
     setEditFieldDialog(true);
@@ -411,6 +417,18 @@ export const FormBuilder = () => {
               />
             </Grid>
 
+            <Grid size={{ xs: 12, md: 4 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={currentField?.is_main_title || false}
+                    onChange={(e) => setCurrentField({ ...currentField, is_main_title: e.target.checked })}
+                  />
+                }
+                label="Use as Main Heading"
+              />
+            </Grid>
+
             <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 2, color: 'hsl(var(--primary))' }}>
                 Additional Settings
@@ -438,6 +456,54 @@ export const FormBuilder = () => {
                 placeholder="Provide helpful instructions..."
               />
             </Grid>
+            
+            {currentField?.field_type === 'file' && (
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3, bgcolor: 'hsl(var(--muted) / 0.3)', borderRadius: '12px' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    File Validation Rules
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 8 }}>
+                      <TextField
+                        fullWidth
+                        label="Allowed File Types (comma-separated, e.g., .pdf, .jpg, .png)"
+                        defaultValue={currentField?.validation_rules?.allowed_file_types?.join(', ') || ''}
+                        onBlur={(e) =>
+                          setCurrentField({
+                            ...currentField,
+                            validation_rules: {
+                              ...currentField?.validation_rules,
+                              allowed_file_types: e.target.value.split(',').map((s) => s.trim().startsWith('.') ? s.trim() : '.' + s.trim()).filter(s => s !== '.'),
+                            }
+                          })
+                        }
+                        placeholder=".pdf, .jpg, .png"
+                        helperText="Provide extensions including the dot."
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Max File Size (MB)"
+                        defaultValue={currentField?.validation_rules?.max_file_size || 5}
+                        onBlur={(e) =>
+                          setCurrentField({
+                            ...currentField,
+                            validation_rules: {
+                              ...currentField?.validation_rules,
+                              max_file_size: parseInt(e.target.value) || 5,
+                            }
+                          })
+                        }
+                        placeholder="5"
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            )}
             
             {(currentField?.field_type === 'select' || currentField?.field_type === 'radio' || currentField?.field_type === 'checkbox') && (
               <Grid size={{ xs: 12 }}>

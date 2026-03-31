@@ -300,6 +300,46 @@ def mark_application_as_read(request, id):
         return Response({"error": "Submission not found"}, status=404)
 
 
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_application(request, id):
+    """
+    Delete an incubation application (FormSubmission).
+    """
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        submission = FormSubmission.objects.get(id=id)
+        submission.delete()
+        return Response({"message": "Application deleted successfully"})
+    except FormSubmission.DoesNotExist:
+        return Response({"error": "Submission not found"}, status=404)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def bulk_delete_applications(request):
+    """
+    Delete multiple incubation applications at once.
+    Expected data: {"ids": [1, 2, 3]}
+    """
+    if not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    ids = request.data.get('ids', [])
+    if not ids:
+        return Response({"error": "No IDs provided"}, status=400)
+
+    try:
+        submissions = FormSubmission.objects.filter(id__in=ids)
+        count = submissions.count()
+        submissions.delete()
+        return Response({"message": f"{count} applications deleted successfully"})
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
 # Authentication Views
 def create_admin_user():
     """Create admin user as AppUser instance if it doesn't exist"""

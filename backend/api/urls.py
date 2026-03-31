@@ -18,7 +18,7 @@ from .wrappers.form_submission_views import (
 )
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
-    submit_incubation, get_incubation_applications, update_application_status, mark_application_as_read,
+    submit_incubation, get_incubation_applications, update_application_status, mark_application_as_read, delete_application, bulk_delete_applications,
     admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password, change_user_password,
     user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user,
     get_user_profile, update_user_profile, get_user_company_request, create_or_update_company_request,
@@ -82,6 +82,8 @@ urlpatterns = [
     path("incubation-applications/", get_incubation_applications, name="get_incubation_applications"),
     path("incubation-applications/<int:id>/status/", update_application_status, name="update_application_status"),
     path("incubation-applications/<int:id>/read/", mark_application_as_read, name="mark_application_as_read"),
+    path("incubation-applications/<int:id>/delete/", delete_application, name="delete_application"),
+    path("incubation-applications/bulk-delete/", bulk_delete_applications, name="bulk_delete_applications"),
 
     # Auth endpoints
     path('auth/admin-login/', admin_login, name='admin_login'),
