@@ -167,7 +167,7 @@ class Command(BaseCommand):
                 {'field_name': 'fullName', 'label': 'Full Name', 'field_type': 'text', 'is_required': True, 'order': 7},
                 {'field_name': 'fatherName', 'label': 'Father Name', 'field_type': 'text', 'is_required': True, 'order': 8},
                 {'field_name': 'age', 'label': 'Age', 'field_type': 'number', 'is_required': True, 'order': 9},
-                {'field_name': 'email', 'label': 'Email', 'field_type': 'email', 'is_required': True, 'order': 10, 'help_text': 'This email will be your primary login ID if approved.'},
+                {'field_name': 'email', 'label': 'Email', 'field_type': 'email', 'is_required': True, 'order': 10, 'help_text': 'The Gmail ID provided will be used for future communications and TCETBI portal credentials upon approval.'},
                 {'field_name': 'resMobile', 'label': 'Residential Mobile', 'field_type': 'phone', 'is_required': True, 'order': 11},
                 {'field_name': 'offMobile', 'label': 'Office Mobile', 'field_type': 'phone', 'is_required': False, 'order': 12},
                 {'field_name': 'address', 'label': 'Postal / Residential Address', 'field_type': 'textarea', 'is_required': True, 'order': 13},

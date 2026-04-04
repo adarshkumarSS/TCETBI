@@ -10,6 +10,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supportService } from '../../api/supportService';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const MotionTableRow = motion(TableRow);
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,7 +53,6 @@ export const SupportRequests = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'note'>('note'); // This might be redundant with new dialog logic
   const [requestType, setRequestType] = useState<'funding' | 'mentoring' | 'validation'>('funding');
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export const SupportRequests = () => {
   const handleQuickAction = async (request: any, type: 'funding' | 'mentoring' | 'validation', action: 'approve' | 'reject') => {
     try {
         const status = action === 'approve' ? 'approved' : 'rejected';
-        const data = { status };
+        const data = { status, admin_notes: adminNotes || request.admin_notes };
         
         if (type === 'funding') await supportService.updateFundingStatus(request.id, data);
         else if (type === 'mentoring') await supportService.updateMentoringStatus(request.id, data);
@@ -115,7 +117,6 @@ export const SupportRequests = () => {
 
     try {
       const data = { status: selectedRequest.status, admin_notes: adminNotes };
-      // Here we only update notes essentially if strictly following logic, but let's assume this dialog is for notes mostly if status isn't changed via buttons
       
       if (requestType === 'funding') {
         await supportService.updateFundingStatus(selectedRequest.id, data);
@@ -133,20 +134,23 @@ export const SupportRequests = () => {
     }
   };
 
-  // Helper to filter list
-  const filterList = (list: any[]) => {
-      return list.filter(item => 
-          (item.startup_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-          (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-      );
-  };
-
   const renderRequestView = (
       requests: any[], 
       type: 'funding' | 'mentoring' | 'validation',
       title: string
   ) => {
-      const filtered = filterList(requests);
+      // Sort: Pending top -> the rest -> then created_at desc
+      const sortedRequests = [...requests].sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      const filtered = sortedRequests.filter(item => 
+          (item.startup_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+          (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+      );
+      
       const pending = requests.filter(r => r.status === 'pending');
 
       return (
@@ -168,7 +172,7 @@ export const SupportRequests = () => {
                         />
                     </Box>
 
-                    <TableContainer sx={{ maxHeight: 'none', overflowX: 'auto' }}>
+                    <TableContainer sx={{ maxHeight: 'none', overflowX: 'auto', overflowY: 'hidden' }}>
                         <Table>
                             <TableHead>
                                 <TableRow>
@@ -179,36 +183,46 @@ export const SupportRequests = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {filtered.map((req) => (
-                                    <TableRow key={req.id}>
-                                        <TableCell>
-                                            <Typography variant="subtitle2" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
-                                                {req.startup_name || req.name || 'Unknown'}
-                                            </Typography>
-                                            <Typography variant="caption" color="textSecondary">
-                                                {type === 'funding' && `₹${req.amount_requested}`}
-                                                {type === 'mentoring' && req.domain}
-                                                {type === 'validation' && req.target_market}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ fontFamily: "Poppins, sans-serif" }}>
-                                            {new Date(req.created_at).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip 
-                                                label={req.status} 
-                                                size="small" 
-                                                color={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'error' : 'warning'}
-                                                sx={{ textTransform: 'capitalize' }}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <IconButton size="small" onClick={() => handleOpenDialog(req, type)} color="primary">
-                                                <Eye size={16} />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                <AnimatePresence mode="popLayout">
+                                    {filtered.map((req) => (
+                                        <MotionTableRow 
+                                            key={req.id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, x: -50 }}
+                                            transition={{ duration: 0.3 }}
+                                            sx={{ position: 'relative' }} // ensure layout animations work nicely
+                                        >
+                                            <TableCell>
+                                                <Typography variant="subtitle2" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+                                                    {req.startup_name || req.name || 'Unknown'}
+                                                </Typography>
+                                                <Typography variant="caption" color="textSecondary">
+                                                    {type === 'funding' && `₹${req.amount_requested}`}
+                                                    {type === 'mentoring' && req.domain}
+                                                    {type === 'validation' && req.target_market}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ fontFamily: "Poppins, sans-serif" }}>
+                                                {new Date(req.created_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip 
+                                                    label={req.status} 
+                                                    size="small" 
+                                                    color={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'error' : 'warning'}
+                                                    sx={{ textTransform: 'capitalize' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <IconButton size="medium" onClick={() => handleOpenDialog(req, type)} color="primary">
+                                                    <Eye size={24} />
+                                                </IconButton>
+                                            </TableCell>
+                                        </MotionTableRow>
+                                    ))}
+                                </AnimatePresence>
                                 {filtered.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={4} align="center" sx={{ py: 4, color: "text.secondary" }}>
@@ -375,9 +389,39 @@ export const SupportRequests = () => {
                     />
                 </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={handleCloseDialog}>Cancel</Button>
-                <Button onClick={handleSubmitAction} variant="contained">Save Notes</Button>
+            <DialogActions sx={{ p: 3, justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    {selectedRequest?.status === 'pending' && (
+                        <>
+                            <Button 
+                                onClick={async () => {
+                                    await handleQuickAction(selectedRequest, requestType, 'approve');
+                                    handleCloseDialog();
+                                }} 
+                                variant="contained" 
+                                color="success"
+                                startIcon={<CheckCircle size={18} />}
+                            >
+                                Approve
+                            </Button>
+                            <Button 
+                                onClick={async () => {
+                                    await handleQuickAction(selectedRequest, requestType, 'reject');
+                                    handleCloseDialog();
+                                }} 
+                                variant="outlined" 
+                                color="error"
+                                startIcon={<XCircle size={18} />}
+                            >
+                                Reject
+                            </Button>
+                        </>
+                    )}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleSubmitAction} variant="contained">Save Notes</Button>
+                </Box>
             </DialogActions>
         </Dialog>
 
@@ -385,3 +429,4 @@ export const SupportRequests = () => {
     </Box>
   );
 };
+

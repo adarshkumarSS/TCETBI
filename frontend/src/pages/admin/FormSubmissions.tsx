@@ -302,6 +302,29 @@ export const FormSubmissions = () => {
     }
   };
 
+  // Color theme per form type
+  const getFormTypeTheme = (formType: string) => {
+    switch (formType) {
+      case 'mentor_application':
+        return { bg: 'hsl(293 70% 50% / 0.06)', border: 'hsl(293 70% 50% / 0.15)', accent: '#d946ef' };
+      case 'funding_request':
+      case 'funding_support':
+        return { bg: 'hsl(38 92% 50% / 0.06)', border: 'hsl(38 92% 50% / 0.15)', accent: '#f59e0b' };
+      case 'mentoring_request':
+      case 'mentoring_support':
+        return { bg: 'hsl(199 89% 48% / 0.06)', border: 'hsl(199 89% 48% / 0.15)', accent: '#0ea5e9' };
+      case 'validation_request':
+      case 'idea_validation':
+        return { bg: 'hsl(160 84% 39% / 0.06)', border: 'hsl(160 84% 39% / 0.15)', accent: '#10b981' };
+      case 'incubation_application':
+        return { bg: 'hsl(221 83% 53% / 0.06)', border: 'hsl(221 83% 53% / 0.15)', accent: '#3b82f6' };
+      case 'contact':
+        return { bg: 'hsl(142 71% 45% / 0.06)', border: 'hsl(142 71% 45% / 0.15)', accent: '#22c55e' };
+      default:
+        return { bg: 'hsl(var(--muted) / 0.3)', border: 'hsl(var(--border))', accent: '#8b5cf6' };
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
@@ -331,7 +354,7 @@ export const FormSubmissions = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ pt: 12, pb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           Form Submissions
@@ -399,8 +422,10 @@ export const FormSubmissions = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {submissions.map((submission) => (
-              <TableRow key={submission.id} hover>
+            {submissions.map((submission) => {
+              const theme = getFormTypeTheme(submission.form_type);
+              return (
+              <TableRow key={submission.id} hover sx={{ borderLeft: `4px solid ${theme.accent}`, '&:hover': { bgcolor: theme.bg } }}>
                 <TableCell>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {submission.form_name}
@@ -437,7 +462,8 @@ export const FormSubmissions = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
             {submissions.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
@@ -472,9 +498,11 @@ export const FormSubmissions = () => {
               </Typography>
 
               <Grid container spacing={2}>
-                {selectedSubmission.field_values.map((fieldValue, index) => (
+                {selectedSubmission.field_values.map((fieldValue, index) => {
+                  const theme = getFormTypeTheme(selectedSubmission.form_type);
+                  return (
                   <Grid size={{ xs: 12 }} key={index}>
-                    <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+                    <Paper sx={{ p: 2, bgcolor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '12px' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                         {fieldValue.field_label}
                       </Typography>
@@ -495,7 +523,8 @@ export const FormSubmissions = () => {
                       )}
                     </Paper>
                   </Grid>
-                ))}
+                  );
+                })}
               </Grid>
             </Box>
           )}

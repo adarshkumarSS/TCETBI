@@ -261,6 +261,8 @@ class Notification(models.Model):
         ("user_registration", "User Registration"),
         ("blog", "Blog Update"),
         ("event", "Event Update"),
+        ("support", "Support Request"),
+        ("mentor", "Mentor Application"),
         ("general", "General"),
     )
 

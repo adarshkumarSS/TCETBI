@@ -70,6 +70,7 @@ interface AdminCompanyRequest {
   created_at: string;
   updated_at: string;
   is_edit_request?: boolean;
+  edit_changes_summary?: string;
 }
 
 export const CompanyRequests = () => {
@@ -398,6 +399,18 @@ export const CompanyRequests = () => {
                                   />
                                 </Box>
                               </Box>
+
+                              {/* Edit Requirements Summary */}
+                              {request.is_edit_request && request.edit_changes_summary && (
+                                <Box sx={{ mb: 4, p: 2, backgroundColor: "hsl(var(--warning) / 0.1)", border: "1px solid hsl(var(--warning) / 0.5)", borderRadius: "var(--radius)" }}>
+                                  <Typography variant="subtitle2" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, color: "hsl(var(--warning))", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                                    <FileEdit size={18} /> Proposed Changes Summary
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontFamily: "Poppins, sans-serif", color: "hsl(var(--foreground))", whiteSpace: "pre-line" }}>
+                                    {request.edit_changes_summary}
+                                  </Typography>
+                                </Box>
+                              )}
 
                               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 3 }}>
                                 

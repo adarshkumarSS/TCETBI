@@ -1,117 +1,377 @@
 import os
 import sys
 import django
-import cloudinary.uploader
-from dotenv import load_dotenv
 
-# ✅ Setup Django environment dynamically
+# Setup Django environment
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
 sys.path.append(BASE_DIR)
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
 
 from api.models import Mentor
-load_dotenv()
 
-# ✅ Cloudinary setup
-import cloudinary
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True,
-)
-
-def upload_to_cloudinary(local_path, folder="TCETBI/Mentors"):
-    """Uploads a file to Cloudinary and returns the secure URL."""
-    if not os.path.exists(local_path):
-        print(f"⚠️ Missing file: {local_path}")
-        return ""
-    try:
-        result = cloudinary.uploader.upload(local_path, folder=folder)
-        return result.get("secure_url", "")
-    except Exception as e:
-        print(f"❌ Upload failed for {local_path}: {e}")
-        return ""
 
 def seed_mentors():
-    print("🌱 Seeding Mentors data...")
+    print("🌱 Seeding 25 Mentors...")
 
-    # 🧹 Clean old data
-    Mentor.objects.all().delete()
-
-    # ✅ Path to frontend assets
-    base_dir = os.path.join(os.path.dirname(BASE_DIR), "frontend", "public")
+    # Don't delete existing mentors, just add if count is low
+    existing = Mentor.objects.count()
+    if existing >= 20:
+        print(f"✅ Already {existing} mentors in DB. Skipping seed.")
+        return
 
     mentors_data = [
         {
-            "name": "Dr. S. J. Thiruvengadam",
-            "domain": "Electronics & Communication, Signal Processing",
-            "expertise": "Signal Processing, Academic Research, Innovation",
-            "bio": "Expert in Signal Processing with extensive experience in academic research and innovation management.",
-            "email": "sjthiru@tce.edu",
-            "linkedin": "https://www.linkedin.com/in/thiruvengadam-sj/",
-            "image": "asset/people/mentor1.png", # Using specific filenames as requested or placeholders
+            "salutation": "Dr",
+            "name": "Rajesh Venkataraman",
+            "domain": "Artificial Intelligence, Machine Learning",
+            "expertise": "Deep Learning, NLP, Computer Vision",
+            "bio": "AI researcher with 18 years of experience in building intelligent systems for healthcare and finance. Former lead scientist at a top AI research lab.",
+            "email": "rajesh.v@mentornetwork.in",
+            "designation": "Chief AI Officer",
+            "years_of_experience": 18,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/rajeshvenkat",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=RV&backgroundColor=1e88e5",
         },
         {
-            "name": "Dr. K. Chockalingam",
-            "domain": "Mechanical Engineering, Manufacturing",
-            "expertise": "Additive Manufacturing, Product Development",
-            "bio": "Specialist in Mechanical Engineering and Additive Manufacturing with a focus on product development.",
-            "email": "kcmech@tce.edu",
-            "linkedin": "https://www.linkedin.com/in/chockalingam-k/",
-            "image": "asset/people/mentor2.png",
+            "salutation": "Ms",
+            "name": "Priya Nair",
+            "domain": "FinTech, Digital Payments",
+            "expertise": "Payment Systems, Blockchain, RegTech",
+            "bio": "FinTech strategist who has helped 30+ startups navigate digital payment regulations and build scalable payment infrastructure.",
+            "email": "priya.nair@mentornetwork.in",
+            "designation": "VP of FinTech Strategy",
+            "years_of_experience": 14,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/priyanair",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=PN&backgroundColor=e91e63",
         },
         {
-            "name": "Mr. R. Karthik Kumar",
-            "domain": "Software Development, Cloud Computing",
-            "expertise": "AWS, DevOps, Full Stack Development",
-            "bio": "Experienced software architect helping startups scale their technical infrastructure.",
-            "email": "karthik.it@tce.edu",
-            "linkedin": "https://www.linkedin.com/in/karthikkumar-r/",
-            "image": "asset/people/mentor3.png",
+            "salutation": "Mr",
+            "name": "Arun Shankar",
+            "domain": "Cloud Computing, DevOps",
+            "expertise": "AWS, Kubernetes, CI/CD Pipelines",
+            "bio": "Cloud architect with deep experience in designing scalable microservices architectures. Certified AWS Solutions Architect Professional.",
+            "email": "arun.shankar@mentornetwork.in",
+            "designation": "Principal Cloud Architect",
+            "years_of_experience": 12,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/arunshankar",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=AS&backgroundColor=43a047",
         },
         {
-            "name": "Ms. Deepa V.",
-            "domain": "Business Development, Marketing",
-            "expertise": "Go-to-market Strategy, Branding, Sales",
-            "bio": "Marketing veteran with a track record of launching successful brands in the tech space.",
-            "email": "deepa.mkt@tce.edu",
-            "linkedin": "https://www.linkedin.com/in/deepa-v-marketing/",
-            "image": "asset/people/mentor4.png",
+            "salutation": "Dr",
+            "name": "Kavitha Subramanian",
+            "domain": "BioTech, Healthcare",
+            "expertise": "Drug Discovery, Clinical Trials, Genomics",
+            "bio": "PhD in Molecular Biology with 20 years in pharmaceutical R&D. Mentor for health-tech and biotech startups in regulatory compliance.",
+            "email": "kavitha.s@mentornetwork.in",
+            "designation": "Director of R&D",
+            "years_of_experience": 20,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/kavithasub",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=KS&backgroundColor=8e24aa",
         },
         {
-            "name": "Dr. B. Sankar",
-            "domain": "Civil Engineering, Sustainability",
-            "expertise": "Green Building, Smart Cities, Materials",
-            "bio": "Researcher focusing on sustainable construction and smart city technologies.",
-            "email": "bsankar.civil@tce.edu",
-            "linkedin": "https://www.linkedin.com/in/sankar-b/",
-            "image": "asset/people/mentor5.png",
-        }
+            "salutation": "Mr",
+            "name": "Vikram Mehta",
+            "domain": "Startup Strategy, Fundraising",
+            "expertise": "Venture Capital, Pitch Decks, Growth Strategy",
+            "bio": "Serial entrepreneur and angel investor who has raised over ₹200 Cr across 5 ventures. Passionate about guiding first-time founders.",
+            "email": "vikram.mehta@mentornetwork.in",
+            "designation": "Managing Partner",
+            "years_of_experience": 16,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/vikrammehta",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=VM&backgroundColor=ff6f00",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Ananya Desai",
+            "domain": "UI/UX Design, Product Design",
+            "expertise": "Design Thinking, User Research, Prototyping",
+            "bio": "Lead product designer who has shaped UX for apps serving 50M+ users. Advocate for accessible and inclusive design.",
+            "email": "ananya.d@mentornetwork.in",
+            "designation": "Head of Design",
+            "years_of_experience": 10,
+            "interested_in": "student_startups",
+            "linkedin": "https://linkedin.com/in/ananyadesai",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=AD&backgroundColor=00897b",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Suresh Ramalingam",
+            "domain": "IoT, Embedded Systems",
+            "expertise": "Sensor Networks, Edge Computing, RTOS",
+            "bio": "Professor and industry consultant specializing in IoT solutions for smart agriculture and industrial automation.",
+            "email": "suresh.r@mentornetwork.in",
+            "designation": "Professor & Consultant",
+            "years_of_experience": 22,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/sureshrama",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=SR&backgroundColor=5d4037",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Divya Krishnan",
+            "domain": "Digital Marketing, Growth Hacking",
+            "expertise": "SEO, Content Strategy, Performance Marketing",
+            "bio": "Growth marketer who has driven 10x growth for SaaS startups. Expert in data-driven marketing and conversion optimization.",
+            "email": "divya.k@mentornetwork.in",
+            "designation": "Growth Lead",
+            "years_of_experience": 9,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/divyakrishnan",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=DK&backgroundColor=c62828",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Karthik Rajan",
+            "domain": "Cybersecurity, Information Security",
+            "expertise": "Penetration Testing, SOC, Compliance",
+            "bio": "Cybersecurity veteran with experience securing critical infrastructure for banking and government sectors.",
+            "email": "karthik.r@mentornetwork.in",
+            "designation": "CISO",
+            "years_of_experience": 15,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/karthikrajan",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=KR&backgroundColor=37474f",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Meera Joshi",
+            "domain": "EdTech, E-Learning",
+            "expertise": "Curriculum Design, Gamification, LMS",
+            "bio": "Education technology expert who has built learning platforms used by 2M+ students across India and Southeast Asia.",
+            "email": "meera.j@mentornetwork.in",
+            "designation": "Chief Learning Officer",
+            "years_of_experience": 13,
+            "interested_in": "student_startups",
+            "linkedin": "https://linkedin.com/in/meerajoshi",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=MJ&backgroundColor=6a1b9a",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Sanjay Patel",
+            "domain": "Supply Chain, Logistics",
+            "expertise": "Last Mile Delivery, Warehouse Automation, ERP",
+            "bio": "Operations expert with deep domain knowledge in logistics optimization. Helped 15+ D2C brands scale their supply chains.",
+            "email": "sanjay.p@mentornetwork.in",
+            "designation": "VP of Operations",
+            "years_of_experience": 17,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/sanjaypatel",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=SP&backgroundColor=ef6c00",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Lakshmi Narayanan",
+            "domain": "Data Science, Analytics",
+            "expertise": "Predictive Modeling, Big Data, Visualization",
+            "bio": "Data science leader who has built analytics teams at 3 unicorn startups. Expert in turning data into actionable business insights.",
+            "email": "lakshmi.n@mentornetwork.in",
+            "designation": "Head of Data Science",
+            "years_of_experience": 11,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/lakshminarayanan",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=LN&backgroundColor=1565c0",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Rahul Gupta",
+            "domain": "SaaS, Enterprise Software",
+            "expertise": "Product Management, B2B Sales, API Design",
+            "bio": "SaaS entrepreneur who built and exited a B2B platform serving 500+ enterprise clients. Now mentoring the next wave of SaaS founders.",
+            "email": "rahul.g@mentornetwork.in",
+            "designation": "Founder & Advisor",
+            "years_of_experience": 14,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/rahulgupta",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=RG&backgroundColor=2e7d32",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Deepa Govindarajan",
+            "domain": "Renewable Energy, CleanTech",
+            "expertise": "Solar Energy, Battery Storage, Carbon Credits",
+            "bio": "Clean energy researcher and entrepreneur focused on making renewable energy accessible to rural communities.",
+            "email": "deepa.g@mentornetwork.in",
+            "designation": "Director of Sustainability",
+            "years_of_experience": 19,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/deepagovind",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=DG&backgroundColor=00695c",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Arvind Kumar",
+            "domain": "Mobile Development, Cross-Platform",
+            "expertise": "React Native, Flutter, iOS, Android",
+            "bio": "Mobile app developer who has shipped 40+ apps on App Store and Play Store. Mentor for mobile-first startups.",
+            "email": "arvind.k@mentornetwork.in",
+            "designation": "Mobile Engineering Lead",
+            "years_of_experience": 8,
+            "interested_in": "student_startups",
+            "linkedin": "https://linkedin.com/in/arvindkumar",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=AK&backgroundColor=4527a0",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Shreya Iyer",
+            "domain": "Legal, Compliance",
+            "expertise": "Startup Law, IP Protection, Contract Negotiation",
+            "bio": "Corporate lawyer specializing in startup legal frameworks, intellectual property, and DPIIT registration.",
+            "email": "shreya.i@mentornetwork.in",
+            "designation": "Legal Counsel",
+            "years_of_experience": 12,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/shreyaiyer",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=SI&backgroundColor=880e4f",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Naveen Reddy",
+            "domain": "Robotics, Automation",
+            "expertise": "ROS, Industrial Robots, Computer Vision",
+            "bio": "Robotics engineer who has deployed automated solutions in manufacturing and warehousing for Fortune 500 companies.",
+            "email": "naveen.r@mentornetwork.in",
+            "designation": "Robotics Lead",
+            "years_of_experience": 10,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/naveenreddy",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=NR&backgroundColor=455a64",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Padma Lakshmi",
+            "domain": "Food Technology, AgriTech",
+            "expertise": "Food Processing, Cold Chain, Precision Farming",
+            "bio": "Food scientist turned AgriTech advisor. Helping startups bridge the gap between farm and fork with technology.",
+            "email": "padma.l@mentornetwork.in",
+            "designation": "AgriTech Advisor",
+            "years_of_experience": 16,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/padmalakshmi",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=PL&backgroundColor=33691e",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Harish Balachandran",
+            "domain": "Blockchain, Web3",
+            "expertise": "Smart Contracts, DeFi, Tokenomics",
+            "bio": "Web3 pioneer who has audited smart contracts worth $500M+ in TVL. Active in the Indian blockchain ecosystem.",
+            "email": "harish.b@mentornetwork.in",
+            "designation": "Blockchain Lead",
+            "years_of_experience": 7,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/harishbala",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=HB&backgroundColor=311b92",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Ritu Sharma",
+            "domain": "HR Tech, People Management",
+            "expertise": "Talent Acquisition, Culture Building, OKRs",
+            "bio": "HR leader who has scaled teams from 5 to 500+ at fast-growing startups. Expert in building high-performance cultures.",
+            "email": "ritu.s@mentornetwork.in",
+            "designation": "Chief People Officer",
+            "years_of_experience": 13,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/ritusharma",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=RS&backgroundColor=ad1457",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Mohan Krishnamurthy",
+            "domain": "Aerospace, Defence Tech",
+            "expertise": "Satellite Systems, UAVs, Propulsion",
+            "bio": "Former ISRO scientist now advising defence tech startups on satellite communication and autonomous aerial systems.",
+            "email": "mohan.k@mentornetwork.in",
+            "designation": "Chief Science Advisor",
+            "years_of_experience": 25,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/mohankrishna",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=MK&backgroundColor=0d47a1",
+        },
+        {
+            "salutation": "Ms",
+            "name": "Tara Menon",
+            "domain": "Social Impact, Sustainability",
+            "expertise": "Impact Investing, CSR Strategy, SDG Alignment",
+            "bio": "Social entrepreneur who has helped 20+ impact startups measure and communicate their social impact effectively.",
+            "email": "tara.m@mentornetwork.in",
+            "designation": "Impact Strategist",
+            "years_of_experience": 11,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/taramenon",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=TM&backgroundColor=1b5e20",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Ajay Thakur",
+            "domain": "E-Commerce, D2C Brands",
+            "expertise": "Shopify, Marketplace Strategy, Logistics",
+            "bio": "E-commerce veteran who has built and scaled 3 D2C brands to ₹50 Cr+ revenue. Expert in inventory and marketplace optimization.",
+            "email": "ajay.t@mentornetwork.in",
+            "designation": "E-Commerce Director",
+            "years_of_experience": 12,
+            "interested_in": "both",
+            "linkedin": "https://linkedin.com/in/ajaythakur",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=AT&backgroundColor=e65100",
+        },
+        {
+            "salutation": "Dr",
+            "name": "Swathi Ranganathan",
+            "domain": "Mental Health, Wellness Tech",
+            "expertise": "Teletherapy, CBT Platforms, Wellness Apps",
+            "bio": "Clinical psychologist turned tech founder. Building tools to make mental healthcare accessible and stigma-free in India.",
+            "email": "swathi.r@mentornetwork.in",
+            "designation": "Wellness Tech Advisor",
+            "years_of_experience": 14,
+            "interested_in": "student_startups",
+            "linkedin": "https://linkedin.com/in/swathiranga",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=SRa&backgroundColor=7b1fa2",
+        },
+        {
+            "salutation": "Mr",
+            "name": "Ganesh Sundaram",
+            "domain": "Manufacturing, Industry 4.0",
+            "expertise": "Smart Manufacturing, Digital Twins, PLM",
+            "bio": "Industry 4.0 consultant who has digitized factory floors for 25+ manufacturing companies across South India.",
+            "email": "ganesh.s@mentornetwork.in",
+            "designation": "Industry 4.0 Consultant",
+            "years_of_experience": 18,
+            "interested_in": "current_startups",
+            "linkedin": "https://linkedin.com/in/ganeshsundaram",
+            "image": "https://api.dicebear.com/7.x/initials/svg?seed=GS&backgroundColor=4e342e",
+        },
     ]
 
+    created_count = 0
     for data in mentors_data:
-        image_path = os.path.join(base_dir, data["image"])
-        # If the local image exists, upload to Cloudinary. 
-        # Otherwise, just use the string (public path handled by frontend) or a placeholder.
-        if os.path.exists(image_path):
-            image_url = upload_to_cloudinary(image_path)
-        else:
-            image_url = data["image"].replace("asset/people/", "") # Just the filename for public fallback
-        
+        # Skip if mentor with same email already exists
+        if Mentor.objects.filter(email=data["email"]).exists():
+            continue
+
         Mentor.objects.create(
+            salutation=data["salutation"],
             name=data["name"],
             domain=data["domain"],
             expertise=data["expertise"],
             bio=data["bio"],
             email=data["email"],
-            linkedin=data["linkedin"],
-            image=image_url
+            designation=data.get("designation", ""),
+            years_of_experience=data.get("years_of_experience", 0),
+            interested_in=data.get("interested_in", "both"),
+            linkedin=data.get("linkedin", ""),
+            image=data["image"],
+            status="approved",
         )
+        created_count += 1
 
-    print("✅ Mentors data seeded successfully!")
+    print(f"✅ Created {created_count} new mentors (total: {Mentor.objects.count()})")
+
 
 if __name__ == "__main__":
     seed_mentors()

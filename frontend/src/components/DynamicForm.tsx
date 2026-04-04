@@ -17,24 +17,16 @@ import {
   FormHelperText,
   Radio,
   RadioGroup,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { CloudUpload, Send, CheckCircle } from '@mui/icons-material';
 import { toast } from 'sonner';
 import { dynamicFormService } from '../api/dynamicFormService';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface FormFieldData {
-  id: number;
-  field_name: string;
-  label: string;
-  field_type: string;
-  placeholder?: string;
-  help_text?: string;
-  is_required: boolean;
-  options?: string[];
-  conditional_logic?: any;
-  validation_rules?: any;
-}
+import { DEFAULT_FORM_TEMPLATES, type FormFieldData } from '../constants/formTemplates';
 
 interface DynamicFormProps {
   formType: string;
@@ -48,6 +40,9 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [openValidationDialog, setOpenValidationDialog] = useState(false);
 
   useEffect(() => {
     loadFormStructure();
@@ -56,11 +51,21 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
   const loadFormStructure = async () => {
     try {
       const data = await dynamicFormService.getFormStructure(formType);
-      setFields(data.fields || []);
+      let formFields = data?.fields || [];
+
+      // Fallback to default template if no fields returned from backend
+      if (formFields.length === 0 && DEFAULT_FORM_TEMPLATES[formType]) {
+        formFields = DEFAULT_FORM_TEMPLATES[formType].fields;
+      }
+
+      // Sort fields by order
+      formFields.sort((a, b) => a.order - b.order);
+
+      setFields(formFields);
       
       // Initialize form data with default values
       const initialData: Record<string, any> = {};
-      data.fields?.forEach((field: FormFieldData) => {
+      formFields.forEach((field: FormFieldData) => {
         if (field.field_type === 'checkbox') {
           // If it has options, it's a multi-checkbox (array), otherwise single (boolean)
           initialData[field.field_name] = field.options && field.options.length > 0 ? [] : false;
@@ -70,7 +75,24 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
       });
       setFormData(initialData);
     } catch (error) {
-      toast.error('Failed to load form');
+      console.warn(`Failed to fetch form structure for ${formType}, attempting fallback...`, error);
+      
+      if (DEFAULT_FORM_TEMPLATES[formType]) {
+        const formFields = [...DEFAULT_FORM_TEMPLATES[formType].fields].sort((a, b) => a.order - b.order);
+        setFields(formFields);
+        
+        const initialData: Record<string, any> = {};
+        formFields.forEach((field: FormFieldData) => {
+          if (field.field_type === 'checkbox') {
+            initialData[field.field_name] = field.options && field.options.length > 0 ? [] : false;
+          } else {
+            initialData[field.field_name] = '';
+          }
+        });
+        setFormData(initialData);
+      } else {
+        toast.error('Failed to load form');
+      }
     } finally {
       setLoading(false);
     }
@@ -153,7 +175,7 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
       if (field.is_required) {
         const value = formData[field.field_name];
         if (!value || (typeof value === 'string' && value.trim() === '')) {
-          newErrors[field.field_name] = `${field.label} is required`;
+          newErrors[field.field_name] = `${field.label} is missing`;
         }
       }
       
@@ -174,10 +196,37 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('Please fill in all required fields');
+      // Collect missing field labels for the modal
+      const missing: string[] = [];
+      fields.forEach((field) => {
+        if (field.is_required) {
+          const value = formData[field.field_name];
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            missing.push(field.label);
+          }
+        }
+        if (field.field_type === 'email' && formData[field.field_name]) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData[field.field_name])) {
+            missing.push(`${field.label} (invalid email)`);
+          }
+        }
+      });
+      setValidationErrors(missing);
+      setOpenValidationDialog(true);
       return;
     }
 
+    if (formType === 'incubation_application' && !openConfirmDialog) {
+      setOpenConfirmDialog(true);
+      return;
+    }
+
+    setOpenConfirmDialog(false);
+    executeSubmit();
+  };
+
+  const executeSubmit = async () => {
     setSubmitting(true);
     try {
       const submitData = new FormData();
@@ -593,6 +642,90 @@ export const DynamicForm = ({ formType, onSuccess }: DynamicFormProps) => {
           </Button>
         </Grid>
       </Grid>
+
+      {/* Confirmation Dialog for Incubation Application */}
+      <Dialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '24px', p: 1 }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.5rem' }}>
+          Confirm Application
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 2 }}>
+            Please confirm that your Gmail address **{formData.email}** is correct.
+          </Typography>
+          <Box sx={{ p: 2, bgcolor: 'hsl(var(--primary) / 0.05)', borderRadius: '12px', border: '1px solid hsl(var(--primary) / 0.1)' }}>
+            <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+              All further information regarding your application and your login credentials for the TCETBI portal will be sent to this email address.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button 
+            onClick={() => setOpenConfirmDialog(false)} 
+            sx={{ borderRadius: '12px', px: 3 }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            sx={{ borderRadius: '12px', px: 4 }}
+            disabled={submitting}
+          >
+            {submitting ? <CircularProgress size={24} color="inherit" /> : 'Confirm & Submit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Validation Errors Modal */}
+      <Dialog
+        open={openValidationDialog}
+        onClose={() => setOpenValidationDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '24px', p: 1 }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.3rem', color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'error.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem' }}>!</Typography>
+          </Box>
+          Missing Required Details
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+            Please fill in the following required fields before submitting:
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {validationErrors.map((label, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: 'error.main', borderRadius: '12px', opacity: 0.08 + 0.92, background: 'hsl(0 84% 60% / 0.08)', border: '1px solid hsl(0 84% 60% / 0.15)' }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main', flexShrink: 0 }} />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {label} is missing
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => setOpenValidationDialog(false)}
+            variant="contained"
+            color="error"
+            sx={{ borderRadius: '12px', px: 4, textTransform: 'none', fontWeight: 600 }}
+          >
+            Got it, I'll fix it
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

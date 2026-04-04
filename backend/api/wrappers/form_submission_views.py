@@ -7,7 +7,7 @@ import cloudinary.uploader
 
 from ..models import FormTemplate, FormField, FormSubmission, FormFieldValue, Notification, IncubationApplication
 from ..serializers import FormTemplateSerializer, FormSubmissionSerializer
-from ..utils.email_utils import send_incubation_email_to_ceo, send_approval_email
+from ..utils.email_utils import send_incubation_email_to_ceo, send_approval_email, send_submission_status_email
 from ..utils.drive_utils import upload_to_drive
 import json
 
@@ -24,35 +24,20 @@ def get_form_structure(request, form_type):
         if all_template and not all_template.is_active:
             return Response({'error': 'Form is currently inactive'}, status=status.HTTP_404_NOT_FOUND)
 
-        # It's actually missing, create it on the fly with defaults
-        form_choices = dict(FormTemplate.FORM_TYPES)
-        if form_type in form_choices:
-            try:
-                with transaction.atomic():
-                    template = FormTemplate.objects.create(
-                        form_type=form_type,
-                        name=form_choices[form_type],
-                        description=f"Standard form for {form_choices[form_type].lower()}",
-                        is_active=True
-                    )
-                    
-                    default_fields = [
-                        {"field_name": "full_name", "label": "Full Name", "field_type": "text", "is_required": True, "placeholder": "Enter your full name", "order": 0},
-                        {"field_name": "email", "label": "Email Address", "field_type": "email", "is_required": True, "placeholder": "example@email.com", "order": 1},
-                        {"field_name": "phone", "label": "Phone Number", "field_type": "phone", "is_required": False, "placeholder": "+91 00000 00000", "order": 2},
-                        {"field_name": "subject", "label": "Subject", "field_type": "text", "is_required": True, "placeholder": "What is this about?", "order": 3},
-                        {"field_name": "message", "label": "Message", "field_type": "textarea", "is_required": True, "placeholder": "Share your thoughts...", "order": 4},
-                    ]
-                    
-                    for f_data in default_fields:
-                        FormField.objects.create(form_template=template, **f_data)
-            except Exception as e:
-                # In case of racing conditions where it's created simultaneously by another request
-                template = FormTemplate.objects.filter(form_type=form_type, is_active=True).first()
-                if not template:
-                    return Response({'error': 'Failed to resolve form template'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            return Response({'error': f'Invalid form type: {form_type}'}, status=status.HTTP_400_BAD_REQUEST)
+        # It's actually missing, create it on the fly using the seed script as fallback
+        try:
+            import sys, os
+            if os.path.join(os.path.dirname(__file__), '..', '..') not in sys.path:
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+            from utils.seed_initial_forms import seed_forms
+            seed_forms()
+        except Exception as e:
+            print(f"Fallback seed error: {e}")
+
+        # Fetch again to get fully seeded template
+        template = FormTemplate.objects.filter(form_type=form_type, is_active=True).first()
+        if not template:
+            return Response({'error': f'Invalid form type or seed failed: {form_type}'}, status=status.HTTP_400_BAD_REQUEST)
 
     serializer = FormTemplateSerializer(template)
     return Response(serializer.data)
@@ -127,9 +112,20 @@ def submit_form(request, form_type):
                 file_url=file_url
             )
         
+        # Determine notification type based on form_type
+        noti_type = 'general'
+        if form_type == 'incubation_application':
+            noti_type = 'application'
+        elif form_type in ['funding_support', 'mentoring_support', 'idea_validation']:
+            noti_type = 'support'
+        elif form_type == 'mentor_application':
+            noti_type = 'mentor'
+        elif form_type == 'contact':
+            noti_type = 'contact'
+
         # Create notification
         Notification.objects.create(
-            type='application' if form_type == 'incubation_application' else 'general',
+            type=noti_type,
             title=f'New {template.name} Submission',
             message=f'A new {template.name} has been submitted by {form_data.get("fullName", "User")}.',
             meta={'submission_id': submission.id, 'form_type': form_type}
@@ -192,6 +188,58 @@ def submit_form(request, form_type):
             except Exception as inc_err:
                 print(f"[ERROR] Failed to re-sync incubation application: {inc_err}")
                 # Don't fail the whole request if re-sync fails
+
+        # SYNC OTHER SUPPORT FORMS TO THE LEGACY MODELS
+        elif form_type == 'funding_support':
+            try:
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                from ..models import FundingRequest
+                FundingRequest.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    name=field_values.get('name').value if field_values.get('name') else '',
+                    email=field_values.get('email').value if field_values.get('email') else '',
+                    phone=field_values.get('phone').value if field_values.get('phone') else '',
+                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                    scheme=field_values.get('scheme').value if field_values.get('scheme') else 'other',
+                    description=field_values.get('description').value if field_values.get('description') else '',
+                    amount_requested=field_values.get('amount_requested').value if field_values.get('amount_requested') else '',
+                    pitch_deck=field_values.get('pitch_deck').file_url if field_values.get('pitch_deck') else ''
+                )
+            except Exception as e:
+                print(f"[ERROR] Failed to re-sync FundingRequest: {e}")
+
+        elif form_type == 'mentoring_support':
+            try:
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                from ..models import MentoringRequest
+                MentoringRequest.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    name=field_values.get('name').value if field_values.get('name') else '',
+                    email=field_values.get('email').value if field_values.get('email') else '',
+                    phone=field_values.get('phone').value if field_values.get('phone') else '',
+                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                    domain=field_values.get('domain').value if field_values.get('domain') else '',
+                    description=field_values.get('description').value if field_values.get('description') else ''
+                )
+            except Exception as e:
+                print(f"[ERROR] Failed to re-sync MentoringRequest: {e}")
+
+        elif form_type == 'idea_validation':
+            try:
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                from ..models import ValidationRequest
+                ValidationRequest.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    name=field_values.get('name').value if field_values.get('name') else '',
+                    email=field_values.get('email').value if field_values.get('email') else '',
+                    phone=field_values.get('phone').value if field_values.get('phone') else '',
+                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                    idea_details=field_values.get('idea_details').value if field_values.get('idea_details') else '',
+                    testing_requirements=field_values.get('testing_requirements').value if field_values.get('testing_requirements') else '',
+                    target_market=field_values.get('target_market').value if field_values.get('target_market') else ''
+                )
+            except Exception as e:
+                print(f"[ERROR] Failed to re-sync ValidationRequest: {e}")
         
         serializer = FormSubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -281,6 +329,43 @@ def update_submission_status(request, submission_id):
                             inc_app.save()
                     except:
                         pass
+                        
+            elif submission.form_template.form_type == 'mentor_application' and new_status == 'approved' and old_status != 'approved':
+                # Map dynamic fields to create a Mentor entry
+                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                
+                from ..models import Mentor
+                try:
+                    Mentor.objects.create(
+                        name=field_values.get('name').value if field_values.get('name') else (field_values.get('fullName').value if field_values.get('fullName') else 'Unknown'),
+                        email=field_values.get('email').value if field_values.get('email') else None,
+                        designation=field_values.get('designation').value if field_values.get('designation') else '',
+                        domain=field_values.get('domain').value if field_values.get('domain') else '',
+                        expertise=field_values.get('expertise').value if field_values.get('expertise') else '',
+                        years_of_experience=int(field_values.get('experience').value) if field_values.get('experience') and field_values.get('experience').value.isdigit() else 0,
+                        bio=field_values.get('bio').value if field_values.get('bio') else '',
+                        linkedin=field_values.get('linkedin').value if field_values.get('linkedin') else '',
+                        image=field_values.get('profile_image').file_url if field_values.get('profile_image') else '',
+                        status='approved'
+                    )
+                except Exception as e:
+                    print(f"[ERROR] Failed to create Mentor from application: {e}")
+            
+            # GENERIC STATUS UPDATE EMAIL (for non-incubation or rejections)
+            elif (new_status in ['approved', 'rejected']) and (new_status != old_status):
+                # Map dynamic fields
+                field_values_map = {fv.field.field_name: fv.value for fv in submission.field_values.all()}
+                email = field_values_map.get('email') or field_values_map.get('Email Address')
+                fullName = field_values_map.get('fullName') or field_values_map.get('name') or field_values_map.get('full_name') or 'User'
+                
+                if email:
+                    send_submission_status_email(
+                        email=email,
+                        full_name=fullName,
+                        form_name=submission.form_template.name,
+                        status=new_status,
+                        admin_notes=admin_notes
+                    )
 
         if admin_notes is not None:
             submission.admin_notes = admin_notes

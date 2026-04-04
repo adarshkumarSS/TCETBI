@@ -69,9 +69,21 @@ export const ApplyIncubation = () => {
             </Box>
           </Paper>
 
-          {/* Additional Info */}
-          <Box sx={{ mt: 4, textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+          {/* Information & Credentials Note */}
+          <Box sx={{ 
+            mt: 4, 
+            p: 3, 
+            borderRadius: '24px', 
+            bgcolor: 'hsl(var(--primary) / 0.05)',
+            border: '1px solid hsl(var(--primary) / 0.1)',
+            textAlign: 'center'
+          }}>
+            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', lineHeight: 1.6 }}>
+              <strong>Important:</strong> The Email ID provided in this application will be used for all correspondence regarding your application. 
+              This email will also serve as your login credentials for the TCETBI portal upon approval. 
+              Please ensure you provide a valid Gmail ID that you have access to.
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 2, color: 'hsl(var(--muted-foreground))' }}>
               Need help? Contact us at{' '}
               <Box component="span" sx={{ color: 'hsl(var(--primary))', fontWeight: 600 }}>
                 support@tcetbi.com

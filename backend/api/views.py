@@ -81,7 +81,7 @@ def delete_notification(request, id):
     except Notification.DoesNotExist:
         return Response({"error": "Not found"}, status=404)
 
-from .utils.email_utils import send_incubation_email_to_ceo, send_approval_email, send_user_approval_email
+from .utils.email_utils import send_incubation_email_to_ceo, send_approval_email, send_user_approval_email, send_submission_status_email
 
 @api_view(["POST"])
 @parser_classes([MultiPartParser, FormParser])
@@ -275,6 +275,22 @@ def update_application_status(request, id):
                             inc_app.save()
                     except:
                         pass
+                        
+            elif new_status == "rejected" and old_status != "rejected":
+                if submission.form_template.form_type == 'incubation_application':
+                    admin_notes = request.data.get('admin_notes') or request.data.get('message')
+                    field_values_map = {fv.field.field_name: fv.value for fv in submission.field_values.all()}
+                    email = field_values_map.get('email') or field_values_map.get('Email Address')
+                    fullName = field_values_map.get('fullName') or field_values_map.get('name') or field_values_map.get('full_name') or 'User'
+                    
+                    if email:
+                        send_submission_status_email(
+                            email=email,
+                            full_name=fullName,
+                            form_name=submission.form_template.name,
+                            status=new_status,
+                            admin_notes=admin_notes
+                        )
 
             return Response({"message": f"Application {new_status}"})
         else:
@@ -1177,6 +1193,8 @@ class MentorViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # If user is authenticated admin (from PUT/PATCH/DELETE with authenticator),
+        # show all mentors. For unauthenticated GET, show only approved.
         if user.is_authenticated and user.is_staff:
             return Mentor.objects.all().order_by('-created_at')
         return Mentor.objects.filter(status='approved').order_by('-created_at')
@@ -1189,12 +1207,27 @@ class MentorViewSet(viewsets.ModelViewSet):
         return [AllowAny()]
 
     def get_authenticators(self):
-        # Disable authentication for mentor registration (POST to /api/mentors/)
-        if self.request.method == 'POST':
-            return []
-        if self.request.method == 'GET':
+        # Skip authenticators for public-facing methods (GET, POST)
+        # This prevents expired/invalid tokens from causing 401 errors
+        # Admin operations (PUT, PATCH, DELETE) require proper auth
+        if self.request.method in ('GET', 'POST'):
             return []
         return super().get_authenticators()
+
+    def list(self, request, *args, **kwargs):
+        """Override list to manually try auth for admin users"""
+        # Try to manually authenticate the request for GET calls
+        # so admin users can see all mentors (including pending)
+        from rest_framework_simplejwt.authentication import JWTAuthentication
+        try:
+            auth = JWTAuthentication()
+            result = auth.authenticate(request)
+            if result:
+                request.user, request.auth = result
+        except Exception:
+            pass  # Not authenticated or token invalid — just proceed as anonymous
+        
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         print("=== MENTOR CREATE REQUEST ===")
@@ -1213,22 +1246,37 @@ class MentorViewSet(viewsets.ModelViewSet):
         try:
             print("--- Creating Mentor ---")
             print(f"Data: {self.request.data}")
-            mentor = serializer.save(status='pending')
-            print(f"Mentor created: {mentor.id}")
             
-            # Notify admin
-            Notification.objects.create(
-                type="general",
-                title="New Mentor Application",
-                message=f"{mentor.salutation} {mentor.name} has applied as a mentor.",
-                meta={
-                    "mentor_id": mentor.id,
-                    "name": mentor.name,
-                    "email": mentor.email,
-                    "domain": mentor.domain
-                }
-            )
-            print("Notification created successfully")
+            # Check if the request is from an admin user
+            is_admin = False
+            from rest_framework_simplejwt.authentication import JWTAuthentication
+            try:
+                auth = JWTAuthentication()
+                result = auth.authenticate(self.request)
+                if result and result[0].is_staff:
+                    is_admin = True
+            except Exception:
+                pass
+            
+            # Admin-created mentors are auto-approved; public applications are pending
+            mentor_status = 'approved' if is_admin else 'pending'
+            mentor = serializer.save(status=mentor_status)
+            print(f"Mentor created: {mentor.id} (status: {mentor_status}, admin: {is_admin})")
+            
+            if not is_admin:
+                # Only notify admin for public applications
+                Notification.objects.create(
+                    type="mentor",
+                    title="New Mentor Application",
+                    message=f"{mentor.salutation} {mentor.name} has applied as a mentor.",
+                    meta={
+                        "mentor_id": mentor.id,
+                        "name": mentor.name,
+                        "email": mentor.email,
+                        "domain": mentor.domain
+                    }
+                )
+                print("Notification created for public application")
         except Exception as e:
             print(f"!!! Error in MentorViewSet.perform_create: {str(e)}")
             import traceback

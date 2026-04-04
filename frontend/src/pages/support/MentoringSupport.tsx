@@ -1,14 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Container, Typography, Grid, Paper, Avatar, Chip, TextField, Divider } from '@mui/material';
-import { motion } from 'framer-motion';
-import { supportService } from '../../api/supportService';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 import { Assignment, PersonSearch, RocketLaunch, Search } from '@mui/icons-material';
 import { InputAdornment } from '@mui/material';
 import { DynamicForm } from '../../components/DynamicForm';
 
+const API_URL = 'http://localhost:8000/api';
+const DISPLAY_COUNT = 10;
+const ROTATE_INTERVAL = 6000;
+
 export const MentoringSupport = () => {
   const [mentors, setMentors] = useState<any[]>([]);
   const [mentorSearch, setMentorSearch] = useState('');
+  const [displayedMentors, setDisplayedMentors] = useState<any[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetchMentors();
@@ -16,19 +22,46 @@ export const MentoringSupport = () => {
 
   const fetchMentors = async () => {
     try {
-      const data = await supportService.getMentors();
-      setMentors(data);
+      const response = await axios.get(`${API_URL}/mentors/`);
+      setMentors(response.data);
     } catch (error) {
       console.error("Failed to fetch mentors", error);
     }
   };
 
-  const filteredMentors = mentors.filter(m => 
-    m.name.toLowerCase().includes(mentorSearch.toLowerCase()) || 
-    m.domain?.toLowerCase().includes(mentorSearch.toLowerCase()) ||
-    (m.specialization && m.specialization.toLowerCase().includes(mentorSearch.toLowerCase())) ||
-    (m.expertise && m.expertise.toLowerCase().includes(mentorSearch.toLowerCase()))
-  );
+  const getRandomMentors = useCallback((pool: any[]) => {
+    if (pool.length <= DISPLAY_COUNT) return pool;
+    const shuffled = [...pool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, DISPLAY_COUNT);
+  }, []);
+
+  useEffect(() => {
+    const filtered = mentors.filter(m =>
+      m.name.toLowerCase().includes(mentorSearch.toLowerCase()) ||
+      m.domain?.toLowerCase().includes(mentorSearch.toLowerCase()) ||
+      (m.specialization && m.specialization.toLowerCase().includes(mentorSearch.toLowerCase())) ||
+      (m.expertise && m.expertise.toLowerCase().includes(mentorSearch.toLowerCase()))
+    );
+
+    setDisplayedMentors(getRandomMentors(filtered));
+
+    // Clear previous interval
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    if (filtered.length > DISPLAY_COUNT) {
+      intervalRef.current = setInterval(() => {
+        setDisplayedMentors(getRandomMentors(filtered));
+      }, ROTATE_INTERVAL);
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [mentors, mentorSearch, getRandomMentors]);
 
   const getImagePath = (image: string) => {
     if (!image) return '/placeholder.svg';
@@ -48,6 +81,12 @@ export const MentoringSupport = () => {
       }
     }
     return Array.from(labels).filter(l => l !== '');
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
   };
 
   return (
@@ -111,7 +150,7 @@ export const MentoringSupport = () => {
                   size="small"
                   value={mentorSearch}
                   onChange={(e) => setMentorSearch(e.target.value)}
-                  sx={{ 
+                  sx={{
                     width: { xs: '100%', sm: '350px' },
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '12px',
@@ -131,54 +170,70 @@ export const MentoringSupport = () => {
               </Box>
 
               <Grid container spacing={3}>
-                {filteredMentors.map((mentor, index) => (
-                  <Grid size={{ xs: 12, md: 6 }} key={mentor.id || index}>
-                    <motion.div
-                      whileHover={{ y: -5 }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                    >
-                      <Paper sx={{ 
-                        p: 3, 
-                        borderRadius: '24px', 
-                        border: '1px solid hsl(var(--border))', 
-                        backgroundColor: "hsl(var(--card))",
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2
-                      }}>
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                          <Avatar 
-                            src={getImagePath(mentor.image || mentor.profile_pic)} 
-                            alt={mentor.name}
-                            sx={{ width: 80, height: 80, borderRadius: '16px' }}
-                          />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>{mentor.name}</Typography>
-                            <Typography variant="body2" sx={{ color: 'hsl(var(--primary))', fontWeight: 500, mb: 1 }}>
-                              {mentor.specialization || mentor.domain?.split(',')[0] || mentor.expertise?.split(',')[0]}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {getLabels(mentor).map((label: string, i: number) => (
-                                <Chip 
-                                  key={i} 
-                                  label={label} 
-                                  size="small" 
-                                  sx={{ fontSize: '10px', height: '20px', bgcolor: 'hsl(var(--muted))' }} 
-                                />
-                              ))}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={displayedMentors.map(m => m.id).join('-')}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: { opacity: 1, transition: { staggerChildren: 0.08, duration: 0.4 } },
+                      exit: { opacity: 0, transition: { duration: 0.3 } },
+                    }}
+                    style={{ display: 'contents' }}
+                  >
+                    {displayedMentors.map((mentor) => (
+                      <Grid size={{ xs: 12, md: 6 }} key={mentor.id}>
+                        <motion.div
+                          variants={cardVariants}
+                          transition={{ duration: 0.6, ease: 'easeInOut' }}
+                          whileHover={{ y: -4 }}
+                          style={{ height: '100%' }}
+                        >
+                          <Paper sx={{
+                            p: 3,
+                            borderRadius: '24px',
+                            border: '1px solid hsl(var(--border))',
+                            backgroundColor: "hsl(var(--card))",
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2
+                          }}>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                              <Avatar
+                                src={getImagePath(mentor.image || mentor.profile_pic)}
+                                alt={mentor.name}
+                                sx={{ width: 80, height: 80, borderRadius: '16px' }}
+                              />
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 700 }}>{mentor.name}</Typography>
+                                <Typography variant="body2" sx={{ color: 'hsl(var(--primary))', fontWeight: 500, mb: 1 }}>
+                                  {mentor.specialization || mentor.domain?.split(',')[0] || mentor.expertise?.split(',')[0]}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {getLabels(mentor).slice(0, 3).map((label: string, i: number) => (
+                                    <Chip
+                                      key={i}
+                                      label={label}
+                                      size="small"
+                                      sx={{ fontSize: '10px', height: '20px', bgcolor: 'hsl(var(--muted))' }}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
                             </Box>
-                          </Box>
-                        </Box>
-                        
-                        <Divider sx={{ my: 1, opacity: 0.5 }} />
-                        
 
-                      </Paper>
-                    </motion.div>
-                  </Grid>
-                ))}
-                {filteredMentors.length === 0 && (
+                            <Divider sx={{ my: 1, opacity: 0.5 }} />
+
+                          </Paper>
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
+                {displayedMentors.length === 0 && (
                   <Grid size={{ xs: 12 }}>
                     <Box sx={{ py: 8, textAlign: 'center', bgcolor: 'hsl(var(--muted)/0.3)', borderRadius: '24px' }}>
                       <Typography variant="h6" sx={{ color: 'hsl(var(--muted-foreground))' }}>No mentors found matching your search.</Typography>

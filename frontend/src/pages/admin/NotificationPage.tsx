@@ -17,6 +17,8 @@ import {
   CheckCircle,
   ArrowLeft,
   Loader2,
+  HelpingHand,
+  UserCog,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -38,6 +40,8 @@ const typeStyles = {
   blog: { color: "#eab308", icon: <FileText size={20} /> },
   event: { color: "#dc2626", icon: <AlertCircle size={20} /> },
   user_registration: { color: "#f59e0b", icon: <Bell size={20} /> },
+  support: { color: "#0ea5e9", icon: <HelpingHand size={20} /> }, // Light blue
+  mentor: { color: "#d946ef", icon: <UserCog size={20} /> }, // Fuchsia
   general: { color: "#8b5cf6", icon: <Bell size={20} /> },
 };
 
@@ -601,6 +605,46 @@ export const NotificationsPage: React.FC = () => {
                       }}
                     >
                       View Application
+                    </Button>
+                  </Box>
+                )}
+
+                {/* View Support Requests */}
+                {selected.type === "support" && (
+                  <Box sx={{ mt: 3 }}>
+                    <Button
+                      onClick={() => navigate("/admin/support-requests")}
+                      sx={{
+                        backgroundColor: "#0ea5e9",
+                        color: "white",
+                        "&:hover": { backgroundColor: "#0284c7" },
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      View Support Requests
+                    </Button>
+                  </Box>
+                )}
+
+                {/* View Mentor Applications */}
+                {selected.type === "mentor" && (
+                  <Box sx={{ mt: 3 }}>
+                    <Button
+                      onClick={() => navigate("/admin/mentors")}
+                      sx={{
+                        backgroundColor: "#d946ef",
+                        color: "white",
+                        "&:hover": { backgroundColor: "#c026d3" },
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: "10px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      View Mentor Applications
                     </Button>
                   </Box>
                 )}

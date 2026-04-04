@@ -1,9 +1,16 @@
-import { Box, Container, Typography, Grid, Paper } from '@mui/material';
+import { useState } from 'react';
+import { Box, Container, Typography, Grid, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { motion } from 'framer-motion';
-import { Business } from '@mui/icons-material';
+import { Business, CheckCircle } from '@mui/icons-material';
 import { DynamicForm } from '../../components/DynamicForm';
 
 export const FundingSupport = () => {
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const handleSuccess = () => {
+    setShowSuccessModal(true);
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", pt: 16, pb: 8, backgroundColor: "hsl(var(--background))" }}>
       <Container maxWidth="lg">
@@ -24,7 +31,7 @@ export const FundingSupport = () => {
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, lg: 8 }}>
               <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid hsl(var(--border))', backgroundColor: "hsl(var(--card))", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}>
-                <DynamicForm formType="funding_support" />
+                <DynamicForm formType="funding_support" onSuccess={handleSuccess} />
               </Paper>
             </Grid>
 
@@ -64,6 +71,42 @@ export const FundingSupport = () => {
           </Grid>
         </motion.div>
       </Container>
+
+      <Dialog
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '24px', p: 2, textAlign: 'center' }
+        }}
+      >
+        <DialogTitle sx={{ pt: 4, pb: 0 }}>
+          <CheckCircle sx={{ fontSize: 72, color: 'success.main', mb: 2 }} />
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Request Confirmed</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ px: 4 }}>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3, fontSize: '1.1rem' }}>
+            Your funding support request has been successfully submitted.
+          </Typography>
+          <Box sx={{ p: 3, bgcolor: 'hsl(var(--primary) / 0.05)', borderRadius: '16px', border: '1px solid hsl(var(--primary) / 0.1)' }}>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Further details will be shared with the respective mail and phone number entered.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 4, pt: 2 }}>
+          <Button 
+            onClick={() => setShowSuccessModal(false)} 
+            variant="contained" 
+            size="large"
+            fullWidth
+            sx={{ borderRadius: '12px', mx: 2, py: 1.5, fontSize: '1.1rem' }}
+          >
+            Done
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

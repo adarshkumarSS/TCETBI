@@ -218,7 +218,7 @@ class FundingRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FundingRequest
         fields = '__all__'
-        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+        read_only_fields = ['user', 'created_at']
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -233,7 +233,7 @@ class MentoringRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = MentoringRequest
         fields = '__all__'
-        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+        read_only_fields = ['user', 'created_at']
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -247,7 +247,7 @@ class ValidationRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ValidationRequest
         fields = '__all__'
-        read_only_fields = ['user', 'admin_notes', 'created_at', 'status']
+        read_only_fields = ['user', 'created_at']
 
     def create(self, validated_data):
         request = self.context.get('request')
