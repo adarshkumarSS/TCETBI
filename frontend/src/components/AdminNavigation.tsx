@@ -6,7 +6,7 @@ import { DarkButton } from "./ui/DarkButton";
 
 import { motion, useInView } from "framer-motion";
 import { Moon, Sun, Bell, LogOut, LogIn, Menu, LayoutDashboard, FileEdit, ClipboardList, Settings, Linkedin, Building2, UserCog, CheckCircle, HelpingHand, Plus, FormInput, ListChecks } from "lucide-react";
-import { fetchNotifications } from "@/api/notificationservice";
+import { fetchNotifications } from "@/api/notificationService";
 
 export const AnimatedItem = ({ children, index, onClick }: any) => {
   const ref = useRef(null);
@@ -173,53 +173,77 @@ export const AdminNavigation: React.FC = () => {
   ];
 
   const DrawerList = (
-    <Box sx={{ width: 280, height: '100%', bgcolor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }} role="presentation" onClick={() => setDrawerOpen(false)}>
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+    <Box 
+      sx={{ 
+        width: 280, 
+        height: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column',
+        bgcolor: 'hsl(var(--background))', 
+        color: 'hsl(var(--foreground))' 
+      }} 
+      role="presentation"
+    >
+      {/* Header section (Non-scrollable) */}
+      <Box 
+        sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }}
+        onClick={() => {
+          navigate('/admin');
+          setDrawerOpen(false);
+        }}
+      >
         <img src="/asset/TCE_TBI.png" alt="Logo" style={{ width: 40, height: 40 }} />
         <Typography variant="h6" sx={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
           Admin Panel
         </Typography>
       </Box>
+      
       <Divider sx={{ borderColor: 'hsl(var(--border))' }} />
-      <List sx={{ p: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname + location.search === item.path}
-              sx={{
-                borderRadius: '8px',
-                '&.Mui-selected': {
-                  bgcolor: 'hsl(var(--primary) / 0.1)',
-                  color: 'hsl(var(--primary))',
-                  '&:hover': {
-                    bgcolor: 'hsl(var(--primary) / 0.2)',
-                  },
-                  '& .MuiListItemIcon-root': {
+      
+      {/* Scrollable Menu Items */}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+        <List sx={{ p: 0 }}>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+              <ListItemButton
+                onClick={() => {
+                  navigate(item.path);
+                  setDrawerOpen(false);
+                }}
+                selected={location.pathname + location.search === item.path}
+                sx={{
+                  borderRadius: '8px',
+                  '&.Mui-selected': {
+                    bgcolor: 'hsl(var(--primary) / 0.1)',
                     color: 'hsl(var(--primary))',
+                    '&:hover': {
+                      bgcolor: 'hsl(var(--primary) / 0.2)',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'hsl(var(--primary))',
+                    },
                   },
-                },
-                '&:hover': {
-                  bgcolor: 'hsl(var(--muted))',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: (item as any).color || 'hsl(var(--muted-foreground))' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ 
-                  fontFamily: 'Poppins, sans-serif', 
-                  fontSize: '14px',
-                  fontWeight: location.pathname + location.search === item.path ? 600 : 400,
-                  color: (item as any).color || 'inherit'
-                }} 
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+                  '&:hover': {
+                    bgcolor: 'hsl(var(--muted))',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'hsl(var(--muted-foreground))' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ 
+                    fontFamily: 'Poppins, sans-serif', 
+                    fontSize: '14px',
+                    fontWeight: location.pathname + location.search === item.path ? 600 : 400,
+                  }} 
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
     </Box>
   );
 

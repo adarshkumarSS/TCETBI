@@ -1368,3 +1368,188 @@ class ValidationRequestViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return ValidationRequest.objects.all().order_by('-created_at')
         return ValidationRequest.objects.filter(user=user).order_by('-created_at')
+
+
+# =========================================================================
+# Site Settings (Feature Flags)
+# =========================================================================
+from .models import SiteSettings
+
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def site_settings_view(request):
+    """Get or update site-wide settings (admin only)."""
+    if not request.user.is_staff:
+        return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+    settings = SiteSettings.load()
+
+    if request.method == "GET":
+        return Response({
+            "email_enabled": settings.email_enabled,
+            "google_sso_enabled": settings.google_sso_enabled,
+        })
+
+    if request.method == "PUT":
+        if "email_enabled" in request.data:
+            settings.email_enabled = request.data["email_enabled"]
+        if "google_sso_enabled" in request.data:
+            settings.google_sso_enabled = request.data["google_sso_enabled"]
+        settings.save()
+        return Response({
+            "email_enabled": settings.email_enabled,
+            "google_sso_enabled": settings.google_sso_enabled,
+            "message": "Settings updated successfully"
+        })
+
+
+# =========================================================================
+# Admin Password Reset
+# =========================================================================
+import secrets
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def admin_reset_user_password(request, user_id):
+    """Admin resets a user's password to a secure temporary one."""
+    if not request.user.is_staff:
+        return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        user = AppUser.objects.get(id=user_id)
+    except AppUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Generate secure temporary password
+    temp_password = secrets.token_urlsafe(12)
+    user.set_password(temp_password)
+    user.must_change_password = True
+    user.save()
+
+    # Optionally send email with new password
+    send_reset_email = request.data.get("send_email", False)
+    if send_reset_email and user.email:
+        from .utils.gmail_service import send_html_email
+        login_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:8080')}/auth"
+        send_html_email(
+            to=[user.email],
+            subject="Password Reset - TCETBI Portal",
+            html_body=f"""
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2 style="color: #1976d2;">Password Reset</h2>
+                <p>Dear {user.full_name or user.username},</p>
+                <p>Your password has been reset by the administrator.</p>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>New Temporary Password:</strong> <code>{temp_password}</code></p>
+                    <p style="color: #d32f2f; font-size: 14px;"><em>You will be required to change this password on your next login.</em></p>
+                </div>
+                <a href="{login_url}" style="background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">Login Now</a>
+                <p style="margin-top: 30px;">Best regards,<br>TCETBI Team</p>
+            </div>
+            """,
+            plain_body=f"Your password has been reset. New temporary password: {temp_password}. Login at {login_url}",
+        )
+
+    return Response({
+        "message": "Password reset successfully",
+        "temporary_password": temp_password,
+        "user_email": user.email,
+        "must_change_password": True,
+    })
+
+
+# =========================================================================
+# Google SSO Login
+# =========================================================================
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def google_sso_login(request):
+    """Authenticate user via Google OAuth2 ID token."""
+    credential = request.data.get("credential")
+    if not credential:
+        return Response({"error": "Google credential is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if SSO is enabled
+    try:
+        settings = SiteSettings.load()
+        if not settings.google_sso_enabled:
+            return Response({"error": "Google SSO is currently disabled"}, status=status.HTTP_403_FORBIDDEN)
+    except Exception:
+        pass
+
+    # Verify token with Google
+    from .utils.google_auth import verify_google_token
+    google_user = verify_google_token(credential)
+    if not google_user:
+        return Response({"error": "Invalid Google token"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    email = google_user["email"]
+    name = google_user.get("name", "")
+    picture = google_user.get("picture", "")
+
+    # Find or create user
+    user = AppUser.objects.filter(email=email).first()
+    if not user:
+        # Also check by username (email-based)
+        user = AppUser.objects.filter(username=email).first()
+
+    if user:
+        # Existing user — check status
+        if user.status == 'blocked':
+            return Response({"error": "Your account has been blocked"}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        # Create new user via Google SSO
+        user = AppUser.objects.create_user(
+            username=email,
+            email=email,
+            full_name=name,
+            profile_image=picture,
+            status='approved',  # Google-verified users are auto-approved
+            must_change_password=False,
+        )
+        # Set unusable password since they use Google
+        user.set_unusable_password()
+        user.save()
+
+        # Create notification
+        Notification.objects.create(
+            type="user_registration",
+            title="New Google SSO User",
+            message=f"{name} ({email}) signed up via Google SSO.",
+            meta={"user_id": user.id, "email": email, "name": name}
+        )
+
+    # Generate JWT tokens
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name or name,
+            "profile_image": user.profile_image or picture,
+            "is_staff": user.is_staff,
+            "status": user.status,
+            "must_change_password": user.must_change_password,
+        }
+    })
+
+
+# =========================================================================
+# Google SSO Status (public endpoint - needed by auth page)
+# =========================================================================
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def google_sso_status(request):
+    """Check if Google SSO is enabled (public)."""
+    try:
+        settings = SiteSettings.load()
+        client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+        return Response({
+            "enabled": settings.google_sso_enabled and bool(client_id),
+            "client_id": client_id if settings.google_sso_enabled else "",
+        })
+    except Exception:
+        return Response({"enabled": False, "client_id": ""})
+

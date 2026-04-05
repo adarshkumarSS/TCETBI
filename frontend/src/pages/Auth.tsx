@@ -206,6 +206,85 @@ export const Auth = () => {
   });
   const [isResetting, setIsResetting] = useState(false);
 
+  // Google SSO
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState('');
+
+  useEffect(() => {
+    // Check if Google SSO is enabled
+    authService.getGoogleSSOStatus().then(data => {
+      setSsoEnabled(data.enabled);
+      setGoogleClientId(data.client_id);
+      
+      if (data.enabled && data.client_id) {
+        // Pre-load Google SSO script
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          // Initialize immediately when script loads
+          if (data.client_id) {
+            initGoogleSSO(data.client_id);
+          }
+        };
+        document.body.appendChild(script);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const initGoogleSSO = (clientId: string) => {
+    if (!(window as any).google?.accounts?.id) return;
+
+    (window as any).google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response: any) => {
+        setIsLoggingIn(true);
+        try {
+          const result = await authService.googleLogin(response.credential);
+          if (result.user.is_staff) {
+            localStorage.setItem('admin_token', result.access);
+            localStorage.setItem('admin_refresh', result.refresh);
+            localStorage.setItem('admin_user', JSON.stringify(result.user));
+            navigate('/admin');
+          } else {
+            localStorage.setItem('user_token', result.access);
+            localStorage.setItem('user_refresh', result.refresh);
+            localStorage.setItem('user_user', JSON.stringify(result.user));
+            navigate('/user/dashboard');
+          }
+        } catch (error: any) {
+          setLoginError(error.response?.data?.error || 'Google login failed');
+          setShowErrorModal(true);
+        } finally {
+          setIsLoggingIn(false);
+        }
+      }
+    });
+
+    // Render Google's official branded button with pill shape and left-aligned logo
+    const btnContainer = document.getElementById("google-signin-btn-container");
+    if (btnContainer) {
+      (window as any).google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        logo_alignment: "left",
+        width: 384
+      });
+    }
+  };
+
+  const handleGoogleFallback = () => {
+    if (!(window as any).google?.accounts?.id) {
+      toast.error("Google sign-in script still loading...");
+      return;
+    }
+    // Attempt to show the prompt if it hasn't appeared
+    (window as any).google.accounts.id.prompt();
+  };
+
   const validatePassword = (password: string) => {
     const minLength = 8;
     const hasUpperCase = /[A-Z]/.test(password);
@@ -624,13 +703,19 @@ export const Auth = () => {
                       </Typography>
                     </Divider>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <SocialButton fullWidth startIcon={<Google />}>
-                        Continue with Google
-                      </SocialButton>
-                      <SocialButton fullWidth startIcon={<LinkedIn />}>
-                        Continue with LinkedIn
-                      </SocialButton>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      mt: 1, 
+                      mb: 1,
+                      '& #google-signin-btn-container': {
+                        transform: 'scale(1.05)',
+                        transformOrigin: 'center'
+                      }
+                    }}>
+                      {ssoEnabled && googleClientId && (
+                        <div id="google-signin-btn-container" style={{ width: '100%', minHeight: '40px' }} />
+                      )}
                     </Box>
 
                     <Box sx={{ textAlign: 'center', mt: 2 }}>

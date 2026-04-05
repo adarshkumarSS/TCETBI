@@ -617,3 +617,27 @@ class FormFieldValue(models.Model):
     
     def __str__(self):
         return f"{self.field.label}: {self.value[:50]}"
+
+
+class SiteSettings(models.Model):
+    """Singleton model for site-wide feature flags and configuration."""
+    email_enabled = models.BooleanField(default=True, help_text="Enable/disable all outgoing email notifications")
+    google_sso_enabled = models.BooleanField(default=False, help_text="Enable/disable Google SSO login")
+
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton: always use pk=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return f"SiteSettings (email={'ON' if self.email_enabled else 'OFF'}, sso={'ON' if self.google_sso_enabled else 'OFF'})"
+

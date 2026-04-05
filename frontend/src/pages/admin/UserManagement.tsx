@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Paper, TextField, Snackbar, Alert } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Ban, Trash2, UserPlus, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Ban, Trash2, UserPlus, Clock, KeyRound, Copy, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../api/userService";
+import authService from "../../api/authService";
 
 export const UserManagement = () => {
   const navigate = useNavigate();
@@ -26,6 +27,14 @@ export const UserManagement = () => {
   });
   const [userCreationLoading, setUserCreationLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'info' | 'warning' });
+
+  // Password reset states
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetTargetUser, setResetTargetUser] = useState<any>(null);
+  const [tempPassword, setTempPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [sendResetEmail, setSendResetEmail] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -157,6 +166,26 @@ export const UserManagement = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetTargetUser) return;
+    setResetLoading(true);
+    try {
+      const result = await authService.resetUserPassword(resetTargetUser.id, sendResetEmail);
+      setTempPassword(result.temporary_password);
+      setSnackbar({ open: true, message: `Password reset for ${resetTargetUser.email}`, severity: 'success' });
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error.response?.data?.error || 'Failed to reset password', severity: 'error' });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(tempPassword);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (isAuthLoading) {
@@ -316,6 +345,20 @@ export const UserManagement = () => {
                           >
                             <Trash2 size={16} />
                           </IconButton>
+                          <IconButton
+                            size="small"
+                            title="Reset Password"
+                            sx={{ color: '#8b5cf6' }}
+                            onClick={() => {
+                              setResetTargetUser(user);
+                              setTempPassword('');
+                              setCopied(false);
+                              setSendResetEmail(true);
+                              setShowResetPasswordModal(true);
+                            }}
+                          >
+                            <KeyRound size={16} />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -454,6 +497,73 @@ export const UserManagement = () => {
           >
             {userCreationLoading ? <Loader2 size={16} className="animate-spin" /> : "Create User"}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Password Reset Modal */}
+      <Dialog open={showResetPasswordModal} onClose={() => setShowResetPasswordModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6" sx={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <KeyRound size={20} /> Reset Password
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          {!tempPassword ? (
+            <Box sx={{ pt: 1 }}>
+              <Typography sx={{ fontFamily: "Poppins, sans-serif", mb: 2 }}>
+                Reset password for <strong>{resetTargetUser?.full_name || resetTargetUser?.username}</strong> ({resetTargetUser?.email})
+              </Typography>
+              <Typography sx={{ fontFamily: "Poppins, sans-serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', mb: 2 }}>
+                A new temporary password will be generated. The user will be forced to change it on next login.
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <input
+                  type="checkbox"
+                  id="sendResetEmail"
+                  checked={sendResetEmail}
+                  onChange={(e) => setSendResetEmail(e.target.checked)}
+                />
+                <label htmlFor="sendResetEmail" style={{ fontFamily: 'Poppins, sans-serif', fontSize: 14 }}>
+                  Send new password via email
+                </label>
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ pt: 1 }}>
+              <Typography sx={{ fontFamily: "Poppins, sans-serif", mb: 2, color: '#22c55e', fontWeight: 600 }}>
+                ✅ Password reset successfully!
+              </Typography>
+              <Box sx={{ bgcolor: 'hsl(var(--muted))', p: 2, borderRadius: '8px', border: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 600, letterSpacing: 1 }}>
+                  {tempPassword}
+                </Typography>
+                <IconButton onClick={handleCopyPassword} sx={{ color: copied ? '#22c55e' : 'hsl(var(--foreground))' }}>
+                  {copied ? <Check size={18} /> : <Copy size={18} />}
+                </IconButton>
+              </Box>
+              <Typography sx={{ fontFamily: "Poppins, sans-serif", fontSize: 12, color: 'hsl(var(--muted-foreground))', mt: 1 }}>
+                {sendResetEmail ? 'This password has been emailed to the user.' : 'Copy and share this password securely with the user.'}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowResetPasswordModal(false)} color="inherit">
+            {tempPassword ? 'Close' : 'Cancel'}
+          </Button>
+          {!tempPassword && (
+            <Button
+              onClick={handleResetPassword}
+              variant="contained"
+              disabled={resetLoading}
+              sx={{
+                backgroundColor: '#8b5cf6',
+                '&:hover': { backgroundColor: '#7c3aed' },
+              }}
+            >
+              {resetLoading ? <Loader2 size={16} className="animate-spin" /> : 'Reset Password'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

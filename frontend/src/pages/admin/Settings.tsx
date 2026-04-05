@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
-import { Loader2, ArrowLeft, Lock, KeyRound, ShieldCheck } from "lucide-react";
+import { Box, Typography, IconButton, Switch, Divider } from "@mui/material";
+import { Loader2, ArrowLeft, Lock, KeyRound, ShieldCheck, Mail, Globe, ToggleLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DarkButton } from "@/components/ui/DarkButton";
 import { OutlinedTextField } from "@/components/ui/OutlinedTextField";
@@ -20,6 +20,12 @@ export const Settings = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  // Feature flags
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+  const [flagsLoading, setFlagsLoading] = useState(true);
+  const [savingFlags, setSavingFlags] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
@@ -29,6 +35,50 @@ export const Settings = () => {
     }
     setIsAuthLoading(false);
   }, [navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadSiteSettings();
+    }
+  }, [isAuthenticated]);
+
+  const loadSiteSettings = async () => {
+    try {
+      const settings = await authService.getSiteSettings();
+      setEmailEnabled(settings.email_enabled);
+      setSsoEnabled(settings.google_sso_enabled);
+    } catch (error) {
+      console.error("Failed to load site settings:", error);
+    } finally {
+      setFlagsLoading(false);
+    }
+  };
+
+  const handleToggleEmail = async (checked: boolean) => {
+    setSavingFlags(true);
+    try {
+      await authService.updateSiteSettings({ email_enabled: checked });
+      setEmailEnabled(checked);
+      toast.success(checked ? "Email notifications enabled" : "Email notifications disabled");
+    } catch (error) {
+      toast.error("Failed to update setting");
+    } finally {
+      setSavingFlags(false);
+    }
+  };
+
+  const handleToggleSSO = async (checked: boolean) => {
+    setSavingFlags(true);
+    try {
+      await authService.updateSiteSettings({ google_sso_enabled: checked });
+      setSsoEnabled(checked);
+      toast.success(checked ? "Google SSO enabled" : "Google SSO disabled");
+    } catch (error) {
+      toast.error("Failed to update setting");
+    } finally {
+      setSavingFlags(false);
+    }
+  };
 
   const handleChange = (prop: keyof typeof passwords) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setPasswords({ ...passwords, [prop]: event.target.value });
@@ -97,6 +147,7 @@ export const Settings = () => {
         backgroundColor: "hsl(var(--background))",
         pt: 12,
         px: 4,
+        pb: 6,
         display: "flex",
         flexDirection: "column",
         alignItems: "center"
@@ -105,7 +156,7 @@ export const Settings = () => {
       <Box
         sx={{
           width: "100%",
-          maxWidth: "600px",
+          maxWidth: "680px",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 6 }}>
@@ -126,10 +177,140 @@ export const Settings = () => {
               color: "hsl(var(--foreground))",
             }}
           >
-            Security Settings
+            Settings
           </Typography>
         </Box>
 
+        {/* ========= FEATURE FLAGS ========= */}
+        <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm mb-6">
+          <CardHeader className="pb-2">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  backgroundColor: "hsl(var(--primary) / 0.1)",
+                  color: "hsl(var(--primary))",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ToggleLeft size={24} />
+              </Box>
+              <Box>
+                <CardTitle className="text-xl font-bold">Feature Flags</CardTitle>
+                <CardDescription>Toggle platform features on or off</CardDescription>
+              </Box>
+            </Box>
+          </CardHeader>
+          <CardContent className="px-8 pb-8">
+            {flagsLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <Loader2 size={24} className="animate-spin" />
+              </Box>
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                {/* Email Toggle */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    py: 2.5,
+                    px: 2,
+                    borderRadius: "12px",
+                    transition: "0.2s",
+                    "&:hover": { bgcolor: "hsl(var(--muted) / 0.5)" },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "10px",
+                        bgcolor: emailEnabled ? "hsl(142 71% 45% / 0.1)" : "hsl(var(--muted))",
+                        color: emailEnabled ? "#22c55e" : "hsl(var(--muted-foreground))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "0.3s",
+                      }}
+                    >
+                      <Mail size={20} />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                        Email Notifications
+                      </Typography>
+                      <Typography sx={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))" }}>
+                        Send Gmail notifications for applications, approvals, and status updates
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Switch
+                    checked={emailEnabled}
+                    onChange={(_, checked) => handleToggleEmail(checked)}
+                    disabled={savingFlags}
+                    color="success"
+                  />
+                </Box>
+
+                <Divider sx={{ opacity: 0.3 }} />
+
+                {/* Google SSO Toggle */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    py: 2.5,
+                    px: 2,
+                    borderRadius: "12px",
+                    transition: "0.2s",
+                    "&:hover": { bgcolor: "hsl(var(--muted) / 0.5)" },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "10px",
+                        bgcolor: ssoEnabled ? "hsl(221 83% 53% / 0.1)" : "hsl(var(--muted))",
+                        color: ssoEnabled ? "#3b82f6" : "hsl(var(--muted-foreground))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "0.3s",
+                      }}
+                    >
+                      <Globe size={20} />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                        Google SSO
+                      </Typography>
+                      <Typography sx={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))" }}>
+                        Allow users to sign in with their Google account
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Switch
+                    checked={ssoEnabled}
+                    onChange={(_, checked) => handleToggleSSO(checked)}
+                    disabled={savingFlags}
+                    color="primary"
+                  />
+                </Box>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ========= PASSWORD CHANGE ========= */}
         <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
           <CardHeader className="text-center pb-2">
             <Box

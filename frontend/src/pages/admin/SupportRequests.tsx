@@ -12,7 +12,7 @@ import { supportService } from '../../api/supportService';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MotionTableRow = motion(TableRow);
+const MotionTableRow = motion.create(TableRow);
 
 interface TabPanelProps {
   children?: React.ReactNode;

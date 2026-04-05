@@ -26,6 +26,8 @@ interface UserAuth {
   full_name: string;
   must_change_password: boolean;
   profile_image?: string;
+  is_staff?: boolean;
+  status?: string;
 }
 
 interface AuthResponse {
@@ -139,6 +141,34 @@ export const authService = {
     const response = await axios.post(`${BASE_URL}/auth/change-user-password/`, data, {
       headers: getUserAuthHeaders()
     });
+    return response.data;
+  },
+
+  // Site Settings
+  async getSiteSettings(): Promise<{ email_enabled: boolean; google_sso_enabled: boolean }> {
+    const response = await axios.get(`${BASE_URL}/admin/site-settings/`, { headers: getAuthHeaders() });
+    return response.data;
+  },
+
+  async updateSiteSettings(data: { email_enabled?: boolean; google_sso_enabled?: boolean }): Promise<any> {
+    const response = await axios.put(`${BASE_URL}/admin/site-settings/`, data, { headers: getAuthHeaders() });
+    return response.data;
+  },
+
+  // Admin Password Reset
+  async resetUserPassword(userId: number, sendEmail: boolean = false): Promise<{ temporary_password: string; user_email: string }> {
+    const response = await axios.post(`${BASE_URL}/admin/users/${userId}/reset-password/`, { send_email: sendEmail }, { headers: getAuthHeaders() });
+    return response.data;
+  },
+
+  // Google SSO
+  async googleLogin(credential: string): Promise<UserAuthResponse> {
+    const response = await axios.post<UserAuthResponse>(`${BASE_URL}/auth/google-login/`, { credential });
+    return response.data;
+  },
+
+  async getGoogleSSOStatus(): Promise<{ enabled: boolean; client_id: string }> {
+    const response = await axios.get(`${BASE_URL}/auth/google-sso-status/`);
     return response.data;
   },
 

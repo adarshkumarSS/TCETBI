@@ -1,8 +1,8 @@
 import os
 import json
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from ..models import TBICEO, AppUser, UserCompanyRequest, Startup, CEO
+from .gmail_service import send_html_email
 
 def send_incubation_email_to_ceo(application):
     """Send email notification to CEO about new incubation application."""
@@ -141,17 +141,12 @@ def send_incubation_email_to_ceo(application):
         if admin_email and admin_email not in recipient_list:
             recipient_list.append(admin_email)
 
-        # Send unified HTML + plain text email
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=f"New Incubation Application Received from {fullName}. Please check the admin dashboard.",
-            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
+        send_html_email(
             to=recipient_list,
+            subject=subject,
+            html_body=application_data,
+            plain_body=f"New Incubation Application Received from {fullName}. Please check the admin dashboard.",
         )
-        msg.attach_alternative(application_data, "text/html")
-        msg.send()
-
-        print(f"Email notification sent successfully to {recipient_list} for application #{id}")
 
     except Exception as e:
         print(f"Error sending email notification to CEO: {e}")
@@ -241,17 +236,13 @@ def send_approval_email(email, fullName, businessName, businessDescription, busi
         
         plain_text = f"Congratulations {fullName}! Your incubation application for {businessName} has been approved. {credentials_text}"
         
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=plain_text,
-            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
+        result = send_html_email(
             to=[email],
+            subject=subject,
+            html_body=html_content,
+            plain_body=plain_text,
         )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
-        print(f"[EMAIL] Approval email sent to {email}")
-        
-        return True
+        return result
     except Exception as e:
         print(f"[ERROR] Failed to send approval email: {e}")
         return False
@@ -282,15 +273,12 @@ def send_user_approval_email(user):
         
         plain_text = f"Dear {user.full_name or user.username}, Your account at TCETBI Portal has been approved. You can now log in at {login_url}"
         
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=plain_text,
-            from_email=os.getenv('DEFAULT_FROM_EMAIL'),
+        send_html_email(
             to=[user.email],
+            subject=subject,
+            html_body=html_content,
+            plain_body=plain_text,
         )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
-        print(f"[EMAIL] User approval email sent to {user.email}")
     except Exception as e:
         print(f"[ERROR] Failed to send user approval email: {e}")
 
@@ -356,18 +344,13 @@ def send_submission_status_email(email, full_name, form_name, status, admin_note
         
         plain_text = f"Dear {full_name}, your {form_name} application status has been updated to {status_text}. {f'Admin Remarks: {admin_notes}' if admin_notes else ''}"
         
-        from_email = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('EMAIL_HOST_USER'))
-        
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=plain_text,
-            from_email=from_email,
+        result = send_html_email(
             to=[email],
+            subject=subject,
+            html_body=html_content,
+            plain_body=plain_text,
         )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
-        print(f"[MAIL-SUCCESS] Status email sent to {email} for {form_name} ({status_text})")
-        return True
+        return result
     except Exception as e:
         print(f"[MAIL-ERROR] Failed to send status email to {email}: {e}")
         return False

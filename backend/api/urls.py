@@ -22,7 +22,8 @@ from .views import (
     admin_login, refresh_token, admin_logout, user_logout, admin_profile, change_admin_password, change_user_password,
     user_register, user_login, get_users, update_user_status, delete_user, get_pending_users, create_user,
     get_user_profile, update_user_profile, get_user_company_request, create_or_update_company_request,
-    submit_company_request, submit_company_edit_request, delete_company_request, get_company_requests_admin, review_company_request
+    submit_company_request, submit_company_edit_request, delete_company_request, get_company_requests_admin, review_company_request,
+    site_settings_view, admin_reset_user_password, google_sso_login, google_sso_status,
 )
 
 router = DefaultRouter()
@@ -129,5 +130,15 @@ urlpatterns = [
     path('admin/submissions/', list_submissions, name='list_submissions'),
     path('admin/submissions/<int:submission_id>/', get_submission_detail, name='get_submission_detail'),
     path('admin/submissions/<int:submission_id>/status/', update_submission_status, name='update_submission_status'),
+
+    # Site Settings (Feature Flags)
+    path('admin/site-settings/', site_settings_view, name='site_settings'),
+
+    # Admin Password Reset
+    path('admin/users/<int:user_id>/reset-password/', admin_reset_user_password, name='admin_reset_user_password'),
+
+    # Google SSO
+    path('auth/google-login/', google_sso_login, name='google_sso_login'),
+    path('auth/google-sso-status/', google_sso_status, name='google_sso_status'),
 
 ]
