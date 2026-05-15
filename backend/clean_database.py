@@ -78,19 +78,13 @@ def truncate_all_tables():
     with connection.cursor() as cursor:
         print("\n🧹 Truncating all tables...")
         with transaction.atomic():
-            # Disable foreign key checks
-            cursor.execute("SET session_replication_role = 'replica';")
-
-            for model in apps.get_models():
-                table_name = model._meta.db_table
-                try:
-                    cursor.execute(f'TRUNCATE TABLE "{table_name}" RESTART IDENTITY CASCADE;')
-                    print(f"✅ Cleared: {table_name}")
-                except Exception as e:
-                    print(f"⚠️ Skipped {table_name}: {e}")
-
-            # Re-enable constraints
-            cursor.execute("SET session_replication_role = 'origin';")
+            # Collect all table names
+            tables = [f'"{model._meta.db_table}"' for model in apps.get_models()]
+            if tables:
+                # Truncate all tables in a single command with CASCADE
+                sql = f"TRUNCATE TABLE {', '.join(tables)} RESTART IDENTITY CASCADE;"
+                cursor.execute(sql)
+                print(f"✅ Cleared {len(tables)} tables successfully.")
 
     print("\n🎯 All tables truncated successfully!")
     return True
