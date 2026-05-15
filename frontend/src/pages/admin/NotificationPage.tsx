@@ -27,7 +27,7 @@ import {
   markNotificationRead,
   deleteNotification,
   Notification,
-} from "@/api/notificationservice";
+} from "@/api/notificationService";
 
 // If you exported these from your AnimatedList file:
 import { AnimatedScroll, AnimatedItem } from "../../components/AdminNavigation";
