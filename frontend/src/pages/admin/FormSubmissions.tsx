@@ -276,13 +276,18 @@ export const FormSubmissions = () => {
     }
   };
 
+  const [adminNotes, setAdminNotes] = useState('');
+  const [mentorName, setMentorName] = useState('');
+
   const handleUpdateStatus = async (status: string) => {
     if (!selectedSubmission) return;
 
     try {
-      await formBuilderService.updateSubmissionStatus(selectedSubmission.id, status);
+      await formBuilderService.updateSubmissionStatus(selectedSubmission.id, status, adminNotes, mentorName);
       toast.success('Status updated successfully');
       setDetailDialog(false);
+      setAdminNotes('');
+      setMentorName('');
       loadSubmissions();
     } catch (error) {
       toast.error('Failed to update status');
@@ -309,6 +314,7 @@ export const FormSubmissions = () => {
         return { bg: 'hsl(293 70% 50% / 0.06)', border: 'hsl(293 70% 50% / 0.15)', accent: '#d946ef' };
       case 'funding_request':
       case 'funding_support':
+      case 'company_funding_support':
         return { bg: 'hsl(38 92% 50% / 0.06)', border: 'hsl(38 92% 50% / 0.15)', accent: '#f59e0b' };
       case 'mentoring_request':
       case 'mentoring_support':
@@ -383,6 +389,7 @@ export const FormSubmissions = () => {
                 <MenuItem value="">All Forms</MenuItem>
                 <MenuItem value="mentor_application">Mentor Application</MenuItem>
                 <MenuItem value="funding_request">Funding Request</MenuItem>
+                <MenuItem value="company_funding_support">Company Funding Request</MenuItem>
                 <MenuItem value="mentoring_request">Mentoring Request</MenuItem>
                 <MenuItem value="validation_request">Idea Validation</MenuItem>
                 <MenuItem value="incubation_application">Incubation Application</MenuItem>
@@ -455,7 +462,10 @@ export const FormSubmissions = () => {
                 <TableCell align="right">
                   <IconButton
                     size="small"
-                    onClick={() => handleViewDetails(submission.id)}
+                    onClick={() => {
+                        handleViewDetails(submission.id);
+                        setAdminNotes(submission.admin_notes || '');
+                    }}
                     color="primary"
                   >
                     <Visibility />
@@ -506,7 +516,7 @@ export const FormSubmissions = () => {
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                         {fieldValue.field_label}
                       </Typography>
-                      {fieldValue.file_url ? (
+                      {fieldValue.field_type === 'file' || fieldValue.file_url ? (
                         <Button
                           variant="text"
                           href={fieldValue.file_url}
@@ -526,23 +536,54 @@ export const FormSubmissions = () => {
                   );
                 })}
               </Grid>
+
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Admin Processing</Typography>
+                <Grid container spacing={2}>
+                   {selectedSubmission.form_type === 'mentoring_support' && (
+                     <Grid size={{ xs: 12 }}>
+                        <TextField
+                           label="Assigned Mentor Name"
+                           fullWidth
+                           placeholder="Enter name of mentor to include in the email"
+                           value={mentorName}
+                           onChange={(e) => setMentorName(e.target.value)}
+                           sx={{ mb: 2 }}
+                        />
+                     </Grid>
+                   )}
+                   <Grid size={{ xs: 12 }}>
+                      <TextField
+                        label="Admin Notes / Feedback"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        placeholder="These notes will be included in the automated email sent to the user."
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                      />
+                   </Grid>
+                </Grid>
+              </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Box sx={{ display: 'flex', gap: 1, width: '100%', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', gap: 1, width: '100%', justifyContent: 'space-between', p: 1 }}>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button onClick={() => handleUpdateStatus('approved')} color="success" variant="contained">
-                Approve
+                Approve Request
               </Button>
               <Button onClick={() => handleUpdateStatus('rejected')} color="error" variant="contained">
-                Reject
+                Reject Request
               </Button>
-              <Button onClick={() => handleUpdateStatus('in_progress')} color="warning" variant="contained">
-                In Progress
-              </Button>
+              {selectedSubmission?.status === 'pending' && (
+                <Button onClick={() => handleUpdateStatus('in_progress')} color="warning" variant="contained">
+                    Mark In Progress
+                </Button>
+              )}
             </Box>
-            <Button onClick={() => setDetailDialog(false)}>Close</Button>
+            <Button onClick={() => setDetailDialog(false)} variant="outlined">Close</Button>
           </Box>
         </DialogActions>
       </Dialog>

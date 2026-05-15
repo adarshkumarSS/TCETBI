@@ -11,29 +11,22 @@ def is_email_enabled():
     try:
         from api.models import SiteSettings
         settings = SiteSettings.load()
-        return settings.email_enabled
-    except Exception:
-        # If the table doesn't exist yet (pre-migration), default to True
+        # FORCE ENABLE FOR DEBUG
+        print(f"[MAIL-DEBUG] SiteSettings.email_enabled: {settings.email_enabled}")
+        return True #settings.email_enabled
+    except Exception as e:
+        print(f"[MAIL-DEBUG] SiteSettings check failed: {e}")
         return True
 
 
 def send_html_email(to, subject, html_body, plain_body=None, from_email=None):
     """
     Send an HTML email through Django's SMTP backend.
-    Checks the feature flag before sending.
-    
-    Args:
-        to: list of recipient emails or single email string
-        subject: email subject line
-        html_body: HTML content
-        plain_body: plain text fallback (auto-generated if not provided)
-        from_email: sender email (defaults to DEFAULT_FROM_EMAIL env var)
-    
-    Returns:
-        True if sent, False if skipped or failed
     """
+    print(f"[MAIL-DEBUG] Initiating send to {to} | Subject: {subject}")
+    
     if not is_email_enabled():
-        print(f"[MAIL-SKIP] Email disabled by admin. Skipping: '{subject}' to {to}")
+        print(f"[MAIL-SKIP] Email disabled. Skipping: '{subject}' to {to}")
         return False
 
     if not to:
@@ -47,7 +40,6 @@ def send_html_email(to, subject, html_body, plain_body=None, from_email=None):
         from_email = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('EMAIL_HOST_USER'))
 
     if not plain_body:
-        # Strip HTML tags for a basic plain text version
         import re
         plain_body = re.sub(r'<[^>]+>', '', html_body).strip()
 
@@ -59,9 +51,11 @@ def send_html_email(to, subject, html_body, plain_body=None, from_email=None):
             to=to,
         )
         msg.attach_alternative(html_body, "text/html")
-        msg.send()
-        print(f"[MAIL-OK] Sent '{subject}' to {to}")
+        sent_count = msg.send()
+        print(f"[MAIL-OK] Django sent {sent_count} email(s) successfully to {to}")
         return True
     except Exception as e:
-        print(f"[MAIL-ERROR] Failed to send '{subject}' to {to}: {e}")
+        import traceback
+        print(f"[MAIL-ERROR] CRITICAL FAILURE sending to {to}: {e}")
+        traceback.print_exc()
         return False

@@ -7,7 +7,12 @@ import cloudinary.uploader
 
 from ..models import FormTemplate, FormField, FormSubmission, FormFieldValue, Notification, IncubationApplication
 from ..serializers import FormTemplateSerializer, FormSubmissionSerializer
-from ..utils.email_utils import send_incubation_email_to_ceo, send_approval_email, send_submission_status_email
+from ..utils.email_utils import (
+    send_incubation_email_to_ceo, 
+    send_approval_email, 
+    send_submission_status_email,
+    send_submission_acknowledgement_email
+)
 from ..utils.drive_utils import upload_to_drive
 import json
 
@@ -123,11 +128,14 @@ def submit_form(request, form_type):
         elif form_type == 'contact':
             noti_type = 'contact'
 
+        # Get applicant name for notification
+        applicant_name = form_data.get("fullName") or form_data.get("name") or form_data.get("full_name") or "User"
+
         # Create notification
         Notification.objects.create(
             type=noti_type,
             title=f'New {template.name} Submission',
-            message=f'A new {template.name} has been submitted by {form_data.get("fullName", "User")}.',
+            message=f'A new {template.name} has been submitted by {applicant_name}.',
             meta={'submission_id': submission.id, 'form_type': form_type}
         )
 
@@ -240,6 +248,26 @@ def submit_form(request, form_type):
                 )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync ValidationRequest: {e}")
+
+        # NEW: Send acknowledgement email to user for Support Requests
+        if form_type in ['funding_support', 'mentoring_support', 'idea_validation', 'company_funding_support']:
+            try:
+                # Extract email and name using the same robust logic as update_submission_status
+                field_values = submission.field_values.all()
+                fv_map = {fv.field.field_name.lower(): fv.value for fv in field_values}
+                
+                email = fv_map.get('email') or fv_map.get('email address') or fv_map.get('contact_email')
+                name = fv_map.get('name') or fv_map.get('fullname') or fv_map.get('full_name') or 'User'
+                
+                if email:
+                    send_submission_acknowledgement_email(
+                        email=email,
+                        full_name=name,
+                        form_name=template.name,
+                        submission_id=submission.id
+                    )
+            except Exception as e:
+                print(f"[MAIL-ERROR] Failed to trigger submission acknowledgement: {e}")
         
         serializer = FormSubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -297,74 +325,122 @@ def update_submission_status(request, submission_id):
     """Update submission status (admin)"""
     try:
         submission = FormSubmission.objects.get(id=submission_id)
-        new_status = request.data.get('status')
+        new_status = request.data.get('status', '').lower()
         admin_notes = request.data.get('admin_notes')
+        mentor_name = request.data.get('mentor_name') # Add mentor name support
         
         if new_status:
-            old_status = submission.status
+            old_status = (submission.status or '').lower()
             submission.status = new_status
+            form_type = submission.form_template.form_type
+            email_sent = False
+
+            # SYNC STATUS TO LEGACY MODELS IF THEY EXIST
+            field_values = submission.field_values.all()
+            field_values_map = {fv.field.field_name.lower(): fv.value for fv in field_values}
             
-            # SPECIAL HANDLING FOR INCUBATION APPROVAL
-            if submission.form_template.form_type == 'incubation_application' and new_status == 'approved' and old_status != 'approved':
-                # Map dynamic fields to send approval email
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                
-                email = field_values.get('email').value if field_values.get('email') else None
-                fullName = field_values.get('fullName').value if field_values.get('fullName') else 'User'
-                businessName = field_values.get('businessName').value if field_values.get('businessName') else 'Startup'
-                businessDescription = field_values.get('businessDescription').value if field_values.get('businessDescription') else ''
-                businessType = field_values.get('businessType').value if field_values.get('businessType') else ''
-                city = field_values.get('city').value if field_values.get('city') else ''
-                state = field_values.get('state').value if field_values.get('state') else ''
-                resMobile = field_values.get('resMobile').value if field_values.get('resMobile') else ''
+            # Robust extraction of common fields (case-insensitive keys)
+            def get_field_any(keys):
+                for k in keys:
+                    val = field_values_map.get(k.lower())
+                    if val: return val
+                return None
+
+            email = get_field_any(['email', 'Email Address', 'contact_email', 'Email ID'])
+            
+            # Fallback to user email if authenticated
+            if not email and submission.user:
+                email = submission.user.email
+            
+            fullName = get_field_any(['fullName', 'name', 'full_name', 'Contact Person Name', 'Your Name']) or 'User'
+            
+            # Fallback to user full name
+            if (fullName == 'User' or not fullName) and submission.user:
+                fullName = submission.user.full_name or submission.user.username
+            startup_name = get_field_any(['startup_name', 'businessName', 'company_name', 'Startup Name', 'Registered Company Name'])
+
+            # 1. Incubation
+            if form_type == 'incubation_application' and new_status == 'approved' and old_status != 'approved':
+                businessName = startup_name or 'Startup'
+                businessDescription = get_field_any(['businessDescription', 'description', 'idea_details']) or ''
+                businessType = get_field_any(['businessType', 'domain']) or ''
+                city = get_field_any(['city']) or ''
+                state = get_field_any(['state']) or ''
+                resMobile = get_field_any(['resMobile', 'phone', 'contact_phone', 'Phone Number']) or ''
                 
                 if email:
                     send_approval_email(email, fullName, businessName, businessDescription, businessType, city, state, resMobile)
-                    
-                    # Also try to update the linked IncubationApplication if it exists (by search since they aren't FK'd)
+                    email_sent = True # Mark as sent so generic doesn't fire
                     try:
                         inc_app = IncubationApplication.objects.filter(email=email, businessName=businessName).order_by('-created_at').first()
                         if inc_app:
                             inc_app.status = 'approved'
                             inc_app.save()
-                    except:
-                        pass
-                        
-            elif submission.form_template.form_type == 'mentor_application' and new_status == 'approved' and old_status != 'approved':
-                # Map dynamic fields to create a Mentor entry
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                
+                    except: pass
+            
+            # 2. Mentor Application
+            elif form_type == 'mentor_application' and new_status == 'approved' and old_status != 'approved':
                 from ..models import Mentor
                 try:
                     Mentor.objects.create(
-                        name=field_values.get('name').value if field_values.get('name') else (field_values.get('fullName').value if field_values.get('fullName') else 'Unknown'),
-                        email=field_values.get('email').value if field_values.get('email') else None,
-                        designation=field_values.get('designation').value if field_values.get('designation') else '',
-                        domain=field_values.get('domain').value if field_values.get('domain') else '',
-                        expertise=field_values.get('expertise').value if field_values.get('expertise') else '',
-                        years_of_experience=int(field_values.get('experience').value) if field_values.get('experience') and field_values.get('experience').value.isdigit() else 0,
-                        bio=field_values.get('bio').value if field_values.get('bio') else '',
-                        linkedin=field_values.get('linkedin').value if field_values.get('linkedin') else '',
-                        image=field_values.get('profile_image').file_url if field_values.get('profile_image') else '',
+                        name=fullName,
+                        email=email,
+                        designation=field_values_map.get('designation', ''),
+                        domain=field_values_map.get('domain', ''),
+                        expertise=field_values_map.get('expertise', ''),
+                        years_of_experience=int(field_values_map.get('experience')) if field_values_map.get('experience', '').isdigit() else 0,
+                        bio=field_values_map.get('bio', ''),
+                        linkedin=field_values_map.get('linkedin', ''),
+                        image=field_values_map.get('profile_image', ''),
                         status='approved'
                     )
                 except Exception as e:
-                    print(f"[ERROR] Failed to create Mentor from application: {e}")
-            
-            # GENERIC STATUS UPDATE EMAIL (for non-incubation or rejections)
-            elif (new_status in ['approved', 'rejected']) and (new_status != old_status):
-                # Map dynamic fields
-                field_values_map = {fv.field.field_name: fv.value for fv in submission.field_values.all()}
-                email = field_values_map.get('email') or field_values_map.get('Email Address')
-                fullName = field_values_map.get('fullName') or field_values_map.get('name') or field_values_map.get('full_name') or 'User'
-                
+                    print(f"[ERROR] Failed to create Mentor: {e}")
+
+            # 3. Support Requests Sync Status back to legacy models
+            from ..models import FundingRequest, MentoringRequest, ValidationRequest
+            try:
+                if form_type in ['funding_support', 'company_funding_support']:
+                    # Filter for matching email/startup and update
+                    qs = FundingRequest.objects.filter(email=email)
+                    if startup_name:
+                        qs = qs.filter(startup_name=startup_name)
+                    qs.update(status=new_status, admin_notes=admin_notes)
+
+                elif form_type == 'mentoring_support':
+                    qs = MentoringRequest.objects.filter(email=email)
+                    if startup_name:
+                        qs = qs.filter(startup_name=startup_name)
+                    
+                    mentor_obj = None
+                    if mentor_name:
+                        from ..models import Mentor
+                        mentor_obj = Mentor.objects.filter(name__icontains=mentor_name).first()
+                    
+                    qs.update(status=new_status, admin_notes=admin_notes, mentor=mentor_obj)
+
+                elif form_type == 'idea_validation':
+                    qs = ValidationRequest.objects.filter(email=email)
+                    if startup_name:
+                        qs = qs.filter(startup_name=startup_name)
+                    qs.update(status=new_status, admin_notes=admin_notes)
+            except Exception as sync_err:
+                print(f"[RE-SYNC-ERROR] Failed to update legacy model: {sync_err}")
+
+            # GENERIC STATUS UPDATE EMAIL
+            # Force email send if status changed to approved/rejected and not already sent by specialized function
+            print(f"[MAIL-DEBUG] Evaluating email trigger: old={old_status}, new={new_status}, type={form_type}, already_sent={email_sent}")
+            if (new_status in ['approved', 'rejected']) and (new_status != old_status) and not email_sent:
                 if email:
+                    print(f"[MAIL-DEBUG] Triggering email to {email} for {form_type}")
                     send_submission_status_email(
                         email=email,
                         full_name=fullName,
                         form_name=submission.form_template.name,
                         status=new_status,
-                        admin_notes=admin_notes
+                        admin_notes=admin_notes,
+                        mentor_name=mentor_name,
+                        form_type=form_type
                     )
 
         if admin_notes is not None:

@@ -282,7 +282,7 @@ def send_user_approval_email(user):
     except Exception as e:
         print(f"[ERROR] Failed to send user approval email: {e}")
 
-def send_submission_status_email(email, full_name, form_name, status, admin_notes=None):
+def send_submission_status_email(email, full_name, form_name, status, admin_notes=None, mentor_name=None, form_type=None):
     """Generic function to send automated approval/rejection emails for any form."""
     try:
         if not email:
@@ -293,6 +293,25 @@ def send_submission_status_email(email, full_name, form_name, status, admin_note
         is_approved = status == 'approved'
         status_text = "Approved" if is_approved else "Rejected"
         color = "#2e7d32" if is_approved else "#d32f2f" # Success Green vs Error Red
+
+        # Specialized Messages
+        special_message = ""
+        if is_approved:
+            if form_type == 'mentoring_support':
+                mentor_display = mentor_name if mentor_name else "one of our expert mentors"
+                special_message = f"<p>We are pleased to inform you that your request for mentoring has been approved. You have been assigned to <strong>{mentor_display}</strong>, who will guide you through the process.</p>"
+            elif form_type == 'idea_validation':
+                special_message = "<p>Your idea has been successfully validated! <strong>We have proceeded further and will let you know the next steps in this mail soon.</strong></p>"
+            elif form_type == 'funding_support' or form_type == 'company_funding_support':
+                special_message = "<p>Your funding request has been approved! Our financial team will contact you shortly to discuss the disbursement and compliance details.</p>"
+            else:
+                special_message = "<p>Our team will contact you shortly with the next steps regarding your approval process.</p>"
+        else:
+            # Rejection message
+            if "incubation" in form_name.lower():
+                special_message = "<p>We deeply appreciate the time and effort you invested in preparing your incubation application. After careful consideration, we regret to inform you that we cannot proceed with your proposal at this time.</p>"
+            else:
+                special_message = "<p>Unfortunately, we are unable to proceed with your application at this time. We encourage you to refine your proposal and apply again in the future if applicable.</p>"
 
         html_content = f"""
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 12px;">
@@ -305,36 +324,27 @@ def send_submission_status_email(email, full_name, form_name, status, admin_note
             
             <div style="background-color: #f9f9f9; padding: 15px; border-left: 5px solid {color}; margin: 20px 0;">
                 <p style="margin: 0;"><strong>Status:</strong> {status_text}</p>
+                {special_message}
                 {f'<p style="margin: 10px 0 0 0;"><strong>Remarks/Feedback:</strong> {admin_notes}</p>' if admin_notes else ''}
             </div>
             """
         
-        if is_approved:
-            html_content += "<p>Our team will contact you shortly with the next steps regarding your approval process.</p>"
-        else:
-            if "incubation" in form_name.lower():
-                # Formal Rejection for Incubation
-                from ..models import TBICEO
-                ceo = TBICEO.objects.first()
-                ceo_contact = ""
-                if ceo:
-                    ceo_contact = f"""
-                    <div style="margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px;">
-                        <p style="margin: 0;"><strong>For any further queries, please feel free to reach out to our CEO:</strong></p>
-                        <p style="margin: 5px 0;">{ceo.name} - {ceo.position}</p>
-                        <p style="margin: 5px 0;"><a href="mailto:{ceo.email}" style="color: #1976d2;">{ceo.email}</a></p>
-                        {f'<p style="margin: 5px 0;"><a href="{ceo.linkedin}" style="color: #1976d2;">LinkedIn Profile</a></p>' if ceo.linkedin else ''}
-                    </div>
-                    """
-                
-                html_content += f"""
-                <p>We deeply appreciate the time and effort you invested in preparing your incubation application. After careful consideration, we regret to inform you that we cannot proceed with your proposal at this time.</p>
-                <p>We receive many promising applications, and our selection process is highly competitive. Should your startup pivot or achieve new milestones that align more closely with our incubation mandate, we encourage you to apply again in the future.</p>
-                {ceo_contact}
+        if not is_approved and "incubation" in form_name.lower():
+            # Formal Rejection for Incubation
+            from ..models import TBICEO
+            ceo = TBICEO.objects.first()
+            ceo_contact = ""
+            if ceo:
+                ceo_contact = f"""
+                <div style="margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px;">
+                    <p style="margin: 0;"><strong>For any further queries, please feel free to reach out to our CEO:</strong></p>
+                    <p style="margin: 5px 0;">{ceo.name} - {ceo.position}</p>
+                    <p style="margin: 5px 0;"><a href="mailto:{ceo.email}" style="color: #1976d2;">{ceo.email}</a></p>
+                    {f'<p style="margin: 5px 0;"><a href="{ceo.linkedin}" style="color: #1976d2;">LinkedIn Profile</a></p>' if ceo.linkedin else ''}
+                </div>
                 """
-            else:
-                html_content += "<p>Unfortunately, we are unable to proceed with your application at this time. We encourage you to refine your proposal and apply again in the future if applicable.</p>"
-
+            html_content += ceo_contact
+                
         html_content += f"""
             <p style="margin-top: 30px;">Best regards,<br><strong>Team TCETBI</strong></p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
@@ -353,4 +363,45 @@ def send_submission_status_email(email, full_name, form_name, status, admin_note
         return result
     except Exception as e:
         print(f"[MAIL-ERROR] Failed to send status email to {email}: {e}")
+        return False
+
+def send_submission_acknowledgement_email(email, full_name, form_name, submission_id):
+    """Send immediate acknowledgement email to user when they submit a form."""
+    try:
+        if not email:
+            return False
+
+        subject = f"Acknowledgement: Your {form_name} has been received - TCETBI"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 12px;">
+            <div style="text-align: center; border-bottom: 2px solid #e60000; padding-bottom: 10px;">
+                <h2 style="color: #e60000; margin: 0;">Submission Received</h2>
+            </div>
+            
+            <p>Dear {full_name},</p>
+            <p>Thank you for reaching out to TCETBI. We have successfully received your application for <strong>{form_name}</strong>.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-left: 5px solid #e60000; margin: 20px 0;">
+                <p style="margin: 0;"><strong>Submission ID:</strong> #{submission_id}</p>
+                <p style="margin: 5px 0 0 0;"><strong>Status:</strong> Under Review</p>
+            </div>
+
+            <p>Our team will review your details and get back to you with an update shortly. You can use the Submission ID above for any future correspondence regarding this request.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br><strong>Team TCETBI</strong></p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px; text-align: center;">This is an automated acknowledgment. Please do not reply directly to this email.</p>
+        </div>
+        """
+        
+        plain_text = f"Dear {full_name}, we have received your {form_name} submission (ID: #{submission_id}). We will review it and get back to you soon."
+        
+        return send_html_email(
+            to=[email],
+            subject=subject,
+            html_body=html_content,
+            plain_body=plain_text,
+        )
+    except Exception as e:
+        print(f"[MAIL-ERROR] Failed to send acknowledgement email to {email}: {e}")
         return False
