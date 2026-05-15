@@ -42,9 +42,10 @@ import { Support } from "./pages/Support";
 import { MyCompany } from "./pages/MyCompany";
 import { SupportRequests } from "./pages/admin/SupportRequests";
 import { AdminMentors } from "./pages/admin/AdminMentors";
-import { FundingSupport } from "./pages/support/FundingSupport";
-import { MentoringSupport } from "./pages/support/MentoringSupport";
-import { IdeaValidation } from "./pages/support/IdeaValidation";
+import { FundingSupport } from './pages/support/FundingSupport';
+import { CompanyFundingSupport } from './pages/support/CompanyFundingSupport';
+import { MentoringSupport } from './pages/support/MentoringSupport';
+import { IdeaValidation } from './pages/support/IdeaValidation';
 import { ApplyMentor } from "./pages/support/ApplyMentor";
 import { FormBuilder } from "./pages/admin/FormBuilder";
 import { FormSubmissions } from "./pages/admin/FormSubmissions";
@@ -190,6 +191,15 @@ const router = createBrowserRouter(
         <>
           <AppContent />
           <FundingSupport />
+        </>
+      ),
+    },
+    {
+      path: "/support/company-funding",
+      element: (
+        <>
+          <AppContent />
+          <CompanyFundingSupport />
         </>
       ),
     },

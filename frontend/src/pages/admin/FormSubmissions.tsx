@@ -276,13 +276,18 @@ export const FormSubmissions = () => {
     }
   };
 
+  const [adminNotes, setAdminNotes] = useState('');
+  const [mentorName, setMentorName] = useState('');
+
   const handleUpdateStatus = async (status: string) => {
     if (!selectedSubmission) return;
 
     try {
-      await formBuilderService.updateSubmissionStatus(selectedSubmission.id, status);
+      await formBuilderService.updateSubmissionStatus(selectedSubmission.id, status, adminNotes, mentorName);
       toast.success('Status updated successfully');
       setDetailDialog(false);
+      setAdminNotes('');
+      setMentorName('');
       loadSubmissions();
     } catch (error) {
       toast.error('Failed to update status');
@@ -299,6 +304,30 @@ export const FormSubmissions = () => {
         return 'warning';
       default:
         return 'default';
+    }
+  };
+
+  // Color theme per form type
+  const getFormTypeTheme = (formType: string) => {
+    switch (formType) {
+      case 'mentor_application':
+        return { bg: 'hsl(293 70% 50% / 0.06)', border: 'hsl(293 70% 50% / 0.15)', accent: '#d946ef' };
+      case 'funding_request':
+      case 'funding_support':
+      case 'company_funding_support':
+        return { bg: 'hsl(38 92% 50% / 0.06)', border: 'hsl(38 92% 50% / 0.15)', accent: '#f59e0b' };
+      case 'mentoring_request':
+      case 'mentoring_support':
+        return { bg: 'hsl(199 89% 48% / 0.06)', border: 'hsl(199 89% 48% / 0.15)', accent: '#0ea5e9' };
+      case 'validation_request':
+      case 'idea_validation':
+        return { bg: 'hsl(160 84% 39% / 0.06)', border: 'hsl(160 84% 39% / 0.15)', accent: '#10b981' };
+      case 'incubation_application':
+        return { bg: 'hsl(221 83% 53% / 0.06)', border: 'hsl(221 83% 53% / 0.15)', accent: '#3b82f6' };
+      case 'contact':
+        return { bg: 'hsl(142 71% 45% / 0.06)', border: 'hsl(142 71% 45% / 0.15)', accent: '#22c55e' };
+      default:
+        return { bg: 'hsl(var(--muted) / 0.3)', border: 'hsl(var(--border))', accent: '#8b5cf6' };
     }
   };
 
@@ -331,7 +360,7 @@ export const FormSubmissions = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ pt: 12, pb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           Form Submissions
@@ -360,6 +389,7 @@ export const FormSubmissions = () => {
                 <MenuItem value="">All Forms</MenuItem>
                 <MenuItem value="mentor_application">Mentor Application</MenuItem>
                 <MenuItem value="funding_request">Funding Request</MenuItem>
+                <MenuItem value="company_funding_support">Company Funding Request</MenuItem>
                 <MenuItem value="mentoring_request">Mentoring Request</MenuItem>
                 <MenuItem value="validation_request">Idea Validation</MenuItem>
                 <MenuItem value="incubation_application">Incubation Application</MenuItem>
@@ -399,8 +429,10 @@ export const FormSubmissions = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {submissions.map((submission) => (
-              <TableRow key={submission.id} hover>
+            {submissions.map((submission) => {
+              const theme = getFormTypeTheme(submission.form_type);
+              return (
+              <TableRow key={submission.id} hover sx={{ borderLeft: `4px solid ${theme.accent}`, '&:hover': { bgcolor: theme.bg } }}>
                 <TableCell>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {submission.form_name}
@@ -430,14 +462,18 @@ export const FormSubmissions = () => {
                 <TableCell align="right">
                   <IconButton
                     size="small"
-                    onClick={() => handleViewDetails(submission.id)}
+                    onClick={() => {
+                        handleViewDetails(submission.id);
+                        setAdminNotes(submission.admin_notes || '');
+                    }}
                     color="primary"
                   >
                     <Visibility />
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
             {submissions.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
@@ -472,13 +508,15 @@ export const FormSubmissions = () => {
               </Typography>
 
               <Grid container spacing={2}>
-                {selectedSubmission.field_values.map((fieldValue, index) => (
+                {selectedSubmission.field_values.map((fieldValue, index) => {
+                  const theme = getFormTypeTheme(selectedSubmission.form_type);
+                  return (
                   <Grid size={{ xs: 12 }} key={index}>
-                    <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+                    <Paper sx={{ p: 2, bgcolor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '12px' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                         {fieldValue.field_label}
                       </Typography>
-                      {fieldValue.file_url ? (
+                      {fieldValue.field_type === 'file' || fieldValue.file_url ? (
                         <Button
                           variant="text"
                           href={fieldValue.file_url}
@@ -495,25 +533,57 @@ export const FormSubmissions = () => {
                       )}
                     </Paper>
                   </Grid>
-                ))}
+                  );
+                })}
               </Grid>
+
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Admin Processing</Typography>
+                <Grid container spacing={2}>
+                   {selectedSubmission.form_type === 'mentoring_support' && (
+                     <Grid size={{ xs: 12 }}>
+                        <TextField
+                           label="Assigned Mentor Name"
+                           fullWidth
+                           placeholder="Enter name of mentor to include in the email"
+                           value={mentorName}
+                           onChange={(e) => setMentorName(e.target.value)}
+                           sx={{ mb: 2 }}
+                        />
+                     </Grid>
+                   )}
+                   <Grid size={{ xs: 12 }}>
+                      <TextField
+                        label="Admin Notes / Feedback"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        placeholder="These notes will be included in the automated email sent to the user."
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                      />
+                   </Grid>
+                </Grid>
+              </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Box sx={{ display: 'flex', gap: 1, width: '100%', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', gap: 1, width: '100%', justifyContent: 'space-between', p: 1 }}>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button onClick={() => handleUpdateStatus('approved')} color="success" variant="contained">
-                Approve
+                Approve Request
               </Button>
               <Button onClick={() => handleUpdateStatus('rejected')} color="error" variant="contained">
-                Reject
+                Reject Request
               </Button>
-              <Button onClick={() => handleUpdateStatus('in_progress')} color="warning" variant="contained">
-                In Progress
-              </Button>
+              {selectedSubmission?.status === 'pending' && (
+                <Button onClick={() => handleUpdateStatus('in_progress')} color="warning" variant="contained">
+                    Mark In Progress
+                </Button>
+              )}
             </Box>
-            <Button onClick={() => setDetailDialog(false)}>Close</Button>
+            <Button onClick={() => setDetailDialog(false)} variant="outlined">Close</Button>
           </Box>
         </DialogActions>
       </Dialog>

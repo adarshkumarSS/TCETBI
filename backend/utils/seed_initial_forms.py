@@ -201,6 +201,43 @@ def seed_forms():
             FormField.objects.create(form_template=incubation_template, **field_data)
         print(f"  Added {len(incubation_fields)} fields")
     
+    # 6. Registered Company's Request Form
+    company_funding_template, created = FormTemplate.objects.get_or_create(
+        form_type='company_funding_support',
+        defaults={
+            'name': "Registered Company's Request",
+            'description': 'Dedicated funding application for registered companies and incorporated startups',
+            'is_active': True
+        }
+    )
+    
+    if created:
+        print("✅ Created Company Funding Support template")
+        company_fields = [
+            {'field_name': 'company_name', 'label': 'Registered Company Name', 'field_type': 'text', 'is_required': True, 'order': 0},
+            {'field_name': 'incorporation_date', 'label': 'Date of Incorporation', 'field_type': 'date', 'is_required': True, 'order': 1},
+            {'field_name': 'cin_number', 'label': 'CIN / Registration Number', 'field_type': 'text', 'is_required': True, 'order': 2},
+            {'field_name': 'pan_number', 'label': 'Company PAN', 'field_type': 'text', 'is_required': True, 'order': 3},
+            {'field_name': 'full_name', 'label': 'Contact Person Name', 'field_type': 'text', 'is_required': True, 'order': 4},
+            {'field_name': 'email', 'label': 'Contact Email', 'field_type': 'email', 'is_required': True, 'order': 5},
+            {'field_name': 'phone', 'label': 'Contact Phone', 'field_type': 'phone', 'is_required': True, 'order': 6},
+            {
+                'field_name': 'scheme', 
+                'label': 'Funding Scheme', 
+                'field_type': 'select', 
+                'is_required': True, 
+                'order': 7,
+                'options': ['SISFS', 'NIDHI PRAYAS', 'NIDHI EIR', 'Seed Support', 'Other']
+            },
+            {'field_name': 'amount_requested', 'label': 'Amount Requested (in ₹)', 'field_type': 'number', 'is_required': True, 'order': 8},
+            {'field_name': 'business_proposal', 'label': 'Business Proposal / Pitch Deck', 'field_type': 'file', 'is_required': True, 'order': 9},
+            {'field_name': 'description', 'label': 'Brief Description of Milestones Achieved', 'field_type': 'textarea', 'is_required': True, 'order': 10},
+        ]
+        
+        for field_data in company_fields:
+            FormField.objects.create(form_template=company_funding_template, **field_data)
+        print(f"  Added {len(company_fields)} fields")
+    
     print("\n✨ Form seeding complete!")
     print(f"Total templates: {FormTemplate.objects.count()}")
     print(f"Total fields: {FormField.objects.count()}")

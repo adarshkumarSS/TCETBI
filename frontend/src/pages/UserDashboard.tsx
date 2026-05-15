@@ -1,5 +1,5 @@
-import { Paper, Typography, Box, Button, Avatar } from "@mui/material";
-import { Logout, AccountCircle } from "@mui/icons-material";
+import { Paper, Typography, Box, Button, Avatar, Chip } from "@mui/material";
+import { Logout, AccountCircle, Business } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -250,8 +250,63 @@ export const UserDashboard = () => {
         </Paper>
 
         {/* Profile Section */}
-        <Box sx={{ animation: "fadeIn 0.5s ease-in-out" }}>
+        <Box sx={{ animation: "fadeIn 0.5s ease-in-out", mb: 6 }}>
           <ProfileTab user={user} />
+        </Box>
+
+        {/* Corporate Services Section */}
+        <Box sx={{ animation: "fadeIn 0.5s ease-in-out 0.2s", opacity: 0, animationFillMode: 'forwards' }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, fontFamily: 'Poppins, sans-serif' }}>
+            Corporate Services
+          </Typography>
+          <Paper
+            sx={{
+              p: 4,
+              borderRadius: '24px',
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'center',
+              gap: 4,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'hsl(var(--primary))',
+                backgroundColor: 'hsl(var(--primary) / 0.02)'
+              }
+            }}
+          >
+            <Box sx={{ p: 2, bgcolor: 'hsl(var(--primary) / 0.1)', borderRadius: '20px' }}>
+              <Business sx={{ fontSize: '3rem', color: 'hsl(var(--primary))' }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                Registered Company's Funding Track
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mb: 2 }}>
+                Is your startup already incorporated? Apply through our corporate track for institutional funding, SISFS commercial grants, and dedicated venture support.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Chip label="CIN Required" size="small" sx={{ fontWeight: 600 }} />
+                <Chip label="Faster Processing" size="small" variant="outlined" sx={{ color: 'success.main', borderColor: 'success.main', fontWeight: 600 }} />
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/support/company-funding')}
+              sx={{
+                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                boxShadow: '0 4px 12px hsl(var(--primary) / 0.2)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Apply Now
+            </Button>
+          </Paper>
         </Box>
       </Box>
     </Box>
