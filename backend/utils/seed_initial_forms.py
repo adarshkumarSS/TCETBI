@@ -3,10 +3,13 @@ Seed initial form templates with fields matching current forms
 Run with: python manage.py shell < utils/seed_initial_forms.py
 """
 
+from django.contrib.auth import get_user_model
 from api.models import FormTemplate, FormField
 
+User = get_user_model()
+
 def seed_forms():
-    print("🌱 Seeding initial form templates...")
+    print("Seeding initial form templates...")
     
     # 1. Funding Support Form
     funding_template, created = FormTemplate.objects.get_or_create(
@@ -19,7 +22,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Funding Support template")
+        print("[OK] Created Funding Support template")
         funding_fields = [
             {'field_name': 'name', 'label': 'Full Name', 'field_type': 'text', 'is_required': True, 'order': 0},
             {'field_name': 'email', 'label': 'Email Address', 'field_type': 'email', 'is_required': True, 'order': 1},
@@ -53,7 +56,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Mentoring Support template")
+        print("[OK] Created Mentoring Support template")
         mentoring_fields = [
             {'field_name': 'name', 'label': 'Your Name', 'field_type': 'text', 'is_required': True, 'order': 0},
             {'field_name': 'email', 'label': 'Email', 'field_type': 'email', 'is_required': True, 'order': 1},
@@ -78,7 +81,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Idea Validation template")
+        print("[OK] Created Idea Validation template")
         validation_fields = [
             {'field_name': 'name', 'label': 'Your Name', 'field_type': 'text', 'is_required': True, 'order': 0},
             {'field_name': 'email', 'label': 'Email Address', 'field_type': 'email', 'is_required': True, 'order': 1},
@@ -105,7 +108,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Contact template")
+        print("[OK] Created Contact template")
         contact_fields = [
             {'field_name': 'name', 'label': 'Name', 'field_type': 'text', 'is_required': True, 'order': 0},
             {'field_name': 'email', 'label': 'Email', 'field_type': 'email', 'is_required': True, 'order': 1},
@@ -129,7 +132,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Incubation Application template")
+        print("[OK] Created Incubation Application template")
         incubation_fields = [
             # Profile
             {'field_name': 'profile_image', 'label': 'Profile Photo', 'field_type': 'file', 'is_required': True, 'order': 0},
@@ -212,7 +215,7 @@ def seed_forms():
     )
     
     if created:
-        print("✅ Created Company Funding Support template")
+        print("[OK] Created Company Funding Support template")
         company_fields = [
             {'field_name': 'company_name', 'label': 'Registered Company Name', 'field_type': 'text', 'is_required': True, 'order': 0},
             {'field_name': 'incorporation_date', 'label': 'Date of Incorporation', 'field_type': 'date', 'is_required': True, 'order': 1},
@@ -238,7 +241,7 @@ def seed_forms():
             FormField.objects.create(form_template=company_funding_template, **field_data)
         print(f"  Added {len(company_fields)} fields")
     
-    print("\n✨ Form seeding complete!")
+    print("\nForm seeding complete!")
     print(f"Total templates: {FormTemplate.objects.count()}")
     print(f"Total fields: {FormField.objects.count()}")
 

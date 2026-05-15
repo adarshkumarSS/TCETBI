@@ -6,7 +6,7 @@ import { Assignment, PersonSearch, RocketLaunch, Search } from '@mui/icons-mater
 import { InputAdornment } from '@mui/material';
 import { DynamicForm } from '../../components/DynamicForm';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const DISPLAY_COUNT = 10;
 const ROTATE_INTERVAL = 6000;
 
