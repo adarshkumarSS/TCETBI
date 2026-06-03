@@ -211,7 +211,7 @@ def submit_form(request, form_type):
                     scheme=field_values.get('scheme').value if field_values.get('scheme') else 'other',
                     description=field_values.get('description').value if field_values.get('description') else '',
                     amount_requested=field_values.get('amount_requested').value if field_values.get('amount_requested') else '',
-                    pitch_deck=field_values.get('pitch_deck').file_url if field_values.get('pitch_deck') else ''
+                    pitch_deck=field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else ''
                 )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync FundingRequest: {e}")
