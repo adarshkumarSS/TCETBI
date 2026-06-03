@@ -2,6 +2,12 @@ import os
 import subprocess
 import sys
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
+
 def run_tests():
     print("[START] Starting Automated Test Suite...\n")
     
@@ -48,7 +54,8 @@ def run_tests():
     )
     
     print(frontend_result.stdout)
-    if frontend_result.stderr and "ERR!" in frontend_result.stderr:
+    if frontend_result.stderr:
+        print("[FRONTEND STDERR]")
         print(frontend_result.stderr)
         
     frontend_passed = frontend_result.returncode == 0

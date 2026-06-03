@@ -1,13 +1,10 @@
 
 from pathlib import Path
-from dotenv import load_dotenv
+from decouple import config
 import os
 import dj_database_url
 
-load_dotenv()
-
-
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-key")
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-default-key")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,9 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'api.AppUser'  # Using AppUser as the main user model
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
+ALLOWED_HOSTS = ["*"]
 
 # Increase maximum request size (for base64/large images)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
@@ -71,9 +68,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
+DATABASE_URL = config("DATABASE_URL", default=os.getenv("DATABASE_URL", ""))
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
+        default=DATABASE_URL,
         conn_max_age=600,
         ssl_require=True
     )
@@ -131,6 +129,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
+frontend_url = config("FRONTEND_URL", default="")
+if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(frontend_url)
+
+cors_origins_env = config("CORS_ALLOWED_ORIGINS", default="")
+if cors_origins_env:
+    for origin in cors_origins_env.split(","):
+        origin = origin.strip()
+        if origin and origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
+
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
@@ -147,22 +156,21 @@ CORS_ALLOW_HEADERS = [
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+EMAIL_HOST = config('EMAIL_HOST', default=None)
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=None)
 
 print(f"[MAIL-DEBUG] Using host: {EMAIL_HOST}, User: {EMAIL_HOST_USER}, Pass length: {len(EMAIL_HOST_PASSWORD) if EMAIL_HOST_PASSWORD else 0}")
 
 import cloudinary
-import os
 
 cloudinary.config( 
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', 'your_cloud_name_here'),
-    api_key=os.getenv('CLOUDINARY_API_KEY', 'your_api_key_here'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET', 'your_api_secret_here'),
+    cloud_name=config('CLOUDINARY_CLOUD_NAME', default='your_cloud_name_here'),
+    api_key=config('CLOUDINARY_API_KEY', default='your_api_key_here'),
+    api_secret=config('CLOUDINARY_API_SECRET', default='your_api_secret_here'),
 )
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
