@@ -162,6 +162,7 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None)
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=None)
+EMAIL_TIMEOUT = 5  # SMTP connection timeout in seconds (prevents Gunicorn worker freezes on blocked ports)
 
 print(f"[MAIL-DEBUG] Using host: {EMAIL_HOST}, User: {EMAIL_HOST_USER}, Pass length: {len(EMAIL_HOST_PASSWORD) if EMAIL_HOST_PASSWORD else 0}")
 
