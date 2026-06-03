@@ -142,57 +142,58 @@ def submit_form(request, form_type):
         # SPECIAL HANDLING FOR INCUBATION APPLICATION
         if form_type == 'incubation_application':
             try:
-                # Gather all values into a dict for mapping
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                
-                # Map dynamic fields to IncubationApplication model
-                inc_app = IncubationApplication.objects.create(
-                    businessName=field_values.get('businessName').value if field_values.get('businessName') else 'N/A',
-                    salutation=field_values.get('salutation').value if field_values.get('salutation') else 'Mr',
-                    fullName=field_values.get('fullName').value if field_values.get('fullName') else 'N/A',
-                    fatherName=field_values.get('fatherName').value if field_values.get('fatherName') else 'N/A',
-                    age=int(field_values.get('age').value) if field_values.get('age') and field_values.get('age').value.isdigit() else 0,
-                    email=field_values.get('email').value if field_values.get('email') else 'N/A',
-                    resMobile=field_values.get('resMobile').value if field_values.get('resMobile') else 'N/A',
-                    offMobile=field_values.get('offMobile').value if field_values.get('offMobile') else None,
-                    address=field_values.get('address').value if field_values.get('address') else 'N/A',
-                    city=field_values.get('city').value if field_values.get('city') else 'N/A',
-                    state=field_values.get('state').value if field_values.get('state') else 'N/A',
-                    post=field_values.get('post').value if field_values.get('post') else 'N/A',
-                    country=field_values.get('country').value if field_values.get('country') else 'N/A',
-                    businessType=field_values.get('businessType').value if field_values.get('businessType') else 'Other',
-                    legalEntity=field_values.get('legalEntity').value if field_values.get('legalEntity') else 'Other',
-                    businessDescription=field_values.get('businessDescription').value if field_values.get('businessDescription') else 'N/A',
-                    numChairs=int(field_values.get('numChairs').value) if field_values.get('numChairs') and field_values.get('numChairs').value.isdigit() else None,
-                    fullTimeEmployees=int(field_values.get('fullTimeEmployees').value) if field_values.get('fullTimeEmployees') and field_values.get('fullTimeEmployees').value.isdigit() else None,
-                    partTimeEmployees=int(field_values.get('partTimeEmployees').value) if field_values.get('partTimeEmployees') and field_values.get('partTimeEmployees').value.isdigit() else None,
-                    consultants=int(field_values.get('consultants').value) if field_values.get('consultants') and field_values.get('consultants').value.isdigit() else None,
-                    declaration=True if field_values.get('declaration') and field_values.get('declaration').value.lower() == 'true' else False,
-                    profile_image=field_values.get('profile_image').file_url if field_values.get('profile_image') else None,
-                    resume_pdf=field_values.get('resume').file_url if field_values.get('resume') else None,
-                )
-                
-                # Map References
-                reference1 = {
-                    "name": field_values.get('reference1Name').value if field_values.get('reference1Name') else '',
-                    "mobile": field_values.get('reference1Mobile').value if field_values.get('reference1Mobile') else '',
-                    "email": field_values.get('reference1Email').value if field_values.get('reference1Email') else '',
-                    "address": field_values.get('reference1Address').value if field_values.get('reference1Address') else '',
-                }
-                reference2 = {
-                    "name": field_values.get('reference2Name').value if field_values.get('reference2Name') else '',
-                    "mobile": field_values.get('reference2Mobile').value if field_values.get('reference2Mobile') else '',
-                    "email": field_values.get('reference2Email').value if field_values.get('reference2Email') else '',
-                    "address": field_values.get('reference2Address').value if field_values.get('reference2Address') else '',
-                }
-                inc_app.reference1 = reference1
-                inc_app.reference2 = reference2
-                inc_app.save()
-                
-                # Send email to CEO/Admin
-                send_incubation_email_to_ceo(inc_app)
-                print(f"[RE-SYNC] Created IncubationApplication #{inc_app.id} from FormSubmission #{submission.id}")
-                
+                with transaction.atomic():
+                    # Gather all values into a dict for mapping
+                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    
+                    # Map dynamic fields to IncubationApplication model
+                    inc_app = IncubationApplication.objects.create(
+                        businessName=field_values.get('businessName').value if field_values.get('businessName') else 'N/A',
+                        salutation=field_values.get('salutation').value if field_values.get('salutation') else 'Mr',
+                        fullName=field_values.get('fullName').value if field_values.get('fullName') else 'N/A',
+                        fatherName=field_values.get('fatherName').value if field_values.get('fatherName') else 'N/A',
+                        age=int(field_values.get('age').value) if field_values.get('age') and field_values.get('age').value.isdigit() else 0,
+                        email=field_values.get('email').value if field_values.get('email') else 'N/A',
+                        resMobile=field_values.get('resMobile').value if field_values.get('resMobile') else 'N/A',
+                        offMobile=field_values.get('offMobile').value if field_values.get('offMobile') else None,
+                        address=field_values.get('address').value if field_values.get('address') else 'N/A',
+                        city=field_values.get('city').value if field_values.get('city') else 'N/A',
+                        state=field_values.get('state').value if field_values.get('state') else 'N/A',
+                        post=field_values.get('post').value if field_values.get('post') else 'N/A',
+                        country=field_values.get('country').value if field_values.get('country') else 'N/A',
+                        businessType=field_values.get('businessType').value if field_values.get('businessType') else 'Other',
+                        legalEntity=field_values.get('legalEntity').value if field_values.get('legalEntity') else 'Other',
+                        businessDescription=field_values.get('businessDescription').value if field_values.get('businessDescription') else 'N/A',
+                        numChairs=int(field_values.get('numChairs').value) if field_values.get('numChairs') and field_values.get('numChairs').value.isdigit() else None,
+                        fullTimeEmployees=int(field_values.get('fullTimeEmployees').value) if field_values.get('fullTimeEmployees') and field_values.get('fullTimeEmployees').value.isdigit() else None,
+                        partTimeEmployees=int(field_values.get('partTimeEmployees').value) if field_values.get('partTimeEmployees') and field_values.get('partTimeEmployees').value.isdigit() else None,
+                        consultants=int(field_values.get('consultants').value) if field_values.get('consultants') and field_values.get('consultants').value.isdigit() else None,
+                        declaration=True if field_values.get('declaration') and field_values.get('declaration').value.lower() == 'true' else False,
+                        profile_image=field_values.get('profile_image').file_url if field_values.get('profile_image') else None,
+                        resume_pdf=field_values.get('resume').file_url if field_values.get('resume') else None,
+                    )
+                    
+                    # Map References
+                    reference1 = {
+                        "name": field_values.get('reference1Name').value if field_values.get('reference1Name') else '',
+                        "mobile": field_values.get('reference1Mobile').value if field_values.get('reference1Mobile') else '',
+                        "email": field_values.get('reference1Email').value if field_values.get('reference1Email') else '',
+                        "address": field_values.get('reference1Address').value if field_values.get('reference1Address') else '',
+                    }
+                    reference2 = {
+                        "name": field_values.get('reference2Name').value if field_values.get('reference2Name') else '',
+                        "mobile": field_values.get('reference2Mobile').value if field_values.get('reference2Mobile') else '',
+                        "email": field_values.get('reference2Email').value if field_values.get('reference2Email') else '',
+                        "address": field_values.get('reference2Address').value if field_values.get('reference2Address') else '',
+                    }
+                    inc_app.reference1 = reference1
+                    inc_app.reference2 = reference2
+                    inc_app.save()
+                    
+                    # Send email to CEO/Admin
+                    send_incubation_email_to_ceo(inc_app)
+                    print(f"[RE-SYNC] Created IncubationApplication #{inc_app.id} from FormSubmission #{submission.id}")
+                    
             except Exception as inc_err:
                 print(f"[ERROR] Failed to re-sync incubation application: {inc_err}")
                 # Don't fail the whole request if re-sync fails
@@ -200,52 +201,55 @@ def submit_form(request, form_type):
         # SYNC OTHER SUPPORT FORMS TO THE LEGACY MODELS
         elif form_type == 'funding_support':
             try:
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                from ..models import FundingRequest
-                FundingRequest.objects.create(
-                    user=request.user if request.user.is_authenticated else None,
-                    name=field_values.get('name').value if field_values.get('name') else '',
-                    email=field_values.get('email').value if field_values.get('email') else '',
-                    phone=field_values.get('phone').value if field_values.get('phone') else '',
-                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
-                    scheme=field_values.get('scheme').value if field_values.get('scheme') else 'other',
-                    description=field_values.get('description').value if field_values.get('description') else '',
-                    amount_requested=field_values.get('amount_requested').value if field_values.get('amount_requested') else '',
-                    pitch_deck=field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else ''
-                )
+                with transaction.atomic():
+                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    from ..models import FundingRequest
+                    FundingRequest.objects.create(
+                        user=request.user if request.user.is_authenticated else None,
+                        name=field_values.get('name').value if field_values.get('name') else '',
+                        email=field_values.get('email').value if field_values.get('email') else '',
+                        phone=field_values.get('phone').value if field_values.get('phone') else '',
+                        startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                        scheme=field_values.get('scheme').value if field_values.get('scheme') else 'other',
+                        description=field_values.get('description').value if field_values.get('description') else '',
+                        amount_requested=field_values.get('amount_requested').value if field_values.get('amount_requested') else '',
+                        pitch_deck=field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else ''
+                    )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync FundingRequest: {e}")
 
         elif form_type == 'mentoring_support':
             try:
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                from ..models import MentoringRequest
-                MentoringRequest.objects.create(
-                    user=request.user if request.user.is_authenticated else None,
-                    name=field_values.get('name').value if field_values.get('name') else '',
-                    email=field_values.get('email').value if field_values.get('email') else '',
-                    phone=field_values.get('phone').value if field_values.get('phone') else '',
-                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
-                    domain=field_values.get('domain').value if field_values.get('domain') else '',
-                    description=field_values.get('description').value if field_values.get('description') else ''
-                )
+                with transaction.atomic():
+                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    from ..models import MentoringRequest
+                    MentoringRequest.objects.create(
+                        user=request.user if request.user.is_authenticated else None,
+                        name=field_values.get('name').value if field_values.get('name') else '',
+                        email=field_values.get('email').value if field_values.get('email') else '',
+                        phone=field_values.get('phone').value if field_values.get('phone') else '',
+                        startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                        domain=field_values.get('domain').value if field_values.get('domain') else '',
+                        description=field_values.get('description').value if field_values.get('description') else ''
+                    )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync MentoringRequest: {e}")
 
         elif form_type == 'idea_validation':
             try:
-                field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
-                from ..models import ValidationRequest
-                ValidationRequest.objects.create(
-                    user=request.user if request.user.is_authenticated else None,
-                    name=field_values.get('name').value if field_values.get('name') else '',
-                    email=field_values.get('email').value if field_values.get('email') else '',
-                    phone=field_values.get('phone').value if field_values.get('phone') else '',
-                    startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
-                    idea_details=field_values.get('idea_details').value if field_values.get('idea_details') else '',
-                    testing_requirements=field_values.get('testing_requirements').value if field_values.get('testing_requirements') else '',
-                    target_market=field_values.get('target_market').value if field_values.get('target_market') else ''
-                )
+                with transaction.atomic():
+                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    from ..models import ValidationRequest
+                    ValidationRequest.objects.create(
+                        user=request.user if request.user.is_authenticated else None,
+                        name=field_values.get('name').value if field_values.get('name') else '',
+                        email=field_values.get('email').value if field_values.get('email') else '',
+                        phone=field_values.get('phone').value if field_values.get('phone') else '',
+                        startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
+                        idea_details=field_values.get('idea_details').value if field_values.get('idea_details') else '',
+                        testing_requirements=field_values.get('testing_requirements').value if field_values.get('testing_requirements') else '',
+                        target_market=field_values.get('target_market').value if field_values.get('target_market') else ''
+                    )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync ValidationRequest: {e}")
 
