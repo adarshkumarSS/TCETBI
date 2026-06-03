@@ -9,7 +9,13 @@ then re-seeds initial data from utils.seed_data.
 """
 
 import os
+import sys
 import django
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 from django.apps import apps
 from django.db import connection, transaction
 import cloudinary
