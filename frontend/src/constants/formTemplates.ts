@@ -146,4 +146,30 @@ export const DEFAULT_FORM_TEMPLATES: Record<string, FormTemplate> = {
       { id: 58, field_name: 'declaration', label: 'I agree to the terms and conditions', field_type: 'checkbox', is_required: true, order: 30 },
     ],
   },
+  company_funding_support: {
+    form_type: 'company_funding_support',
+    name: "Registered Company's Request",
+    description: 'Dedicated funding application for registered companies and incorporated startups',
+    fields: [
+      { id: 59, field_name: 'company_name', label: 'Registered Company Name', field_type: 'text', is_required: true, order: 0 },
+      { id: 60, field_name: 'incorporation_date', label: 'Date of Incorporation', field_type: 'date', is_required: true, order: 1 },
+      { id: 61, field_name: 'cin_number', label: 'CIN / Registration Number', field_type: 'text', is_required: true, order: 2 },
+      { id: 62, field_name: 'pan_number', label: 'Company PAN', field_type: 'text', is_required: true, order: 3 },
+      { id: 63, field_name: 'full_name', label: 'Contact Person Name', field_type: 'text', is_required: true, order: 4 },
+      { id: 64, field_name: 'email', label: 'Contact Email', field_type: 'email', is_required: true, order: 5 },
+      { id: 65, field_name: 'phone', label: 'Contact Phone', field_type: 'phone', is_required: true, order: 6 },
+      {
+        id: 66,
+        field_name: 'scheme',
+        label: 'Funding Scheme',
+        field_type: 'select',
+        is_required: true,
+        order: 7,
+        options: ['SISFS', 'NIDHI PRAYAS', 'NIDHI EIR', 'Seed Support', 'Other']
+      },
+      { id: 67, field_name: 'amount_requested', label: 'Amount Requested (in ₹)', field_type: 'number', is_required: true, order: 8 },
+      { id: 68, field_name: 'business_proposal', label: 'Business Proposal / Pitch Deck', field_type: 'file', is_required: true, order: 9 },
+      { id: 69, field_name: 'description', label: 'Brief Description of Milestones Achieved', field_type: 'textarea', is_required: true, order: 10 },
+    ],
+  },
 };

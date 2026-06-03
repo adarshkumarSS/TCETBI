@@ -34,7 +34,7 @@ def get_home_data(request):
 # 📍 PUT — Update home page data
 @api_view(['PUT'])
 def update_home_data(request):
-    print(f"📥 Received PUT request to update_home_data. Content-Type: {request.content_type}")
+    print(f"Received PUT request to update_home_data. Content-Type: {request.content_type}")
     import json
     from utils.cloudinary_utils import upload_cloudinary_image
     
@@ -74,7 +74,7 @@ def update_home_data(request):
 
     try:
         if request.FILES:
-            print(f"📷 Received {len(request.FILES)} files for upload...")
+            print(f"Received {len(request.FILES)} files for upload...")
 
         for key, file_obj in request.FILES.items():
             # key example: "govt_logos_0"
@@ -93,7 +93,7 @@ def update_home_data(request):
                 # Check if this index exists in our data and is properly formatted
                 if list_name in data and isinstance(data[list_name], list) and index < len(data[list_name]):
                     # Upload!
-                    print(f"⬆️ Uploading file for {list_name}[{index}] ({key})...")
+                    print(f"Uploading file for {list_name}[{index}] ({key})...")
                     url = upload_cloudinary_image(file_obj, folder=f"TCETBI/{list_name}")
                     
                     if url:
@@ -236,7 +236,7 @@ def update_home_data(request):
                 else:
                     # Create new logo (as long as we have a src)
                     if new_src:
-                        print(f"✨ Creating NEW logo: {logo_name} (Category: {category})")
+                        print(f"Creating NEW logo: {logo_name} (Category: {category})")
                         Logo.objects.create(
                             name=logo_name,
                             src=new_src,

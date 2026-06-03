@@ -12,6 +12,18 @@ from ..serializers import FormTemplateSerializer, FormFieldSerializer
 @permission_classes([IsAdminUser])
 def list_form_templates(request):
     """List all form templates"""
+    default_types = ['funding_support', 'mentoring_support', 'idea_validation', 'contact', 'incubation_application', 'company_funding_support']
+    existing_types = FormTemplate.objects.values_list('form_type', flat=True)
+    if any(t not in existing_types for t in default_types):
+        try:
+            import sys, os
+            if os.path.join(os.path.dirname(__file__), '..', '..') not in sys.path:
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+            from utils.seed_initial_forms import seed_forms
+            seed_forms()
+        except Exception as e:
+            print(f"Fallback seed error: {e}")
+            
     templates = FormTemplate.objects.all()
     serializer = FormTemplateSerializer(templates, many=True)
     return Response(serializer.data)

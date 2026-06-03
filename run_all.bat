@@ -17,14 +17,14 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000') do (
 :: -------------------------
 echo.
 echo [1] Starting Frontend (Vite)...
-start cmd /k "cd /d E:\We_make_trash\TCETBI\frontend && npm run dev"
+start cmd /k "cd /d %~dp0frontend && npm run dev"
 
 :: -------------------------
 :: BACKEND (CURRENT TERMINAL)
 :: -------------------------
 echo.
 echo [2] Starting Backend (Django)...
-cd /d E:\We_make_trash\TCETBI
+cd /d %~dp0
 call env\Scripts\activate
 cd backend
 python manage.py runserver

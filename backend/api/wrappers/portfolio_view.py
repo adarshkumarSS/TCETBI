@@ -62,7 +62,7 @@ def update_portfolio_data(request):
                     
                     if parts[3] == 'logo':
                         # Upload logo
-                        print(f"⬆️ Uploading logo for {category_key}[{startup_index}]...")
+                        print(f"Uploading logo for {category_key}[{startup_index}]...")
                         url = upload_cloudinary_image(file_obj, folder="TCETBI/Startups/Logos")
                         if url:
                             data[category_key][startup_index]['logo'] = url
@@ -75,7 +75,7 @@ def update_portfolio_data(request):
                         except ValueError: continue
 
                         if 'ceos' in data[category_key][startup_index] and ceo_index < len(data[category_key][startup_index]['ceos']):
-                            print(f"⬆️ Uploading CEO image for {category_key}[{startup_index}] CEO [{ceo_index}]...")
+                            print(f"Uploading CEO image for {category_key}[{startup_index}] CEO [{ceo_index}]...")
                             url = upload_cloudinary_image(file_obj, folder="TCETBI/Startups/CEOs")
                             if url:
                                 data[category_key][startup_index]['ceos'][ceo_index]['image'] = url

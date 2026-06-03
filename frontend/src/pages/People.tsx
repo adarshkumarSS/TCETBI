@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { Box, Typography, Container, Link } from "@mui/material";
+import { Box, Typography, Container, Link, CircularProgress } from "@mui/material";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import { CardContainer } from "../components/ui/CardContainer";
 import { useEffect, useState } from "react";
 import { fetchPeopleData, PeopleData } from "../api/peopleService";
-import PageLoader from "../components/PageLoader";
 
 // 🟢 Founder Section
 const FounderSection = ({ data }: { data: PeopleData["founder"] }) => {
@@ -673,7 +672,20 @@ export const People: React.FC = () => {
       });
   }, []);
 
-  if (loading) return <PageLoader />;
+  if (loading)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          backgroundColor: "hsl(var(--background))",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   if (!data) return <p>Error loading people data.</p>;
 
