@@ -4,9 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Business, CheckCircle, CorporateFare } from '@mui/icons-material';
 import { DynamicForm } from '../../components/DynamicForm';
+import { dynamicFormService } from '../../api/dynamicFormService';
+import { DEFAULT_FORM_TEMPLATES } from '../../constants/formTemplates';
 
 export const CompanyFundingSupport = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [schemes, setSchemes] = useState<string[]>(['SISFS Commercial', 'NIDHI Seed Support', 'Venture Matching', 'Scale-up Grants']);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,6 +18,31 @@ export const CompanyFundingSupport = () => {
       navigate('/auth');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    const fetchSchemes = async () => {
+      try {
+        const data = await dynamicFormService.getFormStructure('company_funding_support');
+        const schemeField = data?.fields?.find((f: any) => f.field_name === 'scheme');
+        if (schemeField && Array.isArray(schemeField.options)) {
+          const filtered = schemeField.options.filter((o: string) => o.toLowerCase() !== 'other');
+          setSchemes(filtered);
+        } else if (DEFAULT_FORM_TEMPLATES.company_funding_support) {
+          const defaultField = DEFAULT_FORM_TEMPLATES.company_funding_support.fields.find(f => f.field_name === 'scheme');
+          if (defaultField && defaultField.options) {
+            setSchemes(defaultField.options.filter(o => o.toLowerCase() !== 'other'));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch schemes", error);
+        const defaultField = DEFAULT_FORM_TEMPLATES.company_funding_support?.fields.find(f => f.field_name === 'scheme');
+        if (defaultField && defaultField.options) {
+          setSchemes(defaultField.options.filter(o => o.toLowerCase() !== 'other'));
+        }
+      }
+    };
+    fetchSchemes();
+  }, []);
 
   const handleSuccess = () => {
     setShowSuccessModal(true);
@@ -68,7 +96,7 @@ export const CompanyFundingSupport = () => {
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Elite Schemes</Typography>
                   </Box>
                   <Grid container spacing={2}>
-                    {['SISFS Commercial', 'NIDHI Seed Support', 'Venture Matching', 'Scale-up Grants'].map((scheme) => (
+                    {schemes.map((scheme) => (
                       <Grid size={{ xs: 12 }} key={scheme}>
                         <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'hsl(var(--muted)/0.3)', border: '1px solid hsl(var(--border))' }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{scheme}</Typography>

@@ -1,11 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Container, Typography, Grid, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Business, CheckCircle } from '@mui/icons-material';
 import { DynamicForm } from '../../components/DynamicForm';
+import { dynamicFormService } from '../../api/dynamicFormService';
+import { DEFAULT_FORM_TEMPLATES } from '../../constants/formTemplates';
 
 export const FundingSupport = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [schemes, setSchemes] = useState<string[]>(['NIDHI PRAYAS', 'NIDHI EIR', 'SISFS', 'Idea Hackathon']);
+
+  useEffect(() => {
+    const fetchSchemes = async () => {
+      try {
+        const data = await dynamicFormService.getFormStructure('funding_support');
+        const schemeField = data?.fields?.find((f: any) => f.field_name === 'scheme');
+        if (schemeField && Array.isArray(schemeField.options)) {
+          const filtered = schemeField.options.filter((o: string) => o.toLowerCase() !== 'other');
+          setSchemes(filtered);
+        } else if (DEFAULT_FORM_TEMPLATES.funding_support) {
+          const defaultField = DEFAULT_FORM_TEMPLATES.funding_support.fields.find(f => f.field_name === 'scheme');
+          if (defaultField && defaultField.options) {
+            setSchemes(defaultField.options.filter(o => o.toLowerCase() !== 'other'));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch schemes", error);
+        const defaultField = DEFAULT_FORM_TEMPLATES.funding_support?.fields.find(f => f.field_name === 'scheme');
+        if (defaultField && defaultField.options) {
+          setSchemes(defaultField.options.filter(o => o.toLowerCase() !== 'other'));
+        }
+      }
+    };
+    fetchSchemes();
+  }, []);
 
   const handleSuccess = () => {
     setShowSuccessModal(true);
@@ -27,7 +55,6 @@ export const FundingSupport = () => {
               Get the financial backing your startup deserves. We provide various schemes to help you scale your idea.
             </Typography>
           </Box>
-
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, lg: 8 }}>
               <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid hsl(var(--border))', backgroundColor: "hsl(var(--card))", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}>
@@ -57,7 +84,7 @@ export const FundingSupport = () => {
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Available Schemes</Typography>
                   </Box>
                   <Grid container spacing={2}>
-                    {['NIDHI PRAYAS', 'NIDHI EIR', 'SISFS', 'Idea Hackathon'].map((scheme) => (
+                    {schemes.map((scheme) => (
                       <Grid size={{ xs: 12 }} key={scheme}>
                         <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'hsl(var(--muted)/0.3)', border: '1px solid hsl(var(--border))' }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{scheme}</Typography>
