@@ -115,9 +115,25 @@ def submit_incubation(request):
         profile_url = upload.get("secure_url")
 
     if resume:
-        # Use resource_type="auto" to let Cloudinary detect PDF and serve it correctly
-        upload = cloudinary.uploader.upload(resume, resource_type="auto")
-        resume_url = upload.get("secure_url")
+        ext = resume.name.split('.')[-1].lower() if '.' in resume.name else ''
+        is_image = ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
+        
+        if is_image:
+            upload = cloudinary.uploader.upload(resume)
+            resume_url = upload.get("secure_url")
+        else:
+            # Upload non-images to Google Drive
+            print(f"[DRIVE-DEBUG] Attempting upload for resume: {resume.name}")
+            from .utils.drive_utils import upload_to_drive
+            drive_view_link, drive_file_id = upload_to_drive(resume, resume.name)
+            if drive_view_link:
+                print(f"[DRIVE-DEBUG] SUCCESS: {drive_view_link}")
+                resume_url = drive_view_link
+            else:
+                print(f"[DRIVE-DEBUG] FAILED, falling back to Cloudinary")
+                resume.seek(0)
+                upload = cloudinary.uploader.upload(resume, resource_type="auto")
+                resume_url = upload.get("secure_url")
 
     data = request.data.copy()
     data["profile_image"] = profile_url
