@@ -19,29 +19,10 @@ const HeroSection = () => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      overflow: "hidden", // Ensure video doesn't overflow
+      overflow: "hidden", // Ensure content doesn't overflow
+      backgroundColor: "#000", // Keep a black screen in both light and dark mode
     }}
   >
-    <video
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="auto"
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        zIndex: -1,
-      }}
-    >
-      <source src="/asset/home_asset.mp4" type="video/mp4" />
-      {/* Add more <source> tags for other formats if needed */}
-      Your browser does not support the video tag.
-    </video>
     <Container maxWidth="lg">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
