@@ -520,6 +520,7 @@ class ValidationRequest(models.Model):
     idea_details = models.TextField()
     testing_requirements = models.TextField()
     target_market = models.CharField(max_length=255, blank=True, null=True)
+    pitch_deck = models.TextField(blank=True, null=True) # URL to PDF/Deck or other uploaded file
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     admin_notes = models.TextField(blank=True, null=True)

@@ -248,7 +248,8 @@ def submit_form(request, form_type):
                         startup_name=field_values.get('startup_name').value if field_values.get('startup_name') else '',
                         idea_details=field_values.get('idea_details').value if field_values.get('idea_details') else '',
                         testing_requirements=field_values.get('testing_requirements').value if field_values.get('testing_requirements') else '',
-                        target_market=field_values.get('target_market').value if field_values.get('target_market') else ''
+                        target_market=field_values.get('target_market').value if field_values.get('target_market') else '',
+                        pitch_deck=field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else ''
                     )
             except Exception as e:
                 print(f"[ERROR] Failed to re-sync ValidationRequest: {e}")

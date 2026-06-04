@@ -64,12 +64,19 @@ def sync_existing_submissions():
                     'idea_details': field_values.get('idea_details').value if field_values.get('idea_details') else '',
                     'testing_requirements': field_values.get('testing_requirements').value if field_values.get('testing_requirements') else '',
                     'target_market': field_values.get('target_market').value if field_values.get('target_market') else '',
+                    'pitch_deck': field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else '',
                     'created_at': submission.created_at
                 }
             )
             if created:
                 print(f"✅ Synced ValidationRequest: {val.startup_name}")
                 count += 1
+            else:
+                deck_url = field_values.get('pitch_deck').file_url if (field_values.get('pitch_deck') and field_values.get('pitch_deck').file_url) else ''
+                if deck_url and val.pitch_deck != deck_url:
+                    val.pitch_deck = deck_url
+                    val.save()
+                    print(f"Updated pitch deck for ValidationRequest: {val.startup_name}")
 
     print(f"Sync complete. {count} new legacy records created.")
 
