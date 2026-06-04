@@ -460,3 +460,42 @@ def update_submission_status(request, submission_id):
             {'error': 'Submission not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+@transaction.atomic
+def clear_all_submissions(request):
+    """Delete all form submissions and legacy requests from the system."""
+    try:
+        from ..models import FormSubmission, FundingRequest, MentoringRequest, ValidationRequest, IncubationApplication, Mentor
+        
+        # Delete dynamic Form Submissions
+        submission_count = FormSubmission.objects.all().delete()[0]
+        
+        # Delete legacy support requests
+        funding_count = FundingRequest.objects.all().delete()[0]
+        mentoring_count = MentoringRequest.objects.all().delete()[0]
+        validation_count = ValidationRequest.objects.all().delete()[0]
+        
+        # Delete incubation applications
+        incubation_count = IncubationApplication.objects.all().delete()[0]
+        
+        # Delete mentors
+        mentor_count = Mentor.objects.all().delete()[0]
+        
+        total_deleted = submission_count + funding_count + mentoring_count + validation_count + incubation_count + mentor_count
+        
+        return Response({
+            'message': f'Successfully cleared all submissions. Total deleted: {total_deleted}',
+            'details': {
+                'dynamic_submissions': submission_count,
+                'funding_requests': funding_count,
+                'mentoring_requests': mentoring_count,
+                'validation_requests': validation_count,
+                'incubation_applications': incubation_count,
+                'mentors': mentor_count
+            }
+        })
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -102,4 +102,11 @@ export const formBuilderService = {
         });
         return response.data;
     },
+
+    clearAllSubmissions: async () => {
+        const response = await axios.delete(`${API_URL}/admin/submissions/clear-all/`, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    },
 };

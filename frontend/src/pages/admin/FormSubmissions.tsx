@@ -24,7 +24,7 @@ import {
   InputLabel,
   Select,
 } from '@mui/material';
-import { Visibility, Download } from '@mui/icons-material';
+import { Visibility, Download, Delete, WarningAmber } from '@mui/icons-material';
 import { toast } from 'sonner';
 import { formBuilderService } from '../../api/formBuilderService';
 import { supportService } from '../../api/supportService';
@@ -72,6 +72,7 @@ export const FormSubmissions = () => {
   // Filters
   const [formTypeFilter, setFormTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   useEffect(() => {
     loadSubmissions();
@@ -348,22 +349,232 @@ export const FormSubmissions = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const exportToCSV = () => {
-    // Simple CSV export
-    const headers = ['Form Type', 'Status', 'Submitted At', 'User'];
-    const rows = submissions.map(s => [
-      s.form_name,
-      s.status,
-      formatDate(s.created_at),
-      s.user_details?.full_name || 'Anonymous'
+  const fetchAllUnfilteredSubmissions = async (): Promise<Submission[]> => {
+    const results = await Promise.allSettled([
+      formBuilderService.listSubmissions('', ''),
+      supportService.getMentors(),
+      supportService.getFundingRequests(),
+      supportService.getMentoringRequests(),
+      supportService.getValidationRequests(),
+      getIncubationApplications()
     ]);
 
+    let allSubmissions: Submission[] = [];
+
+    // 1. Dynamic Forms
+    if (results[0].status === 'fulfilled') {
+      const rawData = results[0].value;
+      let dynamicForms: any[] = [];
+      if (Array.isArray(rawData)) dynamicForms = rawData;
+      else if (rawData && Array.isArray(rawData.results)) dynamicForms = rawData.results;
+      allSubmissions = [...allSubmissions, ...dynamicForms];
+    }
+
+    // 2. Mentors
+    if (results[1].status === 'fulfilled') {
+      const rawData = results[1].value;
+      let mentors: any[] = [];
+      if (Array.isArray(rawData)) mentors = rawData;
+      else if (rawData && Array.isArray(rawData.results)) mentors = rawData.results;
+
+      const formatted = mentors.map((m: any) => ({
+        id: m.id,
+        form_name: 'Mentor Application',
+        form_type: 'mentor_application',
+        status: m.status,
+        created_at: m.created_at || new Date().toISOString(),
+        user_details: {
+          full_name: `${m.salutation} ${m.name}`,
+          email: m.email
+        },
+        field_values: [
+          { field_label: 'Designation', field_type: 'text', value: m.designation },
+          { field_label: 'Domain', field_type: 'text', value: m.domain },
+          { field_label: 'Experience (Years)', field_type: 'number', value: m.years_of_experience?.toString() },
+          { field_label: 'LinkedIn', field_type: 'url', value: m.linkedin },
+          { field_label: 'Bio', field_type: 'textarea', value: m.bio },
+          { field_label: 'Expertise', field_type: 'text', value: m.expertise },
+          { field_label: 'Profile Photo', field_type: 'file', value: 'View Photo', file_url: m.image }
+        ]
+      }));
+      allSubmissions = [...allSubmissions, ...formatted];
+    }
+
+    // 3. Funding
+    if (results[2].status === 'fulfilled') {
+       const rawData = results[2].value;
+       let funding: any[] = [];
+       if (Array.isArray(rawData)) funding = rawData;
+       else if (rawData && Array.isArray(rawData.results)) funding = rawData.results;
+
+       const formatted = funding.map((f: any) => ({
+         id: f.id,
+         form_name: 'Funding Request',
+         form_type: 'funding_request',
+         status: f.status,
+         created_at: f.created_at,
+         user_details: {
+           full_name: f.name || f.user_details?.full_name || 'N/A',
+           email: f.email || f.user_details?.email || 'N/A'
+         },
+         field_values: [
+           { field_label: 'Startup Name', field_type: 'text', value: f.startup_name },
+           { field_label: 'Scheme', field_type: 'text', value: f.scheme },
+           { field_label: 'Amount Requested', field_type: 'text', value: f.amount_requested },
+           { field_label: 'Pitch Deck', field_type: 'file', value: 'View Deck', file_url: f.pitch_deck },
+           { field_label: 'Description', field_type: 'textarea', value: f.description }
+         ]
+       }));
+       allSubmissions = [...allSubmissions, ...formatted];
+    }
+
+    // 4. Mentoring Requests
+    if (results[3].status === 'fulfilled') {
+      const rawData = results[3].value;
+      let mentoring: any[] = [];
+      if (Array.isArray(rawData)) mentoring = rawData;
+      else if (rawData && Array.isArray(rawData.results)) mentoring = rawData.results;
+      
+      const formatted = mentoring.map((m: any) => ({
+        id: m.id,
+        form_name: 'Mentoring Request',
+        form_type: 'mentoring_request',
+        status: m.status,
+        created_at: m.created_at,
+        user_details: {
+          full_name: m.name || m.user_details?.full_name || 'N/A',
+          email: m.email || m.user_details?.email || 'N/A'
+        },
+        field_values: [
+          { field_label: 'Startup Name', field_type: 'text', value: m.startup_name },
+          { field_label: 'Domain', field_type: 'text', value: m.domain },
+          { field_label: 'Problem Statement', field_type: 'textarea', value: m.problem_statement },
+          { field_label: 'Specific Mentor', field_type: 'text', value: m.mentor_details?.name || 'Any' }
+        ]
+      }));
+      allSubmissions = [...allSubmissions, ...formatted];
+    }
+
+    // 5. Validation Requests
+    if (results[4].status === 'fulfilled') {
+      const rawData = results[4].value;
+      let validation: any[] = [];
+      if (Array.isArray(rawData)) validation = rawData;
+      else if (rawData && Array.isArray(rawData.results)) validation = rawData.results;
+
+      const formatted = validation.map((v: any) => ({
+        id: v.id,
+        form_name: 'Validation Request',
+        form_type: 'validation_request',
+        status: v.status,
+        created_at: v.created_at,
+        user_details: {
+          full_name: v.name || v.user_details?.full_name || 'N/A',
+          email: v.email || v.user_details?.email || 'N/A'
+        },
+        field_values: [
+          { field_label: 'Startup Name', field_type: 'text', value: v.startup_name },
+          { field_label: 'Target Market', field_type: 'text', value: v.target_market },
+          { field_label: 'Idea Details', field_type: 'textarea', value: v.idea_details },
+          { field_label: 'Testing & Validation Requirements', field_type: 'textarea', value: v.testing_requirements }
+        ]
+      }));
+      allSubmissions = [...allSubmissions, ...formatted];
+    }
+
+    // 6. Incubation Applications
+    if (results[5].status === 'fulfilled') {
+      const incubationData = results[5].value;
+      let incubationList: any[] = [];
+      
+      if (Array.isArray(incubationData)) {
+          incubationList = incubationData;
+      } else if (incubationData && Array.isArray(incubationData.results)) {
+          incubationList = incubationData.results;
+      } else if (incubationData && Array.isArray(incubationData.applications)) {
+          incubationList = incubationData.applications;
+      }
+
+      const formatted = incubationList.map((i: any) => ({
+        id: i.id,
+        form_name: i.form_name || 'Incubation Application',
+        form_type: 'incubation_application',
+        status: i.status || 'pending',
+        created_at: i.created_at,
+        user_details: i.user_details ? {
+          full_name: i.user_details.full_name,
+          email: i.user_details.email
+        } : {
+          full_name: i.founder_name || i.user?.full_name || 'N/A',
+          email: i.email || i.user?.email || 'N/A'
+        },
+        field_values: i.field_values || []
+      }));
+      allSubmissions = [...allSubmissions, ...formatted];
+    }
+    
+    allSubmissions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return allSubmissions;
+  };
+
+  const exportToCSV = (targetSubmissions: Submission[] = submissions) => {
+    const standardHeaders = ['Form Type', 'Status', 'Submitted At', 'User Name', 'User Email'];
+    const dynamicHeadersSet = new Set<string>();
+    
+    targetSubmissions.forEach(s => {
+      (s.field_values || []).forEach(fv => {
+        if (fv.field_label) {
+          dynamicHeadersSet.add(fv.field_label);
+        }
+      });
+    });
+    
+    const dynamicHeaders = Array.from(dynamicHeadersSet);
+    const allHeaders = [...standardHeaders, ...dynamicHeaders];
+    
+    const escapeCSVField = (val: any) => {
+      if (val === null || val === undefined) return '';
+      let strVal = String(val);
+      const needsEscaping = strVal.includes(',') || strVal.includes('"') || strVal.includes('\n') || strVal.includes('\r');
+      if (needsEscaping) {
+        strVal = strVal.replace(/"/g, '""');
+        return `"${strVal}"`;
+      }
+      return strVal;
+    };
+
+    const rows = targetSubmissions.map(s => {
+      const u = getSubmissionUserDetails(s);
+      const fvMap = new Map<string, string>();
+      (s.field_values || []).forEach(fv => {
+        if (fv.field_label) {
+          let val = fv.value || '';
+          if (fv.file_url) {
+            val = fv.file_url;
+          }
+          fvMap.set(fv.field_label, val);
+        }
+      });
+
+      const rowData = [
+        s.form_name,
+        s.status,
+        formatDate(s.created_at),
+        u.full_name || 'Anonymous',
+        u.email || 'N/A',
+        ...dynamicHeaders.map(header => fvMap.get(header) || '')
+      ];
+
+      return rowData.map(escapeCSVField).join(',');
+    });
+
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
+      allHeaders.map(escapeCSVField).join(','),
+      ...rows
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -372,20 +583,65 @@ export const FormSubmissions = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleClearSubmissionsOnly = async () => {
+    setClearConfirmOpen(false);
+    setLoading(true);
+    try {
+      const res = await formBuilderService.clearAllSubmissions();
+      toast.success(res?.message || 'Successfully cleared all submissions');
+      loadSubmissions();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.error || 'Failed to clear submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportAndClear = async () => {
+    setClearConfirmOpen(false);
+    setLoading(true);
+    try {
+      const allSubmissions = await fetchAllUnfilteredSubmissions();
+      if (allSubmissions.length > 0) {
+        exportToCSV(allSubmissions);
+      }
+      const res = await formBuilderService.clearAllSubmissions();
+      toast.success(res?.message || 'Successfully exported and cleared all submissions');
+      loadSubmissions();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.error || 'Failed to export and clear submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Container maxWidth="xl" sx={{ pt: 12, pb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           Form Submissions
         </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Download />}
-          onClick={exportToCSV}
-          disabled={submissions.length === 0}
-        >
-          Export CSV
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={() => exportToCSV()}
+            disabled={submissions.length === 0}
+          >
+            Export CSV
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            onClick={() => setClearConfirmOpen(true)}
+            disabled={submissions.length === 0}
+          >
+            Clear All
+          </Button>
+        </Box>
       </Box>
 
       {/* Filters */}
@@ -614,6 +870,49 @@ export const FormSubmissions = () => {
               )}
             </Box>
             <Button onClick={() => setDetailDialog(false)} variant="outlined">Close</Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Clear Submissions Confirmation Dialog */}
+      <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'error.light', color: 'error.contrastText', py: 2 }}>
+          <WarningAmber />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Danger: Irreversible Action</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+            Are you sure you want to delete all form submissions and legacy applications from the system?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            This action is completely permanent and cannot be undone. It will clear all dynamic form submissions, funding requests, mentoring requests, validation requests, incubation applications, and mentor profiles.
+          </Typography>
+          <Paper sx={{ p: 2, bgcolor: 'action.hover', border: '1px dashed', borderColor: 'error.main', borderRadius: 2 }}>
+            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+              ⚠️ Recommendation: Export as CSV first to keep a backup of the records.
+            </Typography>
+          </Paper>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, display: 'flex', justifyContent: 'space-between' }}>
+          <Button onClick={() => setClearConfirmOpen(false)} variant="outlined">
+            Cancel
+          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              onClick={handleClearSubmissionsOnly}
+              color="error"
+              variant="text"
+            >
+              Clear Only
+            </Button>
+            <Button
+              onClick={handleExportAndClear}
+              color="error"
+              variant="contained"
+              startIcon={<Download />}
+            >
+              Export & Clear
+            </Button>
           </Box>
         </DialogActions>
       </Dialog>

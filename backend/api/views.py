@@ -268,17 +268,30 @@ def update_application_status(request, id):
             if new_status == "approved" and old_status != "approved":
                 # Only for incubation applications
                 if submission.form_template.form_type == 'incubation_application':
-                    # Map dynamic fields to send approval email
-                    field_values = {fv.field.field_name: fv for fv in submission.field_values.all()}
+                    # Robust extraction of fields (case-insensitive keys)
+                    field_values = submission.field_values.all()
+                    field_values_map = {fv.field.field_name.lower(): fv.value for fv in field_values}
                     
-                    email = field_values.get('email').value if field_values.get('email') else None
-                    fullName = field_values.get('fullName').value if field_values.get('fullName') else 'User'
-                    businessName = field_values.get('businessName').value if field_values.get('businessName') else 'Startup'
-                    businessDescription = field_values.get('businessDescription').value if field_values.get('businessDescription') else ''
-                    businessType = field_values.get('businessType').value if field_values.get('businessType') else ''
-                    city = field_values.get('city').value if field_values.get('city') else ''
-                    state = field_values.get('state').value if field_values.get('state') else ''
-                    resMobile = field_values.get('resMobile').value if field_values.get('resMobile') else ''
+                    def get_field_any(keys):
+                        for k in keys:
+                            val = field_values_map.get(k.lower())
+                            if val: return val
+                        return None
+                    
+                    email = get_field_any(['email', 'Email Address', 'contact_email', 'Email ID'])
+                    if not email and submission.user:
+                        email = submission.user.email
+                        
+                    fullName = get_field_any(['fullName', 'name', 'full_name', 'Contact Person Name', 'Your Name']) or 'User'
+                    if (fullName == 'User' or not fullName) and submission.user:
+                        fullName = submission.user.full_name or submission.user.username
+                        
+                    businessName = get_field_any(['businessName', 'startup_name', 'company_name']) or 'Startup'
+                    businessDescription = get_field_any(['businessDescription', 'description', 'idea_details']) or ''
+                    businessType = get_field_any(['businessType', 'domain']) or ''
+                    city = get_field_any(['city']) or ''
+                    state = get_field_any(['state']) or ''
+                    resMobile = get_field_any(['resMobile', 'phone', 'contact_phone', 'Phone Number']) or ''
                     
                     if email:
                         send_approval_email(email, fullName, businessName, businessDescription, businessType, city, state, resMobile)
@@ -295,9 +308,26 @@ def update_application_status(request, id):
             elif new_status == "rejected" and old_status != "rejected":
                 if submission.form_template.form_type == 'incubation_application':
                     admin_notes = request.data.get('admin_notes') or request.data.get('message')
-                    field_values_map = {fv.field.field_name: fv.value for fv in submission.field_values.all()}
-                    email = field_values_map.get('email') or field_values_map.get('Email Address')
-                    fullName = field_values_map.get('fullName') or field_values_map.get('name') or field_values_map.get('full_name') or 'User'
+                    
+                    # Robust extraction of fields (case-insensitive keys)
+                    field_values = submission.field_values.all()
+                    field_values_map = {fv.field.field_name.lower(): fv.value for fv in field_values}
+                    
+                    def get_field_any(keys):
+                        for k in keys:
+                            val = field_values_map.get(k.lower())
+                            if val: return val
+                        return None
+                        
+                    email = get_field_any(['email', 'Email Address', 'contact_email', 'Email ID'])
+                    if not email and submission.user:
+                        email = submission.user.email
+                        
+                    fullName = get_field_any(['fullName', 'name', 'full_name', 'Contact Person Name', 'Your Name']) or 'User'
+                    if (fullName == 'User' or not fullName) and submission.user:
+                        fullName = submission.user.full_name or submission.user.username
+                        
+                    businessName = get_field_any(['businessName', 'startup_name', 'company_name']) or 'Startup'
                     
                     if email:
                         send_submission_status_email(
@@ -305,8 +335,18 @@ def update_application_status(request, id):
                             full_name=fullName,
                             form_name=submission.form_template.name,
                             status=new_status,
-                            admin_notes=admin_notes
+                            admin_notes=admin_notes,
+                            form_type=submission.form_template.form_type
                         )
+                    
+                    # Also try to update the synced IncubationApplication if it exists
+                    try:
+                        inc_app = IncubationApplication.objects.filter(email=email, businessName=businessName).order_by('-created_at').first()
+                        if inc_app:
+                            inc_app.status = 'rejected'
+                            inc_app.save()
+                    except:
+                        pass
 
             return Response({"message": f"Application {new_status}"})
         else:
@@ -1335,10 +1375,21 @@ class FundingRequestViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         instance = self.get_object()
+        old_status = instance.status
         new_pitch_deck = serializer.validated_data.get('pitch_deck')
         if new_pitch_deck and instance.pitch_deck and new_pitch_deck != instance.pitch_deck:
             delete_cloudinary_file(instance.pitch_deck, resource_type='raw')
-        serializer.save()
+        request_obj = serializer.save()
+        
+        if request_obj.status != old_status and request_obj.status in ['approved', 'rejected']:
+            send_submission_status_email(
+                email=request_obj.email,
+                full_name=request_obj.name or 'User',
+                form_name='Funding Support',
+                status=request_obj.status,
+                admin_notes=request_obj.admin_notes,
+                form_type='funding_support'
+            )
 
     def perform_destroy(self, instance):
         if instance.pitch_deck:
@@ -1366,6 +1417,23 @@ class MentoringRequestViewSet(viewsets.ModelViewSet):
             return MentoringRequest.objects.all().order_by('-created_at')
         return MentoringRequest.objects.filter(user=user).order_by('-created_at')
 
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        request_obj = serializer.save()
+        
+        if request_obj.status != old_status and request_obj.status in ['approved', 'rejected']:
+            mentor_name = request_obj.mentor.name if request_obj.mentor else None
+            send_submission_status_email(
+                email=request_obj.email,
+                full_name=request_obj.name or 'User',
+                form_name='Mentoring Support',
+                status=request_obj.status,
+                admin_notes=request_obj.admin_notes,
+                mentor_name=mentor_name,
+                form_type='mentoring_support'
+            )
+
 class ValidationRequestViewSet(viewsets.ModelViewSet):
     queryset = ValidationRequest.objects.all()
     serializer_class = ValidationRequestSerializer
@@ -1380,15 +1448,27 @@ class ValidationRequestViewSet(viewsets.ModelViewSet):
         if self.request.method == 'POST':
             return []
         return super().get_authenticators()
-    queryset = ValidationRequest.objects.all()
-    serializer_class = ValidationRequestSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
             return ValidationRequest.objects.all().order_by('-created_at')
         return ValidationRequest.objects.filter(user=user).order_by('-created_at')
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        request_obj = serializer.save()
+        
+        if request_obj.status != old_status and request_obj.status in ['approved', 'rejected']:
+            send_submission_status_email(
+                email=request_obj.email,
+                full_name=request_obj.name or 'User',
+                form_name='Idea Validation',
+                status=request_obj.status,
+                admin_notes=request_obj.admin_notes,
+                form_type='idea_validation'
+            )
 
 
 # =========================================================================

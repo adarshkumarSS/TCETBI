@@ -14,7 +14,7 @@ from .wrappers.form_builder_views import (
     delete_form_template, add_form_field, update_form_field, delete_form_field, reorder_form_fields
 )
 from .wrappers.form_submission_views import (
-    get_form_structure, submit_form, list_submissions, get_submission_detail, update_submission_status
+    get_form_structure, submit_form, list_submissions, get_submission_detail, update_submission_status, clear_all_submissions
 )
 from .views import (
     submit_contact_message, get_notifications, mark_notification_read, delete_notification,
@@ -130,6 +130,7 @@ urlpatterns = [
     path('admin/submissions/', list_submissions, name='list_submissions'),
     path('admin/submissions/<int:submission_id>/', get_submission_detail, name='get_submission_detail'),
     path('admin/submissions/<int:submission_id>/status/', update_submission_status, name='update_submission_status'),
+    path('admin/submissions/clear-all/', clear_all_submissions, name='clear_all_submissions'),
 
     # Site Settings (Feature Flags)
     path('admin/site-settings/', site_settings_view, name='site_settings'),
