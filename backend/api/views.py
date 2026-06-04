@@ -1258,13 +1258,18 @@ class MentorViewSet(viewsets.ModelViewSet):
             except Exception:
                 pass
             
-            # Admin-created mentors are auto-approved; public applications are pending
-            mentor_status = 'approved' if is_admin else 'pending'
+            # Admin-created mentors are auto-approved if specified; public applications are pending
+            status_sent = self.request.data.get('status')
+            if is_admin:
+                mentor_status = status_sent if status_sent in ['approved', 'pending', 'rejected'] else 'approved'
+            else:
+                mentor_status = 'pending'
+                
             mentor = serializer.save(status=mentor_status)
             print(f"Mentor created: {mentor.id} (status: {mentor_status}, admin: {is_admin})")
             
-            if not is_admin:
-                # Only notify admin for public applications
+            if mentor_status == 'pending':
+                # Only notify admin for pending applications
                 Notification.objects.create(
                     type="mentor",
                     title="New Mentor Application",
@@ -1276,7 +1281,7 @@ class MentorViewSet(viewsets.ModelViewSet):
                         "domain": mentor.domain
                     }
                 )
-                print("Notification created for public application")
+                print("Notification created for pending application")
         except Exception as e:
             print(f"!!! Error in MentorViewSet.perform_create: {str(e)}")
             import traceback

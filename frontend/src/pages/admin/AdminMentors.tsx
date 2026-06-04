@@ -125,6 +125,7 @@ export const AdminMentors = () => {
 
       const mentorData = { 
         ...currentMentor, 
+        status: isEditing ? currentMentor.status : 'approved',
         image: imageUrl,
         experience_details: currentMentor.experience_details // Send as object
       };
