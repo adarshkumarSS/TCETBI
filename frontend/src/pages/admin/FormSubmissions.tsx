@@ -48,6 +48,21 @@ interface Submission {
   }>;
 }
 
+const getSubmissionUserDetails = (s: any) => {
+  if (s.user_details && s.user_details.full_name && s.user_details.full_name !== 'N/A' && s.user_details.full_name !== 'Guest User') {
+    return s.user_details;
+  }
+  
+  const fv = s.field_values || [];
+  const nameFv = fv.find((f: any) => ['name', 'fullname', 'fullname', 'yourname', 'applicantname', 'foundername'].includes((f.field_name || f.field_label || '').toLowerCase().replace(/[^a-z]/g, '')));
+  const emailFv = fv.find((f: any) => ['email', 'emailaddress', 'contactemail'].includes((f.field_name || f.field_label || '').toLowerCase().replace(/[^a-z]/g, '')));
+  
+  return {
+    full_name: nameFv?.value || s.user_details?.full_name || 'Guest User',
+    email: emailFv?.value || s.user_details?.email || 'N/A'
+  };
+};
+
 export const FormSubmissions = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -210,7 +225,8 @@ export const FormSubmissions = () => {
           field_values: [
             { field_label: 'Startup Name', field_type: 'text', value: v.startup_name },
             { field_label: 'Target Market', field_type: 'text', value: v.target_market },
-            { field_label: 'Idea Description', field_type: 'textarea', value: v.description }
+            { field_label: 'Idea Details', field_type: 'textarea', value: v.idea_details },
+            { field_label: 'Testing & Validation Requirements', field_type: 'textarea', value: v.testing_requirements }
           ]
         }));
         allSubmissions = [...allSubmissions, ...formatted];
@@ -235,21 +251,18 @@ export const FormSubmissions = () => {
           .filter((i: any) => !statusFilter || i.status === statusFilter)
           .map((i: any) => ({
           id: i.id,
-          form_name: 'Incubation Application',
+          form_name: i.form_name || 'Incubation Application',
           form_type: 'incubation_application',
           status: i.status || 'pending',
           created_at: i.created_at,
-          user_details: {
+          user_details: i.user_details ? {
+            full_name: i.user_details.full_name,
+            email: i.user_details.email
+          } : {
             full_name: i.founder_name || i.user?.full_name || 'N/A',
             email: i.email || i.user?.email || 'N/A'
           },
-          field_values: [
-             { field_label: 'Startup Name', field_type: 'text', value: i.startup_name },
-             { field_label: 'Sector', field_type: 'text', value: i.sector },
-             { field_label: 'Phone', field_type: 'text', value: i.phone_number },
-             { field_label: 'Description', field_type: 'textarea', value: i.description },
-             { field_label: 'Pitch Deck', field_type: 'file', value: 'View Deck', file_url: i.pitch_deck }
-          ]
+          field_values: i.field_values || []
         }));
         allSubmissions = [...allSubmissions, ...formatted];
       }
@@ -439,16 +452,17 @@ export const FormSubmissions = () => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  {submission.user_details ? (
-                    <Box>
-                      <Typography variant="body2">{submission.user_details.full_name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {submission.user_details.email}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">Anonymous</Typography>
-                  )}
+                  {(() => {
+                    const u = getSubmissionUserDetails(submission);
+                    return (
+                      <Box>
+                        <Typography variant="body2">{u.full_name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {u.email}
+                        </Typography>
+                      </Box>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>
                   <Chip
@@ -516,16 +530,32 @@ export const FormSubmissions = () => {
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                         {fieldValue.field_label}
                       </Typography>
-                      {fieldValue.field_type === 'file' || fieldValue.file_url ? (
-                        <Button
-                          variant="text"
-                          href={fieldValue.file_url}
-                          target="_blank"
-                          size="small"
-                          sx={{ mt: 1 }}
-                        >
-                          View File
-                        </Button>
+                      {fieldValue.field_type === 'file' || fieldValue.file_url || (typeof fieldValue.value === 'string' && (fieldValue.value.startsWith('http://') || fieldValue.value.startsWith('https://'))) ? (
+                        <Box sx={{ mt: 1 }}>
+                          {(() => {
+                            const url = fieldValue.file_url || fieldValue.value;
+                            const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif|webp|bmp)/i.test(url.toLowerCase().split('?')[0]);
+                            if (isImage) {
+                              return (
+                                <Box sx={{ mt: 1, maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+                                  <a href={url} target="_blank" rel="noreferrer">
+                                    <img src={url} alt={fieldValue.field_label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  </a>
+                                </Box>
+                              );
+                            }
+                            return (
+                              <Button
+                                variant="outlined"
+                                href={url}
+                                target="_blank"
+                                size="small"
+                              >
+                                View File
+                              </Button>
+                            );
+                          })()}
+                        </Box>
                       ) : (
                         <Typography variant="body1">
                           {fieldValue.value || '-'}

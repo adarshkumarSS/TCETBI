@@ -397,44 +397,70 @@ export const Applications = () => {
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                    {selectedApp.field_values.filter(fv => fv.field_type !== 'file' && fv.field_type !== 'textarea').map(fv => (
-                      <Box key={fv.id}>
-                        <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))", mb: 0.5 }}>{fv.field_label}</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>{fv.value || 'N/A'}</Typography>
-                      </Box>
-                    ))}
-                  </Box>
+                  {(() => {
+                    const isFileField = (fv: FieldValue) => {
+                      return fv.field_type === 'file' || 
+                             !!fv.file_url || 
+                             (typeof fv.value === 'string' && (fv.value.startsWith('http://') || fv.value.startsWith('https://')));
+                    };
 
-                  {selectedApp.field_values.filter(fv => fv.field_type === 'textarea').map(fv => (
-                    <Box key={fv.id} sx={{ mt: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))", mb: 0.5 }}>{fv.field_label}</Typography>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{fv.value || 'N/A'}</Typography>
-                    </Box>
-                  ))}
+                    const fileFields = selectedApp.field_values.filter(isFileField);
+                    const normalFields = selectedApp.field_values.filter(fv => !isFileField(fv) && fv.field_type !== 'textarea');
+                    const textareaFields = selectedApp.field_values.filter(fv => !isFileField(fv) && fv.field_type === 'textarea');
 
-                  {selectedApp.field_values.filter(fv => fv.field_type === 'file' && fv.file_url).length > 0 && (
-                    <Box sx={{ mt: 4 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "hsl(var(--primary))" }}>Attachments</Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        {selectedApp.field_values.filter(fv => fv.field_type === 'file' && fv.file_url).map(fv => (
-                          <Box key={fv.id} sx={{ p: 2, border: '1px solid hsl(var(--border))', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 2, minWidth: '200px' }}>
-                            {fv.file_url && (fv.file_url.endsWith('.png') || fv.file_url.endsWith('.jpg') || fv.file_url.endsWith('.jpeg')) ? (
-                              <Avatar src={fv.file_url} variant="rounded" sx={{ width: 40, height: 40 }} />
-                            ) : (
-                              <Box sx={{ width: 40, height: 40, bgcolor: 'hsl(var(--muted))', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📄</Box>
-                            )}
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{fv.field_label}</Typography>
-                              <Typography variant="caption" sx={{ display: 'block' }}>
-                                <a href={fv.file_url || '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'hsl(var(--primary))', textDecoration: 'underline' }}>View File</a>
-                              </Typography>
-                            </Box>
+                    return (
+                      <>
+                        {normalFields.length > 0 && (
+                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                            {normalFields.map(fv => (
+                              <Box key={fv.id}>
+                                <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))", mb: 0.5 }}>{fv.field_label}</Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>{fv.value || 'N/A'}</Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+
+                        {textareaFields.map(fv => (
+                          <Box key={fv.id} sx={{ mt: 3 }}>
+                            <Typography variant="subtitle2" sx={{ color: "hsl(var(--muted-foreground))", mb: 0.5 }}>{fv.field_label}</Typography>
+                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{fv.value || 'N/A'}</Typography>
                           </Box>
                         ))}
-                      </Box>
-                    </Box>
-                  )}
+
+                        {fileFields.length > 0 && (
+                          <Box sx={{ mt: 4 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "hsl(var(--primary))" }}>Attachments</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                              {fileFields.map(fv => {
+                                const url = fv.file_url || fv.value;
+                                const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif|webp|bmp)/i.test(url.toLowerCase().split('?')[0]);
+                                return (
+                                  <Box key={fv.id} sx={{ p: 2, border: '1px solid hsl(var(--border))', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 2, minWidth: '200px' }}>
+                                    {isImage ? (
+                                      <Box sx={{ width: 40, height: 40, borderRadius: '4px', overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+                                        <a href={url} target="_blank" rel="noreferrer">
+                                          <img src={url} alt={fv.field_label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </a>
+                                      </Box>
+                                    ) : (
+                                      <Box sx={{ width: 40, height: 40, bgcolor: 'hsl(var(--muted))', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📄</Box>
+                                    )}
+                                    <Box>
+                                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{fv.field_label}</Typography>
+                                      <Typography variant="caption" sx={{ display: 'block' }}>
+                                        <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'hsl(var(--primary))', textDecoration: 'underline' }}>View File</a>
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          </Box>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 6, pt: 3, borderTop: '1px solid hsl(var(--border))' }}>
                     <DarkButton startIcon={<X />} onClick={handleReject} disabled={selectedApp.status !== "pending" || updating} sx={{ backgroundColor: "hsl(var(--destructive))", "&:hover": { backgroundColor: "hsl(var(--destructive) / 0.9)" } }}>Reject</DarkButton>

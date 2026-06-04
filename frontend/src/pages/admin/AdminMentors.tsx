@@ -312,14 +312,13 @@ export const AdminMentors = () => {
                       >
                         Reject
                       </Button>
-                      <Button
+                      <IconButton
                          size="small"
-                         variant="text"
                          color="primary"
                          onClick={() => handleOpenDialog(mentor)}
                       >
                         <Eye size={16} />
-                      </Button>
+                      </IconButton>
                     </Box>
                   </Box>
                 )) : (

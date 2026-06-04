@@ -254,8 +254,8 @@ export const SupportRequests = () => {
                                         {req.description || req.problem_statement || req.idea_details}
                                     </Typography>
                                 </Box>
-                                
-                                <Box sx={{ display: "flex", gap: 1 }}>
+                                                                
+                                <Box sx={{ display: "flex", gap: 1, alignItems: 'center' }}>
                                     <Button 
                                         size="small" 
                                         variant="contained" 
@@ -276,6 +276,13 @@ export const SupportRequests = () => {
                                     >
                                         Reject
                                     </Button>
+                                    <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => handleOpenDialog(req, type)}
+                                    >
+                                        <Eye size={16} />
+                                    </IconButton>
                                 </Box>
                             </Box>
                         )) : (
@@ -346,14 +353,45 @@ export const SupportRequests = () => {
                                 {Object.entries(selectedRequest).map(([key, val]) => {
                                     if (['id', 'user', 'created_at', 'updated_at', 'pitch_deck'].includes(key)) return null;
                                     if (typeof val === 'object' || Array.isArray(val)) return null;
+                                    
+                                    const isUrl = typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'));
+                                    
                                     return (
-                                        <Grid size={{ xs: 12, sm: 6 }} key={key}>
+                                        <Grid size={{ xs: 12, sm: isUrl ? 12 : 6 }} key={key}>
                                             <Typography variant="caption" color="textSecondary" sx={{ textTransform: 'uppercase' }}>
                                                 {key.replace(/_/g, ' ')}
                                             </Typography>
-                                            <Typography variant="body1">
-                                                {String(val)}
-                                            </Typography>
+                                            {isUrl ? (
+                                                <Box sx={{ mt: 1 }}>
+                                                    {(() => {
+                                                        const url = val;
+                                                        const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif|webp|bmp)/i.test(url.toLowerCase().split('?')[0]);
+                                                        if (isImage) {
+                                                            return (
+                                                                <Box sx={{ mt: 1, maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+                                                                    <a href={url} target="_blank" rel="noreferrer">
+                                                                        <img src={url} alt={key} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    </a>
+                                                                </Box>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <Button 
+                                                                variant="outlined" 
+                                                                size="small" 
+                                                                href={url} 
+                                                                target="_blank"
+                                                            >
+                                                                View File
+                                                            </Button>
+                                                        );
+                                                    })()}
+                                                </Box>
+                                            ) : (
+                                                <Typography variant="body1">
+                                                    {String(val)}
+                                                </Typography>
+                                            )}
                                         </Grid>
                                     );
                                 })}
@@ -361,15 +399,30 @@ export const SupportRequests = () => {
                                 {selectedRequest.pitch_deck && (
                                     <Grid size={{ xs: 12 }}>
                                         <Typography variant="caption" color="textSecondary">PITCH DECK</Typography>
-                                        <Box>
-                                            <Button 
-                                                variant="outlined" 
-                                                size="small" 
-                                                href={selectedRequest.pitch_deck} 
-                                                target="_blank"
-                                            >
-                                                View Document
-                                            </Button>
+                                        <Box sx={{ mt: 1 }}>
+                                            {(() => {
+                                                const url = selectedRequest.pitch_deck;
+                                                const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif|webp|bmp)/i.test(url.toLowerCase().split('?')[0]);
+                                                if (isImage) {
+                                                    return (
+                                                        <Box sx={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+                                                            <a href={url} target="_blank" rel="noreferrer">
+                                                                <img src={url} alt="Pitch Deck" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            </a>
+                                                        </Box>
+                                                    );
+                                                }
+                                                return (
+                                                    <Button 
+                                                        variant="outlined" 
+                                                        size="small" 
+                                                        href={url} 
+                                                        target="_blank"
+                                                    >
+                                                        View Document
+                                                    </Button>
+                                                );
+                                            })()}
                                         </Box>
                                     </Grid>
                                 )}
